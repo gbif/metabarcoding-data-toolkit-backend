@@ -1,14 +1,15 @@
-import { writeBiom, toBiom, addReadCounts } from '../converters/biom.js';
-import { processWorkBookFromFile, readXlsxHeaders } from "../converters/excel.js"
+import { addReadCounts } from '../converters/biom.js';
+import { getMapFromMatrix, readWorkBookFromFile, toBiom } from "../converters/excel.js"
 import { uploadedFilesAndTypes, getMimeFromPath, getFileSize, unzip } from '../validation/files.js'
 
 import _ from 'lodash'
 import { getCurrentDatasetVersion, writeProcessingReport, wipeGeneratedFilesAndResetProccessing, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
-import {updateStatusOnCurrentStep, beginStep, stepFinished, hdf5Errors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats} from "./util.js"
+import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats} from "./util.js"
+import { assignTaxonomy } from '../classifier/index.js';
 
 
 
-const processDataset = async (id, version) => {
+const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     try {
         console.log("Processing dataset "+id + " version "+version)
     const mapping = await readMapping(id, version);
@@ -20,9 +21,24 @@ const processDataset = async (id, version) => {
     if (filePaths?.taxa) {
         job.taxonHeaders = await readTsvHeaders(filePaths?.taxa)
     } */
+    beginStep('readData')
+   // const biom = await toBiom(filePaths.otuTable, filePaths.samples, filePaths.taxa, samplesAsColumns,  updateStatusOnCurrentStep , mapping, id)
+   const {samples, taxa, otuTable} = await readWorkBookFromFile(id, files.files[0].name, version, mapping, updateStatusOnCurrentStep)
+
+   const sampleMap = getMapFromMatrix(samples.data,  mapping.samples)
+      const taxaMap = getMapFromMatrix(taxa.data, mapping.taxa, true)
+
+    stepFinished('readData');
+
+    if(systemShouldAssignTaxonomy){
+        beginStep('assignTaxonomy')
+        const { errors } = await assignTaxonomy(id, version, taxaMap, mapping?.defaultValues?.target_gene, updateStatusOnCurrentStep)
+        blastErrors(errors || [])
+        stepFinished('assignTaxonomy')
+    }
     beginStep('convertToBiom')
    // const biom = await toBiom(filePaths.otuTable, filePaths.samples, filePaths.taxa, samplesAsColumns,  updateStatusOnCurrentStep , mapping, id)
-   const biom = await processWorkBookFromFile(id, files.files[0].name, version, mapping, updateStatusOnCurrentStep)
+   const biom = await toBiom(otuTable, sampleMap, taxaMap, mapping, updateStatusOnCurrentStep)
 
     stepFinished('convertToBiom');
     beginStep('addReadCounts')
@@ -42,7 +58,8 @@ const processDataset = async (id, version) => {
 
 const id = process.argv[2]
 const version = process.argv[3]
+const systemShouldAssignTaxonomy = process.argv?.[4] || false;
 
-processDataset(id, version)
+processDataset(id, version, systemShouldAssignTaxonomy)
 
 

@@ -7,7 +7,6 @@ import {spawn} from 'child_process';
 import parse from 'csv-parse';
 // import path from 'path';
 import json from 'big-json';
-import AdmZip from "adm-zip";
 
 
 
@@ -210,7 +209,9 @@ export const zipDwcArchive = (id, version) => {
             columns: false,
             ltrim: true,
             rtrim: true,
-            quote: null,
+            escape: '\\',
+
+          //  quote: null,
             to_line: 1
           })
           let headers;

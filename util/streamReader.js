@@ -14,7 +14,8 @@ export const readOtuTable = (path,  progressFn = ()=>{}) => {
             columns: false,
             ltrim: true,
             rtrim: true,
-            quote: null,
+            escape: '\\',
+         //   quote: null,
             from_line: 2
           })
         const records = [];
@@ -51,7 +52,9 @@ export const readOtuTableToSparse = (path, progressFn = (progress, total, messag
           columns: false,
           ltrim: true,
           rtrim: true,
-          quote: null
+          escape: '\\',
+
+       //   quote: null
          // from_line: 2
         })
       const records = [];
@@ -106,7 +109,9 @@ export const readMetaData = (path,  progressFn = ()=>{}) => {
             columns: true,
             ltrim: true,
             rtrim: true,
-            quote: null,
+          //  escape: '\\',
+
+          //  quote: null,
           })
         const records = [];
         let count = 0;
@@ -162,7 +167,9 @@ const mapRecord = record => {
           columns: true,
           ltrim: true,
           rtrim: true,
-          quote: null,
+          escape: '\\',
+
+        //  quote: null,
         })
       const records = new Map();
       let count = 0;

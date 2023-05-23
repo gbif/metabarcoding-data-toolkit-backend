@@ -47,8 +47,7 @@ const addEndpoint = async (ednaDatasetID, uuid, username, password) => {
 
 };
 const registerStudy = async (ednaDatasetID, username, password) => {
-    const auth =
-    "Basic " + new Buffer(username + ":" + password).toString("base64");
+   
   return axios({
      method: 'post',
     url: `${config.gbifBaseUrl}dataset`,

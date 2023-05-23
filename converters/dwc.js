@@ -227,7 +227,9 @@ export const otuTableToDWC = async (otuTableFile, sampleFile, taxaFile, termMapp
         columns: false,
         ltrim: true,
         rtrim: true,
-        quote: null
+        escape: '\\',
+
+      //  quote: null
       })
 
     const inputStream = fs.createReadStream(otuTableFile);    

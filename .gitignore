@@ -2,6 +2,7 @@
 # test data
 input/global_soil/
 testData/global_soil/
+testData/insect_mobile/
 
 # Output data
 output/

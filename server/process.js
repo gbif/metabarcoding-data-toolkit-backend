@@ -43,7 +43,7 @@ const q = queue(async (options) => {
 }, 3)
 
 
-const pushJob = async (id) => {
+const pushJob = async (id, assignTaxonomy) => {
 
 
 
@@ -51,7 +51,7 @@ const pushJob = async (id) => {
         // in case the user starts the proceesing again 
         let version = await getCurrentDatasetVersion(id);
         await wipeGeneratedFilesAndResetProccessing(id, version)
-        runningJobs.set(id, { id: id, filesAvailable: [], steps: [{ status: 'queued', time: Date.now() }] })
+        runningJobs.set(id, { id: id, assignTaxonomy: assignTaxonomy, filesAvailable: [], steps: [{ status: 'queued', time: Date.now() }] })
         q.push({ id: id }, async (error, result) => {
             if (error) {
                 console.log(error);
@@ -64,7 +64,9 @@ const pushJob = async (id) => {
                 //  throw error
             } else {
                 let job = runningJobs.get(id);
-               job.steps.push({ status: 'finished', time: Date.now() })
+                if(job?.steps?.[job?.steps?.length -1]?.status !== 'failed'){
+                    job.steps.push({ status: 'finished', time: Date.now() })
+                }
                 await writeProcessingReport(id, job.version, job)
                 runningJobs.delete(id)
             }
@@ -82,7 +84,7 @@ const pushJob = async (id) => {
 const addPendingSteps = job => {
     const steps_ = job.steps;
 
-    return [...steps_, ...Object.keys(STEPS).filter(s => (!job.unzip ? s !== 'extractArchive' : true) && !steps_.map(a => a?.name).includes(s)).map(k => STEPS[k])]
+    return [...steps_, ...Object.keys(STEPS).filter(s => (!job.unzip ? s !== 'extractArchive' : true) && (!job.assignTaxonomy ? s !== 'assignTaxonomy' : true) && !steps_.map(a => a?.name).includes(s)).map(k => STEPS[k])]
 }
 
 export default (app) => {
@@ -93,7 +95,9 @@ export default (app) => {
             try {
                 // Make sure a job is not already running
                 if (!runningJobs.has(req.params.id)) {
-                    pushJob(req.params.id);
+                    let assignTaxonomy = req?.query?.assignTaxonomy && (req?.query?.assignTaxonomy === true || req?.query?.assignTaxonomy === "true" )
+                    
+                    pushJob(req.params.id, assignTaxonomy );
                     res.sendStatus(201)
                 } else {
                     res.sendStatus(302)
@@ -113,6 +117,7 @@ export default (app) => {
             res.sendStatus(404);
         } else {
 
+            
           //  console.log("Process request 1")
             // this will only find jobs that are being processed -will need
             const job = runningJobs.get(req.params.id);

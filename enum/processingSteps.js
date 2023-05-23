@@ -11,6 +11,18 @@ const STEPS = {
         "message": 'Extracting archive',
         "messagePending": "Extract archive"
     },
+    "readData": {
+        "name": "readData",
+        "status": "pending",
+        "message": 'Reading data files',
+        "messagePending": "Read data files"
+    },
+    "assignTaxonomy": {
+        "name": "assignTaxonomy",
+        "status": "pending",
+        "message": 'Assigning taxonomy',
+        "messagePending": "Assign taxonomy"
+    },
     "convertToBiom": {
         "name": "convertToBiom",
         "status": "pending",

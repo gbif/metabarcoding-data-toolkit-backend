@@ -66,6 +66,34 @@ export const hdf5Errors = errors => {
     }
 }
 
+export const missingSampleRecords = errors => {
+
+    if (typeof process?.send === 'function') {
+        // process.send('stepFinished')
+         process.send({
+            type: 'missingSampleRecords',
+            payload: errors
+
+        }
+            
+        ) 
+    }
+}
+
+export const blastErrors = errors => {
+
+    if (typeof process?.send === 'function') {
+        // process.send('stepFinished')
+         process.send({
+            type: 'blastErrors',
+            payload: errors
+
+        }
+            
+        ) 
+    }
+}
+
 export const finishedJobSuccesssFully = (status) => {
     if (typeof process?.send === 'function') {
         // process.send('stepFinished')

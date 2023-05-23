@@ -74,7 +74,8 @@ export const processDataset = (id, version, job) => {
         // Get the appropriate worker for the job
         const worker = getWorker(job)
         console.log("FORK "+__dirname + '/' + worker)
-        const work = fork(__dirname + '/' + worker, [id, version]);
+        const args = job?.assignTaxonomy ? [id, version, job?.assignTaxonomy] : [id, version];
+        const work = fork(__dirname + '/' + worker, args);
         work.on('message', (message) => {
     
             if(message?.type === 'beginStep' && !!message?.payload){
@@ -95,12 +96,25 @@ export const processDataset = (id, version, job) => {
                     job.filesAvailable = [...job.filesAvailable, { format: 'BIOM 2.1', fileName: 'data.biom.h5', size: getFileSize(`${config.dataStorage}${id}/${version}/data.biom.h5`), mimeType: 'application/x-hdf5' }]
     
                 }
+                if(message?.payload === 'assignTaxonomy'){
+                    job.filesAvailable = [...job.filesAvailable, { format: 'TSV', fileName: 'taxonomy.tsv', size: getFileSize(`${config.dataStorage}${id}/${version}/taxonomy.tsv`), mimeType: 'text/tab-separated-values' }]
+    
+                }
                 runningJobs.set(id, { ...job });
                
             }
             if(message?.type === 'hdf5Errors'){
-                job.processingErrors = { hdf5: message?.payload }
+                job.processingErrors = { ...(job.processingErrors || {}), hdf5: message?.payload }
             }
+            if(message?.type === 'blastErrors'){
+                job.processingErrors = { ...(job.processingErrors || {}), blast: message?.payload }
+            }
+            if(message?.type === 'missingSampleRecords'){
+                job.processingErrors = { ...(job.processingErrors || {}), missingSamples: message?.payload }
+            }
+
+            
+
             if(message?.type === 'updateStatusOnCurrentStep' && message?.payload){
                 let step = job.steps[job.steps.length - 1];
               //  console.log(job.steps)

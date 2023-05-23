@@ -45,8 +45,74 @@ const getColumnIdTerm = (samplesAsColumns, termMapping) => {
     return samplesAsColumns ? _.get(termMapping, 'samples.id', 'id') :_.get(termMapping, 'taxa.id', 'id')
 }
 
+export const metaDataFileToMap = async (file, mapping, processFn = (progress, total, message, summary) => {}) => {
+    const data = await streamReader.readMetaDataAsMap(file, processFn, mapping)
+    return data;
+}
+
 // converts an otu table with sample and taxon metada files to BIOM format
-export const toBiom = async (otuTableFile, sampleFile, taxaFile, samplesAsColumns = true, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id) => {
+export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = true, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id) => {
+
+   /*  processFn(0, 0, 'Reading sample file')
+    const samples = await streamReader.readMetaDataAsMap(sampleFile, processFn, termMapping.samples)
+     processFn(0, 0, 'Reading taxon file', {sampleCount: samples.size});
+    const taxa = await streamReader.readMetaDataAsMap(taxaFile,  processFn, termMapping.taxa)
+    processFn(0, taxa.size, 'Reading OTU table', {taxonCount: taxa.size}); */
+   
+    console.log(`Taxa: ${taxa.size} samples: ${samples.size}`) 
+    const columnIdTerm = getColumnIdTerm(samplesAsColumns, termMapping)
+    console.log("Column ID term: "+columnIdTerm)
+    const [otuTable, rows, columns] = await streamReader.readOtuTableToSparse(otuTableFile, processFn, columnIdTerm);
+    console.log("Finished readOtuTableToSparse")
+    console.log("Columns "+columns.length)
+    console.log(columns)
+
+    /* in the case of sample ids not in the sample file, make blank sample records so the Biom creation does not break. 
+    The missing ids should be reported back to the user
+
+    */
+   let sampleIdsWithNoRecordInSampleFile = [];
+    columns.forEach(c => {
+        if(!samples.has(c)){
+            sampleIdsWithNoRecordInSampleFile.push(c)
+            samples.set(c, {id: c})
+        }
+    })
+
+    try {
+      const b = await new Promise((resolve, reject) => {
+          try {
+              console.log("Create Biom")
+              const biom = new Biom({
+                  id: id || null,
+                  comment: getGroupMetaDataAsJsonString(termMapping),   // Biom v1 does not support group metadata where we store field default values. Therefore this is given as a JSON string in the comment field 
+                  rows: rows.map(r => getMetaDataRow(samplesAsColumns ? taxa.get(r) : samples.get(r) )), 
+                  columns: columns.map(c => getMetaDataRow(samplesAsColumns ? samples.get(c)  : taxa.get(c))),
+                  matrix_type: 'sparse',
+                  shape: samplesAsColumns ? [taxa.size, samples.size] : [samples.size, taxa.size],
+                  data: otuTable
+                })
+                console.log("Biom created")
+                if(!samplesAsColumns){
+                  // We can read taxa as columns, but we will flip the matrix and always store samples as columns (samples will alwas have a smaller cardinality)
+                  biom.transpose()
+                }
+                console.log("Resolve toBiom")
+               resolve({biom, sampleIdsWithNoRecordInSampleFile});
+          } catch (error) {
+              reject(error)
+          }
+         
+        })
+        return b;
+    } catch (err) {
+      throw err
+    }
+    
+  }
+
+// converts an otu table with sample and taxon metada files to BIOM format
+export const toBiom_old = async (otuTableFile, sampleFile, taxaFile, samplesAsColumns = true, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id) => {
 
   processFn(0, 0, 'Reading sample file')
   const samples = await streamReader.readMetaDataAsMap(sampleFile, /* undefined, */ processFn, termMapping.samples)
@@ -87,7 +153,6 @@ export const toBiom = async (otuTableFile, sampleFile, taxaFile, samplesAsColumn
   } catch (err) {
     throw err
   }
-  
   
 }
 

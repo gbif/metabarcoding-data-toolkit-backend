@@ -1,7 +1,8 @@
 import {uploadedFilesAndTypes, unzip} from '../validation/files.js'
 import {determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders} from '../validation/tsvformat.js'
 import {processWorkBookFromFile, readXlsxHeaders} from "../converters/excel.js"
-import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport} from '../util/filesAndDirectories.js'
+import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport, readMapping} from '../util/filesAndDirectories.js'
+import _ from "lodash"
 //import { getCurrentDatasetVersion, writeProcessingReport, getProcessingReport, getMetadata, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
 
 export const validate = async (id) => {
@@ -11,6 +12,7 @@ export const validate = async (id) => {
     let files = await uploadedFilesAndTypes(id, version)
     let processionReport = await getProcessingReport(id, version)
     let metadata = await getMetadata(id, version)
+    const mapping = await readMapping(id, version);
 
     if(!processionReport){
       processionReport= {id: id}
@@ -24,11 +26,12 @@ export const validate = async (id) => {
       console.log(filePaths)
       let samplesAsColumns;
       try {
-        samplesAsColumns = await otuTableHasSamplesAsColumns(filePaths);
-      } catch (error) {
+       samplesAsColumns  = await otuTableHasSamplesAsColumns(filePaths, mapping ?  _.get(mapping, 'samples.id', 'id') : null);
+      } catch (errors) {
         samplesAsColumns = false;
         files.format = "INVALID";
-        files.invalidMessage = error
+        files.invalidErrors = errors;
+       // files.invalidMessage = error
 
       }
                  

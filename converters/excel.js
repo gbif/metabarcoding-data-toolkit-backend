@@ -116,7 +116,7 @@ const determineFileNames = (sheets, termMapping) => {
 
 
 
-const getMapFromMatrix = (matrix, mapping, test) => {
+export const getMapFromMatrix = (matrix, mapping) => {
 
   const reverseMapping = util.objectSwap(mapping)
 
@@ -133,9 +133,7 @@ const mapRecord = record => {
 }
 
   const columns = matrix[0];
-  if(test){
-    "Taxon columns "+columns
-  }
+  
   const rows = matrix.slice(1);
   
   const arr = rows.map(row => {
@@ -151,17 +149,17 @@ const mapRecord = record => {
 }
 
 // converts an otu table with sample and taxon metada files to BIOM format
-export const toBiom = async (data, termMapping, processFn = (progress, total, message, summary) => {}) => {
+export const toBiom = async (otuTable, sampleMap, taxaMap, termMapping, processFn = (progress, total, message, summary) => {}) => {
 
   return new Promise((resolve, reject) => {
     try {
-      const {
+     /*  const {
         otuTable, 
         samples,
         taxa
     } = data;
       const sampleMap = getMapFromMatrix(samples.data,  termMapping.samples)
-      const taxaMap = getMapFromMatrix(taxa.data, termMapping.taxa, true)
+      const taxaMap = getMapFromMatrix(taxa.data, termMapping.taxa, true) */
       const sparseData = [];
       let columns = otuTable.data[0].slice(1);
       processFn(columns.length, columns.length, 'Reading OTU table from spreadsheet', {sampleCount: columns.length});
@@ -185,8 +183,8 @@ export const toBiom = async (data, termMapping, processFn = (progress, total, me
       })
       processFn(rows.length, rows.length, 'Reading OTU table  from spreadsheet', {taxonCount: rows.length});
 
-      console.log(`Samples in metadata: ${samples.data.length} in OTU table: ${columns.length}`)
-      console.log(`Taxa in metadata: ${taxa.data.length} in OTU table: ${rows.length}`)
+      console.log(`Samples in metadata: ${sampleMap.size} in OTU table: ${columns.length}`)
+      console.log(`Taxa in metadata: ${taxaMap.size} in OTU table: ${rows.length}`)
       const biom = new Biom({
         rows: rows.map(r => ({id: r, metadata: taxaMap.get(r)})), 
         columns: columns.map(c => ({id: c, metadata: sampleMap.get(c)})),
@@ -239,6 +237,46 @@ export const processWorkBookFromFile = async (id, fileName, version, termMapping
   })
 
 }
+
+export const readWorkBookFromFile = async (id, fileName, version, termMapping, processFn = (progress, total, message, summary) => {}) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const stream = fs.createReadStream(`${config.dataStorage}${id}/${version}/original/${fileName}`);
+
+      const buffers = [];
+      stream.on("data", function (data) { buffers.push(data); });
+      stream.on('error', (error) => {
+        reject(error)
+      })
+      stream.on("end", async () => {
+        const buffer = Buffer.concat(buffers);
+        const workbook = xlsx.read(buffer, {cellDates: true});
+
+        console.log(workbook.SheetNames)
+        if(workbook.SheetNames.length < 2){
+          throw "There must be minimum 2 sheets, otuTable and samples";
+        } else {
+       // const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      //  const data = xlsx.utils.sheet_to_json(sheet)
+       // console.log(data)
+//        workbook.SheetNames.map(n => ({name: n, data: xlsx.utils.sheet_to_json(workbook.Sheets[n])}))
+
+        const data = workbook.SheetNames.map(n => ({name: n, data: xlsx.utils.sheet_to_json(workbook.Sheets[n], {header: 1})}));
+        const mappedData = determineFileNames(data, termMapping)
+        resolve(mappedData)
+       /*  const biom = await toBiom(mappedData, termMapping, processFn)
+        resolve(biom) */
+        }
+      });
+      
+    } catch (error) {
+      reject(error)
+    }
+  })
+
+}
+
+
 
 export const readXlsxHeaders = async (id, fileName, version) => {
   return new Promise((resolve, reject) => {

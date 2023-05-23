@@ -52,6 +52,8 @@ export const determineFileNames = async (id, version) => {
 
 }
 
+// This function does more than just calculating the direction of the OTU table. It will test CSV parsing of the sample file and throw an error of more than 5% of the samples are not in the OTU table
+
 export const otuTableHasSamplesAsColumns = async (files, sampleIdTerm) => {
     console.log("hasSamplesAsColumns")
     if(!files.samples){
@@ -60,19 +62,53 @@ export const otuTableHasSamplesAsColumns = async (files, sampleIdTerm) => {
         throw "No Otu table"
     }
     try {
-        const samples = await streamReader.readMetaData(files.samples); // readTsvHeaders(`${config.dataStorage}${id}/${version}/original/${files.samples}`);
-        const otuTableColumns = await readTsvHeaders(files.otuTable);
+       
+        let samples = [];
+        let errors = []
+        try {
+            samples = await streamReader.readMetaData(files.samples); // readTsvHeaders(`${config.dataStorage}${id}/${version}/original/${files.samples}`);
+        } catch (error) {
+            let splitted = files.samples.split("/");
+            errors.push({file: splitted[splitted.length-1], message: error?.message})
+            
+            console.log(error?.message)
+        }
+        let otuTableColumns;
+        try {
+            otuTableColumns = await readTsvHeaders(files.otuTable);
+        } catch (error) {
+            let splitted = files.otuTable.split("/");
+            errors.push({file: splitted[splitted.length-1], message: error?.message})
+            console.log(error?.message)
+        }
+       
+       // const otuTableColumns = await readTsvHeaders(files.otuTable);
+       
+       
         const columns = new Set(otuTableColumns.slice(1));
-        let sampleIdsNotInOtuTableColumns = 0;
+        let sampleIdsNotInOtuTableColumns = [];
         samples.forEach(s => {
             if(!columns.has(s[sampleIdTerm])){
-                sampleIdsNotInOtuTableColumns ++;
+                sampleIdsNotInOtuTableColumns.push(s[sampleIdTerm]) // ++;
             }
         })
-        console.log(`samples with no match in OTU table ${sampleIdsNotInOtuTableColumns}`)
-        // more than 95% of the samples has a corresponding column - we could be more strict?
-        const hasSamplesAsColumns = (sampleIdsNotInOtuTableColumns /  samples.length * 100 ) < 5;
-        return hasSamplesAsColumns;
+        console.log(`samples with no match in OTU table ${sampleIdsNotInOtuTableColumns.length}`)
+
+        // Only generate this error if there is a mapping. Files are obviously uploaded before a mapping exists
+        if(sampleIdTerm && sampleIdsNotInOtuTableColumns.length > 0){
+            let splitted = files.otuTable.split("/");
+            errors.push({file: splitted[splitted.length-1], message: `Some sampleIds are not in the OTU table: ${sampleIdsNotInOtuTableColumns.toString()}`})
+        }
+        // more than 95% of the samples has a corresponding column in the OTUtable - we could be more strict?
+        const hasSamplesAsColumns = (sampleIdsNotInOtuTableColumns.length /  samples.length * 100 ) < 5;
+        
+        if(errors.length > 0){
+           
+            throw errors
+        } else {
+            return hasSamplesAsColumns;
+        }
+       
 
     } catch (error) {
         throw error;

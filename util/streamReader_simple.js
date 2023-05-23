@@ -10,7 +10,9 @@ export const readOtuTable = (path) => {
             columns: false,
             ltrim: true,
             rtrim: true,
-            quote: null,
+            escape: '\\',
+
+         //   quote: null,
             from_line: 2
           })
         const records = [];
@@ -47,7 +49,7 @@ export const readOtuTableToSparse = (path) => {
           columns: false,
           ltrim: true,
           rtrim: true,
-          quote: null
+         // quote: null
          // from_line: 2
         })
       const records = [];
@@ -97,7 +99,9 @@ export const readMetaData = (path) => {
             columns: true,
             ltrim: true,
             rtrim: true,
-            quote: null,
+            escape: '\\',
+
+           // quote: null,
           })
         const records = [];
         let count = 0;
@@ -132,7 +136,9 @@ export const readMetaDataAsMap = (path, idHeader = 'id') => {
           columns: true,
           ltrim: true,
           rtrim: true,
-          quote: null,
+          escape: '\\',
+
+        //  quote: null,
         })
       const records = new Map();
       parser.on('readable', function(){
