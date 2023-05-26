@@ -3,6 +3,7 @@
 input/global_soil/
 testData/global_soil/
 testData/insect_mobile/
+testData/
 
 # Output data
 output/
