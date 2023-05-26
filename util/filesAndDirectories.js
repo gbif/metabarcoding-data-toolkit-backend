@@ -202,7 +202,7 @@ export const zipDwcArchive = (id, version) => {
     });
   };
 
-  export const readTsvHeaders = async (path, delimiter) => {
+  export const readTsvHeaders = async (path, delimiter = "\t") => {
     return new Promise((resolve, reject) => {
         const parser = parse( {
             delimiter: delimiter || "\t",

@@ -5,6 +5,7 @@ import filenames from './filenames.js'
 import parse from 'csv-parse';
 import streamReader from '../util/streamReader.js'
 import {readTsvHeaders} from '../util/filesAndDirectories.js'
+import _ from "lodash"
 const dnaSequencePattern = /[ACGTURYSWKMBDHVNacgturyswkmbdhvn]/g
 const minimumLengthForASequence = 100;
 
@@ -66,7 +67,8 @@ export const otuTableHasSamplesAsColumns = async (files, sampleIdTerm) => {
         let samples = [];
         let errors = []
         try {
-            samples = await streamReader.readMetaData(files.samples); // readTsvHeaders(`${config.dataStorage}${id}/${version}/original/${files.samples}`);
+            console.log(`Sample file: ${files.samples.path} - delimiter ${ files.samples.properties.delimiter}`)
+            samples = await streamReader.readMetaData(files.samples.path, ()=>{}, files.samples.properties.delimiter); // readTsvHeaders(`${config.dataStorage}${id}/${version}/original/${files.samples}`);
         } catch (error) {
             let splitted = files.samples.split("/");
             errors.push({file: splitted[splitted.length-1], message: error?.message})
@@ -75,7 +77,9 @@ export const otuTableHasSamplesAsColumns = async (files, sampleIdTerm) => {
         }
         let otuTableColumns;
         try {
-            otuTableColumns = await readTsvHeaders(files.otuTable);
+            console.log(`OTU table: ${files.otuTable.path} delimiter: ${files.otuTable.properties.delimiter}`)
+            otuTableColumns = await readTsvHeaders(files.otuTable.path, files.otuTable.properties.delimiter);
+            console.log(otuTableColumns)
         } catch (error) {
             let splitted = files.otuTable.split("/");
             errors.push({file: splitted[splitted.length-1], message: error?.message})
@@ -115,7 +119,30 @@ export const otuTableHasSamplesAsColumns = async (files, sampleIdTerm) => {
     }
 }
 
-export const otuTableHasSequencesAsColumnHeaders = async files => {
+export const otuTableHasSequencesAsColumnHeaders = async (otuTable) => {
+    console.log("otuTableHasSequencesAsColumnHeaders")
+    if(!otuTable){
+        throw "No Otu table"
+    }
+    try {
+        const otuTableColumns = await readTsvHeaders(otuTable.path, otuTable.properties.delimiter);
+        const columns = otuTableColumns.slice(1);
+        console.log("Number of columns "+columns.length)
+        let isSequenceHeaders = true;
+
+        for(let i = 0; i < Math.min(columns.length, 10); i++){
+            if(columns[i].length < minimumLengthForASequence || !dnaSequencePattern.test(columns[i])){
+                isSequenceHeaders = false;
+            }
+        }
+        return isSequenceHeaders;      
+
+    } catch (error) {
+        throw error;
+    }
+}
+
+/* export const otuTableHasSequencesAsColumnHeaders = async (files) => {
     console.log("otuTableHasSequencesAsColumnHeaders")
     if(!files.otuTable){
         throw "No Otu table"
@@ -136,4 +163,73 @@ export const otuTableHasSequencesAsColumnHeaders = async files => {
     } catch (error) {
         throw error;
     }
+} */
+
+
+export const testDelimiter = async (file, delimiter) => {
+
+    const COLUMN_LIMIT = 100;
+
+    return new Promise((resolve, reject) => {
+        let rows = [];
+        let numColumns = 0;
+        let isInConsistent = false;
+        const parser = parse({
+            delimiter: delimiter ,
+           // columns: true,
+            ltrim: true,
+            rtrim: true,
+            escape: '\\',
+            to_line: 100
+          })    
+          parser.on('readable', function(){
+            let record;
+            while ((record = parser.read()) !== null) {
+               rows.push(record)
+               if(numColumns > 0 && record.length !== numColumns){
+                isInConsistent = true
+               }
+               numColumns = record.length
+            }
+          });
+          // Catch any error
+          parser.on('error', function(err){
+            console.error(err.message);
+            reject(err)
+          });
+          // Test that the parsed records matched the expected records
+          parser.on('end', function(){
+
+            resolve({
+                headers: numColumns > COLUMN_LIMIT  ? rows[0].slice(0, COLUMN_LIMIT) : rows[0],
+                delimiter,
+                rows: numColumns > COLUMN_LIMIT ? rows.map(r => r.slice(0, COLUMN_LIMIT)) : rows,
+                isInConsistent,
+                numColumns,
+                columnLimit:  COLUMN_LIMIT
+            })
+          });
+        const inputStream = fs.createReadStream(file);    
+        inputStream.pipe(parser)
+    })
+    
+}
+
+const delimiters = [';', '\t', '|', ','];
+
+export const analyseCsv = async file => {
+
+    try {
+        const candidates = await Promise.allSettled(delimiters.map(d => testDelimiter(file, d)))
+      // console.log(candidates.filter(c => c.status = "fulfilled").map(c => `${c.delimiter}  :  num columns: ${c.numColumns} is inconsistent: ${c.isInConsistent}`).join('\n'))
+
+        const bestGuess = _.maxBy(candidates.filter(c => c.status = "fulfilled").map(c => c.value), 'numColumns') 
+
+        return bestGuess;
+    } catch (error) {
+        //console.log(error)
+    }
+       
+
+        
 }

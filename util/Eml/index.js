@@ -1,10 +1,14 @@
 import licenseEnum from "../../enum/license.js"
 
+const escapeHtml = (unsafe) => {
+    return unsafe.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+}
+
 const getBibliography = (biblioGraphicReferences) => {
     if(!biblioGraphicReferences){
         return ""
     } else {
-      const refs = Object.keys(biblioGraphicReferences).map(k => `<citation identifier="DOI:${k}">${biblioGraphicReferences[k]}</citation>`)
+      const refs = Object.keys(biblioGraphicReferences).map(k => `<citation identifier="DOI:${k}">${escapeHtml(biblioGraphicReferences[k])}</citation>`)
       return `<bibliography>${refs.join("")}</bibliography>`
     }
 }
@@ -15,7 +19,7 @@ const getMethodSteps = (methodSteps) => {
     } else {
       return methodSteps.map(s => `<methodStep>
       <description>
-          <para>${s}</para>
+          <para>${escapeHtml(s)}</para>
       </description>
   </methodStep>`).join("")
     }
@@ -25,14 +29,14 @@ const getKeywords = (keywords) => {
     if(!keywords || keywords?.length === 0){
         return ""
     } else {
-      let kWords = keywords.map(s => `<keyword>${s}</keyword>`).join("")
+      let kWords = keywords.map(s => `<keyword>${escapeHtml(s)}</keyword>`).join("")
       return `<keywordSet>${kWords}</keywordSet>`
     }
 }
 
 const getComplexType = (entity, attrs, atrrName) => {
     return attrs.find(key => entity.hasOwnProperty(key)) ? `<${atrrName}>` + 
-        attrs.map(a => entity?.[a] ? `<${a}>${entity[a]}</${a}>` : "").join("")
+        attrs.map(a => entity?.[a] ? `<${a}>${escapeHtml(entity[a])}</${a}>` : "").join("")
         +  `</${atrrName}>`: "";
 }
 
@@ -45,12 +49,12 @@ const getAgent = (agent, type) => {
         const address = getComplexType(agent, ['deliveryPoint', 'city', 'postalCode', 'administrativeArea', 'country'], 'address');
       return  `<${type}>
     ${individualName}
-    ${agent?.organizationName ? `<organizationName>${agent?.organizationName}</organizationName>` : ""}
-    ${agent?.positionName ? `<positionName>${agent?.positionName}</positionName>` : ""}
+    ${agent?.organizationName ? `<organizationName>${escapeHtml(agent?.organizationName)}</organizationName>` : ""}
+    ${agent?.positionName ? `<positionName>${escapeHtml(agent?.positionName)}</positionName>` : ""}
     ${address}
-    ${agent?.phone ? `<phone>${agent?.phone}</phone>` : ""}
-    ${agent?.electronicMailAddress ? `<electronicMailAddress>${agent?.electronicMailAddress}</electronicMailAddress>` : ""}
-    ${agent?.userId ? `<userId directory="http://orcid.org/">${agent?.userId}</userId>` : ""}
+    ${agent?.phone ? `<phone>${escapeHtml(agent?.phone)}</phone>` : ""}
+    ${agent?.electronicMailAddress ? `<electronicMailAddress>${escapeHtml(agent?.electronicMailAddress)}</electronicMailAddress>` : ""}
+    ${agent?.userId ? `<userId directory="http://orcid.org/">${escapeHtml(agent?.userId)}</userId>` : ""}
     
     </${type}>`
     } 
@@ -69,7 +73,7 @@ export const getEml = ({id, license, title, description, contact, creator, metho
             packageId="${id}"  system="http://gbif.org" scope="system"
       xml:lang="en">
         <dataset>
-            ${doi ? `<alternateIdentifier>https://doi.org/${doi}</alternateIdentifier>` : ""}
+            ${doi ? `<alternateIdentifier>https://doi.org/${escapeHtml(doi)}</alternateIdentifier>` : ""}
             <title>${title}</title>
             ${creator && creator?.length > 0 ? creator.map(c => getAgent(c, 'creator')).join("") : ""}
             <pubDate>
@@ -77,7 +81,7 @@ export const getEml = ({id, license, title, description, contact, creator, metho
           </pubDate>
             <language>ENGLISH</language>
             ${description ? `<abstract>
-            <para>${description}</para>
+            <para>${escapeHtml(description)}</para>
         </abstract>` : "" }
             ${getKeywords(keywords)}
             <intellectualRights>

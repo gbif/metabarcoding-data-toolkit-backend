@@ -1,6 +1,6 @@
 
 export default {
-    otutable: ['otutable', 'matrix'],
-    taxa: ['taxon', 'taxa', 'observation', 'observations'],
-    samples: ['sample', 'samples', 'site', 'sites']
+    otutable: ['otutable', 'matrix', 'asvtable'],
+    taxa: ['taxon', 'taxa', 'observation', 'observations', 'taxonomy', 'taxontable', 'taxonomytable'],
+    samples: ['sample', 'samples', 'site', 'sites', 'sampletable']
 }

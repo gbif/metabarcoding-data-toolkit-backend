@@ -1,5 +1,5 @@
 import {uploadedFilesAndTypes, unzip} from '../validation/files.js'
-import {determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders} from '../validation/tsvformat.js'
+import {determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders, analyseCsv} from '../validation/tsvformat.js'
 import {processWorkBookFromFile, readXlsxHeaders} from "../converters/excel.js"
 import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport, readMapping} from '../util/filesAndDirectories.js'
 import _ from "lodash"
@@ -23,11 +23,14 @@ export const validate = async (id) => {
    // console.log(files)
     if(files.format.startsWith('TSV')){
       const filePaths = await determineFileNames(id, version);
-      console.log(filePaths)
+     // console.log(filePaths)
+     const fileMap = _.keyBy(files.files, "type")
+
       let samplesAsColumns;
       try {
-       samplesAsColumns  = await otuTableHasSamplesAsColumns(filePaths, mapping ?  _.get(mapping, 'samples.id', 'id') : null);
+       samplesAsColumns  = await otuTableHasSamplesAsColumns(fileMap, mapping ?  _.get(mapping, 'samples.id', 'id') : null);
       } catch (errors) {
+        console.log(errors)
         samplesAsColumns = false;
         files.format = "INVALID";
         files.invalidErrors = errors;
@@ -39,8 +42,9 @@ export const validate = async (id) => {
      
       if(!samplesAsColumns){
         try {
-          sequencesAsHeaders = await otuTableHasSequencesAsColumnHeaders(filePaths)
+          sequencesAsHeaders = await otuTableHasSequencesAsColumnHeaders(fileMap.otuTable)
         } catch (error) {
+          console.log(error)
           sequencesAsHeaders = false;
           files.format = "INVALID";
           files.invalidMessage = error
@@ -48,15 +52,25 @@ export const validate = async (id) => {
       }
       
       let validationReport = {files: {...files, filePaths, samplesAsColumns, sequencesAsHeaders}}
-      if(filePaths?.samples){
-        validationReport.sampleHeaders = await readTsvHeaders(filePaths?.samples)
+      if(fileMap?.samples){
+        validationReport.sampleHeaders = await readTsvHeaders(fileMap?.samples?.path, fileMap?.samples?.properties?.delimiter)
+      /*  const csvProperties = await analyseCsv(filePaths?.samples);
+       if(csvProperties?.headers){
+          validationReport.sampleHeaders = csvProperties?.headers
+       }; */
+       
       }
-      if(filePaths?.taxa){
-        validationReport.taxonHeaders = await readTsvHeaders(filePaths?.taxa)
+      if(fileMap?.taxa){
+        validationReport.taxonHeaders = await readTsvHeaders(fileMap?.taxa?.path, fileMap?.taxa?.properties?.delimiter)
+       /*  const csvProperties = await analyseCsv(filePaths?.taxa);
+       if(csvProperties?.headers){
+          validationReport.taxonHeaders = csvProperties?.headers
+       }; */
       }
       const report = {...processionReport, unzip: false, ...validationReport}
       await writeProcessingReport(id,version, report)
       return report;
+
     } else if(files.format === 'XLSX') {
       console.log("XLSX coming in")
       let headers;

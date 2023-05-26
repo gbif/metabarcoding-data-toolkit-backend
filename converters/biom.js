@@ -46,7 +46,7 @@ const getColumnIdTerm = (samplesAsColumns, termMapping) => {
 }
 
 export const metaDataFileToMap = async (file, mapping, processFn = (progress, total, message, summary) => {}) => {
-    const data = await streamReader.readMetaDataAsMap(file, processFn, mapping)
+    const data = await streamReader.readMetaDataAsMap(file?.path, processFn, mapping, file?.properties?.delimiter)
     return data;
 }
 
@@ -62,7 +62,7 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = tru
     console.log(`Taxa: ${taxa.size} samples: ${samples.size}`) 
     const columnIdTerm = getColumnIdTerm(samplesAsColumns, termMapping)
     console.log("Column ID term: "+columnIdTerm)
-    const [otuTable, rows, columns] = await streamReader.readOtuTableToSparse(otuTableFile, processFn, columnIdTerm);
+    const [otuTable, rows, columns] = await streamReader.readOtuTableToSparse(otuTableFile?.path, processFn, columnIdTerm, otuTableFile?.properties?.delimiter);
     console.log("Finished readOtuTableToSparse")
     console.log("Columns "+columns.length)
     console.log(columns)

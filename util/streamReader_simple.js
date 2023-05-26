@@ -3,10 +3,10 @@
 import fs from 'fs';
 import parse from 'csv-parse';
 
-export const readOtuTable = (path) => {
+export const readOtuTable = (path, delimiter) => {
     return new Promise((resolve, reject) => {
         const parser = parse( {
-            delimiter: "\t",
+            delimiter: delimiter || "\t",
             columns: false,
             ltrim: true,
             rtrim: true,
@@ -42,10 +42,10 @@ export const readOtuTable = (path) => {
 
 }
 
-export const readOtuTableToSparse = (path) => {
+export const readOtuTableToSparse = (path, delimiter = "\t") => {
   return new Promise((resolve, reject) => {
       const parser = parse( {
-          delimiter: "\t",
+          delimiter: delimiter || "\t",
           columns: false,
           ltrim: true,
           rtrim: true,
@@ -92,10 +92,10 @@ export const readOtuTableToSparse = (path) => {
 
 }
 
-export const readMetaData = (path) => {
+export const readMetaData = (path, delimiter = "\t") => {
       return new Promise((resolve, reject) => {
         const parser = parse({
-            delimiter: "\t",
+            delimiter: delimiter || "\t",
             columns: true,
             ltrim: true,
             rtrim: true,
@@ -129,10 +129,10 @@ export const readMetaData = (path) => {
     })
 }
 
-export const readMetaDataAsMap = (path, idHeader = 'id') => {
+export const readMetaDataAsMap = (path, idHeader = 'id', delimiter = "\t") => {
     return new Promise((resolve, reject) => {
       const parser = parse({
-          delimiter: "\t",
+          delimiter: delimiter || "\t",
           columns: true,
           ltrim: true,
           rtrim: true,

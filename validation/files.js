@@ -1,7 +1,7 @@
 import fs from 'fs'
 import config from '../config.js'
 import {execSync, exec}  from 'child_process';
-
+import { determineFileNames, analyseCsv } from './tsvformat.js';
 // there may be hidden 'application/octet-stream' files when unzipping an excel workbook
 const mimeTypesToBeRemoved = ['application/zip', 'application/octet-stream']
 
@@ -110,7 +110,7 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
     try {
         await unzipIfNeeded(id)
         const fileList = await fs.promises.readdir(`${config.dataStorage}${id}/${version}/original`)
-        const files = fileList.map(f => ({
+        let files = fileList.map(f => ({
             mimeType: getMimeFromPath(`${config.dataStorage}${id}/${version}/original/${f}`),
             name: f,
             size: getFileSize(`${config.dataStorage}${id}/${version}/original/${f}`)
@@ -118,6 +118,40 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
         //console.log(JSON.stringify(files))
 
         const format = determineFormat(files);
+
+        if(['TSV_3_FILE', 'TSV_2_FILE'].includes(format)){
+            const filePaths = await determineFileNames(id, version);
+
+             files = files.map( f => {
+                for(const [key, value] of Object.entries(filePaths)){
+                    if(`${config.dataStorage}${id}/${version}/original/${f.name}` === value){
+                        f.type = key;
+                        f.path = value;
+                    }
+                }
+                return f;
+            }) 
+
+            let sampleFile = files.find(f => f.type === "samples")
+            if(sampleFile){
+                const csvProperties = await analyseCsv(sampleFile.path)
+                sampleFile.properties = csvProperties;
+            }
+
+            let taxonFile = files.find(f => f.type === "taxa");
+            if(taxonFile) {
+                const csvProperties = await analyseCsv(taxonFile.path)
+                taxonFile.properties = csvProperties;
+            }
+
+            let otuTableFile = files.find(f => f.type === "otuTable");
+            if(otuTableFile) {
+                const csvProperties = await analyseCsv(otuTableFile.path)
+                otuTableFile.properties =  csvProperties; // {delimiter : csvProperties.delimiter} ;
+            }
+
+        }
+
         return {
             format,
             files

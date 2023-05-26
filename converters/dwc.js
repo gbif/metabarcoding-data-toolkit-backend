@@ -148,7 +148,7 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
 }
 
 
-export const otuTableToDWC = async (otuTableFile, sampleFile, taxaFile, termMapping, path) => {
+export const otuTableToDWC = async (otuTableFile, sampleFile, taxaFile, termMapping, path, delimiter) => {
   try{
 
     if (!fs.existsSync(`${path}/archive`)){
@@ -223,7 +223,7 @@ export const otuTableToDWC = async (otuTableFile, sampleFile, taxaFile, termMapp
         parallel: 5
       });
     const parser = parse( {
-        delimiter: "\t",
+        delimiter: delimiter || "\t",
         columns: false,
         ltrim: true,
         rtrim: true,

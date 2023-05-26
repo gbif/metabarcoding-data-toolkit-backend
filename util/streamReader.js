@@ -7,10 +7,10 @@ const objectSwap = obj => Object.fromEntries(Object.entries(obj).map(([k, v]) =>
 
 // import streamReader from '../util/streamreader.js';
 
-export const readOtuTable = (path,  progressFn = ()=>{}) => {
+export const readOtuTable = (path,  progressFn = ()=>{}, delimiter = "\t") => {
     return new Promise((resolve, reject) => {
         const parser = parse( {
-            delimiter: "\t",
+            delimiter: delimiter || "\t",
             columns: false,
             ltrim: true,
             rtrim: true,
@@ -45,10 +45,10 @@ export const readOtuTable = (path,  progressFn = ()=>{}) => {
 
 }
 
-export const readOtuTableToSparse = (path, progressFn = (progress, total, message, summary)=>{}, columnIdTerm) => {
+export const readOtuTableToSparse = (path, progressFn = (progress, total, message, summary)=>{}, columnIdTerm, delimiter = "\t") => {
   return new Promise((resolve, reject) => {
       const parser = parse( {
-          delimiter: "\t",
+          delimiter: delimiter || "\t",
           columns: false,
           ltrim: true,
           rtrim: true,
@@ -102,14 +102,14 @@ export const readOtuTableToSparse = (path, progressFn = (progress, total, messag
 
 }
 
-export const readMetaData = (path,  progressFn = ()=>{}) => {
+export const readMetaData = (path,  progressFn = ()=>{}, delimiter = "\t") => {
       return new Promise((resolve, reject) => {
         const parser = parse({
-            delimiter: "\t",
+            delimiter: delimiter || "\t",
             columns: true,
             ltrim: true,
             rtrim: true,
-          //  escape: '\\',
+            escape: '\\',
 
           //  quote: null,
           })
@@ -140,7 +140,7 @@ export const readMetaData = (path,  progressFn = ()=>{}) => {
     })
 }
 
-export const readMetaDataAsMap = (path, /* idHeader = 'id', */ progressFn = ()=>{}, mapping = {}) => {
+export const readMetaDataAsMap = (path, /* idHeader = 'id', */ progressFn = ()=>{}, mapping = {}, delimiter = "\t") => {
 
   /**
  * Use a mapping object to rename terms corresponding to DWC / MiXS
@@ -163,7 +163,7 @@ const mapRecord = record => {
 
     return new Promise((resolve, reject) => {
       const parser = parse({
-          delimiter: "\t",
+          delimiter: delimiter || "\t",
           columns: true,
           ltrim: true,
           rtrim: true,
