@@ -10,23 +10,7 @@ export const getMimeFromPath = (filePath) => {
     return mimeType.trim();
 }
 
-const zip = (id) => {
-    return new Promise((resolve, reject) => {
-      exec(
-        `zip -r ${config.outputPath}/${id}/${id}.zip *`,
-        {
-          cwd: `${config.dataStorage}${id}`,
-        },
-        function (err) {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
-        }
-      );
-    });
-  };
+
 
 export const unzip = async (id, fileName, version = 1) => {
     return new Promise((resolve, reject) => {

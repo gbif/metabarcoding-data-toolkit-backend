@@ -24,7 +24,19 @@ export default {
                 description: "The longitude of the sample",
                 synonyms: ['longitude', 'lng', 'lon', 'long'],
                 isRequired: true
-            } ,        
+            } , 
+            {
+                name: 'target_gene',
+                description: "The marker / target gene. Examples: ITS, 16S, 12S, COI",
+                synonyms: ['marker'],
+                isRequired: true
+            } ,   
+            {
+                name: 'otu_db',
+                description: "Database used for classification. Strongly recommended if identifictations of OTUs are provided.",
+                synonyms: ['reflib'],
+                isRequired: false
+            }   
         
         ],
     taxon: [
@@ -40,12 +52,6 @@ export default {
                 synonyms: ['sequence'],
                 isRequired: true
             },
-             {
-                name: 'target_gene',
-                description: "The marker / target gene. Examples: ITS, 16S, 12S, COI",
-                synonyms: ['marker'],
-                isRequired: true
-            } , 
              {
                 name: 'kingdom',
                 description: "",
@@ -80,13 +86,7 @@ export default {
                 name: 'scientificName',
                 description: "This could be the species name (binomial) if the match identity is good. If the species is unknown, use the closest know higher taxon regardless of rank.",
                 isRequired: false
-            },
-             {
-                name: 'otu_db',
-                description: "Database used for classification. Strongly recommended if identifictations of OTUs are provided.",
-                synonyms: ['reflib'],
-                isRequired: false
-            } ,
+            }
       
         ],
 
