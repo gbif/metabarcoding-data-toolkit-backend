@@ -18,7 +18,42 @@ export default [
         biomGroup: 'sample',
         ontology: 'envo'
     },
-    
+    {
+        name: 'env_local_scale',
+        defaultRequired: false,
+        biomGroup: 'sample',
+        ontology: 'envo'
+    },
+    {
+        name: 'env_medium',
+        defaultRequired: false,
+        biomGroup: 'sample',
+        ontology: 'envo'
+    },
+    {
+        name: 'experimental_factor',
+        defaultRequired: false,
+        biomGroup: 'sample',
+        ontology: 'efo'
+    },
+    {
+        name: 'ploidy',
+        defaultRequired: false,
+        biomGroup: 'sample',
+        ontology: 'pato'
+    },
+    {
+        name: 'samp_collec_device',
+        defaultRequired: false,
+        biomGroup: 'sample',
+        ontology: 'envo'
+    },
+    {
+        name: 'samp_mat_process',
+        defaultRequired: false,
+        biomGroup: 'sample',
+        ontology: 'obi'
+    },
     {
         name: 'kingdom',
         description: "The full scientific name of the kingdom in which the taxon is classified.",

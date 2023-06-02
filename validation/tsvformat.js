@@ -194,7 +194,8 @@ export const testDelimiter = async (file, delimiter) => {
           });
           // Catch any error
           parser.on('error', function(err){
-            console.error(err.message);
+            console.log(`Doesn´t look like the delimiter is ${delimiter === "\t" ? '<tab>' : '"'+delimiter+'"'}`)
+            // console.error(err.message);
             reject(err)
           });
           // Test that the parsed records matched the expected records
