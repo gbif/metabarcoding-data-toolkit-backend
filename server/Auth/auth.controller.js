@@ -9,11 +9,16 @@ import db from '../db/index.js'
 
 export default  (app) => {
     app.get('/auth/login', async (req, res) => {
-        console.log(req.headers.authorization)
+       // console.log(req.headers.authorization)
         try {
             const user = await User.login(req.headers.authorization)
-                console.log("Login: "+ user)
-                const datasets = await db.getUserDatasets(user?.userName)
+                console.log("Login: "+ user?.userName)
+                let datasets = []
+                try {
+                    datasets = await db.getUserDatasets(user?.userName)
+                } catch (error) {
+                    console.log(error)
+                }
                 console.log(user)
                 res.json({...user, datasets: datasets})
         } catch (error) {
