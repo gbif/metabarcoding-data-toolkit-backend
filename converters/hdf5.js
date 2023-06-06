@@ -347,6 +347,7 @@ export const getSamples = async (hdf5file) => {
     let f = new h5wasm.File(hdf5file, "r");
     let res = {};
     let keys = f.get('sample/metadata').keys(); //.to_array()
+    console.log(keys)
     keys.forEach(key => {
         res[key] = f.get(`sample/metadata/${key}`).to_array();
     })

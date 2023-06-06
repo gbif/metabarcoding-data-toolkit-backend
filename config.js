@@ -28,11 +28,11 @@ const config = {
         gbifPassword: gbifCredentials.password
     },
     uat: {
-        duckdb:  __dirname + "../ednaToolData/edna_duck.db",
-        dataStorage :  __dirname + "../ednaToolData/data/",
-        ebiOntologyService: 'https://www.ebi.ac.uk/ols/api/search',
-        dwcPublicAccessUrl: 'http://labs.gbif.org/~tsjeppesen/edna/',
-        rsyncDirectory: 'tsjeppesen@labs.gbif.org:~/public_html/edna',
+        duckdb:  "/srv/edna-tool-data/edna_duck.db",
+        dataStorage : "/mnt/auto/misc/hosted-datasets.gbif-uat.org/edna/",
+        ebiOntologyService: "https://www.ebi.ac.uk/ols/api/search",
+        dwcPublicAccessUrl: "https://hosted-datasets.gbif-uat.org/edna/",  // 'http://labs.gbif.org/~tsjeppesen/edna/',
+        rsyncDirectory: '', // Only for dev env, will already be accessible via http
         gbifBaseUrl: "https://api.gbif-uat.org/v1/",
         gbifBaseUrlProd: "https://api.gbif.org/v1/",
         gbifRegistryBaseUrl: 'https://registry-api.gbif-uat.org/',

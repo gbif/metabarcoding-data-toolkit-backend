@@ -1,6 +1,7 @@
 import util from "../util/index.js";
 import license from "../enum/license.js";
 import format from "../enum/format.js";
+import supportedMarkers from "../enum/supportedMarkers.js";
 import config from "../config.js"
 import axios from "axios";
 export default  (app) => {
@@ -20,6 +21,17 @@ export default  (app) => {
         try {
         
         res.json(format)
+        } catch (error) {
+            res.sendStatus(500)
+        }     
+        
+    })
+
+    app.get("/enum/supported-markers", async (req, res) => {
+
+        try {
+        
+        res.json(supportedMarkers)
         } catch (error) {
             res.sendStatus(500)
         }     
