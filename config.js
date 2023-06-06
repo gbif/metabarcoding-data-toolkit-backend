@@ -28,7 +28,7 @@ const config = {
         gbifPassword: gbifCredentials.password
     },
     uat: {
-        duckdb:  "/srv/edna-tool-data/edna_duck.db",
+        duckdb:  __dirname + "../edna-tool-data/edna_duck.db",
         dataStorage : "/mnt/auto/misc/hosted-datasets.gbif-uat.org/edna/",
         ebiOntologyService: "https://www.ebi.ac.uk/ols/api/search",
         dwcPublicAccessUrl: "https://hosted-datasets.gbif-uat.org/edna/",  // 'http://labs.gbif.org/~tsjeppesen/edna/',
