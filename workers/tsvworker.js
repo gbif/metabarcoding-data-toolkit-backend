@@ -1,6 +1,6 @@
 import { writeBiom, toBiom, addReadCounts, metaDataFileToMap } from '../converters/biom.js';
 import { writeHDF5 } from '../converters/hdf5.js'
-import config from '../config.js'
+// import config from '../config.js'
 import _ from 'lodash'
 import { getCurrentDatasetVersion, writeProcessingReport, wipeGeneratedFilesAndResetProccessing, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
 import { determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders } from '../validation/tsvformat.js'

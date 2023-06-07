@@ -149,7 +149,7 @@ export const processDataset = (id, version, job) => {
 export const createDwc = (id, version, job) => {
 
     return new Promise(async (resolve, reject) => {
-        const work = fork(__dirname + '/dwcworker.js', [id, version]);
+        const work = fork(__dirname + '/dwcworker.js', [id, version, config.dataStorage]);
 
 
         work.on('message', (message) => {
