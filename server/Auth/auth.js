@@ -35,7 +35,7 @@ const userCanModifyDataset = () => {
             User.getFromToken(req?.headers?.authorization)
             .then((user) => {
                 if (user) {
-
+                    req.user = user;
                     const datasets = user?.datasets || [];
 
                     if(datasets.includes(req?.params?.id)){

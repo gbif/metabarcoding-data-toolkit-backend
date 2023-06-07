@@ -63,7 +63,7 @@ export const writeBiom = async (biom, path) => {
                 flags: "a",
               });
               biomStream.write(startJson);
-              console.log(Object.keys(biom))
+             // console.log(Object.keys(biom))
               const keys = Object.keys(biom);
               keys.filter(k => !['_rows','_columns','_data'].includes(k)).forEach(k => {
                 biomStream.write(`"${k.slice(1)}": ${JSON.stringify(biom[k])},\n`)

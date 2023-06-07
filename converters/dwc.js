@@ -169,9 +169,9 @@ export const otuTableToDWC = async (otuTableFile, sampleFile, taxaFile, termMapp
     console.log(`Samples: ${samples.size}`)
     
     const taxonHeaders = Object.keys(taxa.entries().next().value[1]);
-    console.log(taxonHeaders)
+    // console.log(taxonHeaders)
     const sampleHeaders = Object.keys(samples.entries().next().value[1]);
-    console.log(sampleHeaders)
+    // console.log(sampleHeaders)
     const relevantOccTerms  = [...sampleHeaders.filter(key => occTerms.has(sampleTerm(key))).map(key => occTerms.get(sampleTerm(key))),
         ...taxonHeaders.filter(key => occTerms.has(taxonTerm(key))).map(key => occTerms.get(taxonTerm(key)))];
     const relevantDnaTerms = [...sampleHeaders.filter(key => dnaTerms.has(sampleTerm(key))).map(key => dnaTerms.get(sampleTerm(key))),

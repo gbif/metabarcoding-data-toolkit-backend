@@ -43,15 +43,13 @@ const q = queue(async (options) => {
 }, 3)
 
 
-const pushJob = async (id, assignTaxonomy) => {
-
-
+const pushJob = async (id, assignTaxonomy, user) => {
 
     try {
         // in case the user starts the proceesing again 
         let version = await getCurrentDatasetVersion(id);
         await wipeGeneratedFilesAndResetProccessing(id, version)
-        runningJobs.set(id, { id: id, assignTaxonomy: assignTaxonomy, filesAvailable: [], steps: [{ status: 'queued', time: Date.now() }] })
+        runningJobs.set(id, { id: id, createdBy: user?.userName, assignTaxonomy: assignTaxonomy, filesAvailable: [], steps: [{ status: 'queued', time: Date.now() }] })
         q.push({ id: id }, async (error, result) => {
             if (error) {
                 console.log(error);
@@ -97,7 +95,7 @@ export default (app) => {
                 if (!runningJobs.has(req.params.id)) {
                     let assignTaxonomy = req?.query?.assignTaxonomy && (req?.query?.assignTaxonomy === true || req?.query?.assignTaxonomy === "true" )
                     
-                    pushJob(req.params.id, assignTaxonomy );
+                    pushJob(req.params.id, assignTaxonomy, req?.user );
                     res.sendStatus(201)
                 } else {
                     res.sendStatus(302)

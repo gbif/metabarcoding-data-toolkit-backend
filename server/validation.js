@@ -1,11 +1,12 @@
 import {uploadedFilesAndTypes, unzip} from '../validation/files.js'
+import auth from './Auth/auth.js';
 import {determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders, analyseCsv} from '../validation/tsvformat.js'
 import {processWorkBookFromFile, readXlsxHeaders} from "../converters/excel.js"
 import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport, readMapping} from '../util/filesAndDirectories.js'
 import _ from "lodash"
 //import { getCurrentDatasetVersion, writeProcessingReport, getProcessingReport, getMetadata, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
 
-export const validate = async (id) => {
+export const validate = async (id, user) => {
   try {
                 
     let version = await getCurrentDatasetVersion(id)
@@ -15,7 +16,7 @@ export const validate = async (id) => {
     const mapping = await readMapping(id, version);
 
     if(!processionReport){
-      processionReport= {id: id}
+      processionReport= {id: id, createdBy: user?.userName}
     }
     if(!!metadata){
       processionReport.metadata = metadata
@@ -100,14 +101,14 @@ export const validate = async (id) => {
 }
 
 export default (app) => {
-    app.get("/validate/:id", async function (req, res) {
+    app.get("/validate/:id", auth.appendUser(), async function (req, res) {
         if (!req.params.id) {
           res.sendStatus(404);
         } else {
             console.log(`Validating ${req.params.id}`)
             try {
                 
-                let report = await validate(req?.params?.id)
+                let report = await validate(req?.params?.id, req?.user)
                 res.json(report)
             } catch (error) {
                // console.log(error)

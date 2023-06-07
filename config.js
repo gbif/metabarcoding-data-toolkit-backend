@@ -9,7 +9,7 @@ let gbifCredentials = {
     password: null
 }
 try {
-    const creds = fs.readFileSync(`${yargs(hideBin(process.argv)).argv?.credentials || '../sometestrubbish/gbifCredentials.json'}`,
+    const creds = fs.readFileSync(`${yargs(hideBin(process.argv)).argv?.credentials || '../somefakepathfortesting/gbifCredentials.json'}`,
     { encoding: 'utf8', flag: 'r' });
      gbifCredentials = JSON.parse(creds)
 } catch (error) {
@@ -24,6 +24,7 @@ const env = process.env.NODE_ENV || 'local';
 
 const config = {
     local: {
+        env: 'local',
         duckdb:  __dirname + "../ednaToolData/edna_duck.db",
         dataStorage :  __dirname + "../ednaToolData/data/",
         ebiOntologyService: 'https://www.ebi.ac.uk/ols/api/search',
@@ -39,11 +40,12 @@ const config = {
         gbifPassword: gbifCredentials?.password
     },
     uat: {
+        env: 'uat',
         duckdb:  __dirname + "../edna-tool-data/edna_duck.db",
         dataStorage : "/mnt/auto/misc/hosted-datasets.gbif-uat.org/edna/",
         ebiOntologyService: "https://www.ebi.ac.uk/ols/api/search",
         dwcPublicAccessUrl: "https://hosted-datasets.gbif-uat.org/edna/",  // 'http://labs.gbif.org/~tsjeppesen/edna/',
-        rsyncDirectory: '', // Only for dev env, will already be accessible via http
+        rsyncDirectory: '', // Only for dev env, will already be accessible via http on UAT
         gbifBaseUrl: "https://api.gbif-uat.org/v1/",
         gbifBaseUrlProd: "https://api.gbif.org/v1/",
         gbifRegistryBaseUrl: 'https://registry-api.gbif-uat.org/',

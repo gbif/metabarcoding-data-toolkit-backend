@@ -29,7 +29,7 @@ const addIdentifier = async (ednaDatasetID, uuid, username, password, env) => {
       }})
 };
 
-const addEndpoint = async (ednaDatasetID, uuid, username, password) => {
+const addEndpoint = async (ednaDatasetID, version, uuid, username, password) => {
 
   return axios({
     method: 'post',
@@ -40,7 +40,7 @@ const addEndpoint = async (ednaDatasetID, uuid, username, password) => {
       },
     data: {
       type: "DWC_ARCHIVE",
-      url: `${config.dwcPublicAccessUrl}${ednaDatasetID}.zip`
+      url: config.env === 'local' ? `${config.dwcPublicAccessUrl}${ednaDatasetID}.zip` : `${config.dwcPublicAccessUrl}${ednaDatasetID}/${version}/archive.zip`
     }
   }); 
  
@@ -78,7 +78,7 @@ const crawlDataset = (uuid, username, password) => {
   });
 };
 
-export const registerDatasetInGBIF = async (ednaDatasetID, username, password) => {
+export const registerDatasetInGBIF = async (ednaDatasetID, version, username, password) => {
   
 
 
@@ -94,7 +94,7 @@ export const registerDatasetInGBIF = async (ednaDatasetID, username, password) =
             const uuid = response?.data;
             console.log(`Registered new eDNA dataset ${ednaDatasetID} with uuid: ${uuid}`);
             await addIdentifier(ednaDatasetID, uuid, username, password);
-            await addEndpoint(ednaDatasetID, uuid, username, password);
+            await addEndpoint(ednaDatasetID, version, uuid, username, password);
             await crawlDataset(uuid, username, password)
             return uuid
           }

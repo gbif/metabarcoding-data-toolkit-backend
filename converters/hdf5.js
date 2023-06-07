@@ -347,7 +347,7 @@ export const getSamples = async (hdf5file) => {
     let f = new h5wasm.File(hdf5file, "r");
     let res = {};
     let keys = f.get('sample/metadata').keys(); //.to_array()
-    console.log(keys)
+    // console.log(keys)
     keys.forEach(key => {
         res[key] = f.get(`sample/metadata/${key}`).to_array();
     })
@@ -363,7 +363,7 @@ export const getSparseMatrix = async  (hdf5file, sampleIndex) => {
     await h5wasm.ready;
 
     let f = new h5wasm.File(hdf5file, "r");
-    console.log(f.keys())
+   // console.log(f.keys())
     const data = f.get("observation/matrix/data").to_array();
     const indices = f.get("observation/matrix/indices").to_array();
     const indptr = f.get("observation/matrix/indptr").to_array();

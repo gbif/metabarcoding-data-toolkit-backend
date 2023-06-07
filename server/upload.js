@@ -29,6 +29,7 @@ export default  (app) => {
   app.post('/dataset/upload', auth.appendUser(), upload.array('tables', 3), async function (req, res, next) {
     if(req?.user){
       await db.createUserDataset(req?.user?.userName, req.id)
+      console.log(`Dataset ${req.id} created by ${req?.user?.userName}`)
     } else {
       console.log("Upload attention: no user logged in" )
     }

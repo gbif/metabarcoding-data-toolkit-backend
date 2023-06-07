@@ -162,11 +162,14 @@ const processDwc = async function (req, res) {
             report.publishing = {steps : []}
             console.log("Copying Archive to public access URI")
             report.publishing.steps.push({ status: 'processing', message: 'Copying archive to public URI', time: Date.now() })
-
-            await rsyncToPublicAccess(req.params.id, version)
+            if(config?.env === 'local'){
+                // When doing local development, the data needs to be moved to a public url
+                await rsyncToPublicAccess(req.params.id, version)
+            }
+            
             report.publishing.steps.push({ status: 'processing', message: 'Registering dataset in GBIF', time: Date.now() })
 
-            const gbifDatasetKey = await registerDatasetInGBIF(req.params.id, config.gbifUsername, config.gbifPassword)
+            const gbifDatasetKey = await registerDatasetInGBIF(req.params.id, version, config.gbifUsername, config.gbifPassword)
             report.publishing.gbifDatasetKey = gbifDatasetKey;
             console.log("Dataset registered in GBIF, crawl triggered")
             report.publishing.steps.push({ status: 'finished', message: 'Registering dataset in GBIF complete', time: Date.now() })
