@@ -12,6 +12,8 @@ const saveMapping = async function (req, res) {
             if(!version){
                 version = await getCurrentDatasetVersion(req.params.id)
             } 
+            console.log(`Save mapping for dataset ${req.params.id}`)
+
             await writeMapping(req.params.id, version, req.body)
             
            // console.log(eml)

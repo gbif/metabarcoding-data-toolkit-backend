@@ -29,7 +29,7 @@ const q = queue(async (options) => {
         } else {
             job.mapping = mapping;
         }
-
+        console.log(`Start processing of dataset ${id}`)
         await processDataset(id, version, job)
 
     } catch (error) {
