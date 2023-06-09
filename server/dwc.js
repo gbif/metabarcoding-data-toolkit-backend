@@ -1,4 +1,4 @@
-import { getProcessingReport, writeProcessingReport, getMetadata, getCurrentDatasetVersion, readBiom, zipDwcArchive, rsyncToPublicAccess, dwcArchiveExists} from '../util/filesAndDirectories.js'
+import { getProcessingReport, writeProcessingReport, getMetadata, getCurrentDatasetVersion, wipeGeneratedDwcFiles, rsyncToPublicAccess, dwcArchiveExists} from '../util/filesAndDirectories.js'
 import {registerDatasetInGBIF} from '../util/gbifRegistry.js'
 import { biomToDwc } from '../converters/dwc.js';
 import {getMimeFromPath, getFileSize} from '../validation/files.js'
@@ -76,6 +76,8 @@ import {createDwc} from '../workers/supervisor.js'
 
 const pushJob = async (id, version) => {
     runningJobs.set(id, { id: id, version, steps: [{ status: 'queued', time: Date.now() }] })
+    // remove previously generated files
+    await wipeGeneratedDwcFiles(id, version)
     try {
        
         q.push({ id: id, version }, async (error, result) => {
@@ -97,7 +99,7 @@ const pushJob = async (id, version) => {
                     size: getFileSize(`${config.dataStorage}${id}/${version}/archive.zip`), 
                     mimeType: 'application/zip'
                 }
-                report.filesAvailable = report.filesAvailable ?    [...report.filesAvailable, file] :[file]
+                report.filesAvailable = report.filesAvailable ?    [...report.filesAvailable.filter(f => f?.format !== "DWC"), file] :[file]
                 report.dwc = job;
                 await writeProcessingReport(id, version, report)
                 runningJobs.delete(id)

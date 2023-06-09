@@ -309,9 +309,27 @@ export const wipeGeneratedFilesAndResetProccessing = async (id, version) => {
     } catch (error) {
       reject(error)
     }
-    
-    
-  
+      
+})
+
+}
+
+export const wipeGeneratedDwcFiles = async (id, version) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const files = ['archive.zip', 'archive/dna.txt', 'archive/occurrence.txt', 'archive/meta.xml'];
+      for (let f of files) {
+        const exists = await fileExists(id, version, f)
+        if(exists){
+          await deleteFile(id, version, f)
+        }
+        
+      }
+      resolve(`Cleaned directories`)
+    } catch (error) {
+      reject(error)
+    }
+      
 })
 
 }
