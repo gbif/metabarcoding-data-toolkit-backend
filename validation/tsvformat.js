@@ -79,7 +79,7 @@ export const otuTableHasSamplesAsColumns = async (files, sampleIdTerm) => {
         try {
             console.log(`OTU table: ${files.otuTable.path} delimiter: ${files.otuTable.properties.delimiter}`)
             otuTableColumns = await readTsvHeaders(files.otuTable.path, files.otuTable.properties.delimiter);
-            console.log(otuTableColumns)
+           // console.log(otuTableColumns)
         } catch (error) {
             let splitted = files.otuTable.split("/");
             errors.push({file: splitted[splitted.length-1], message: error?.message})
@@ -120,7 +120,7 @@ export const otuTableHasSamplesAsColumns = async (files, sampleIdTerm) => {
 }
 
 export const otuTableHasSequencesAsColumnHeaders = async (otuTable) => {
-    console.log("otuTableHasSequencesAsColumnHeaders")
+    // console.log("otuTableHasSequencesAsColumnHeaders")
     if(!otuTable){
         throw "No Otu table"
     }

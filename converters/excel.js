@@ -4,6 +4,8 @@ import fileNames from "../validation/filenames.js";
 import {Biom} from 'biojs-io-biom';
 import config from '../config.js'
 import util from "../util/index.js"
+import {writeMapping} from '../util/filesAndDirectories.js'
+
 
 
 const extractTaxaFromOTUtable = (otuTable, samples, termMapping ) => {
@@ -77,8 +79,12 @@ const determineFileNames = (sheets, termMapping) => {
         let rawFileName = f.name.replace(/[^0-9a-z]/gi, '').toLowerCase();
         return fileNames.taxa.indexOf(rawFileName) > -1;
       });
-      console.log((samples?.name))
-      //console.log(`taxa ${taxa}`)
+      
+      let defaultValues = sheets.find(f => {
+        let rawFileName = f.name.replace(/[^0-9a-z]/gi, '').toLowerCase();
+        return fileNames.defaultvalues.indexOf(rawFileName) > -1;
+      });
+
       if(!otuTable){
         throw `Could not find the otuTable in the sheets: ${sheets.map(s => s.name).toString()}`
       }
@@ -104,7 +110,8 @@ const determineFileNames = (sheets, termMapping) => {
       return {
           otuTable, 
           samples,
-          taxa
+          taxa,
+          defaultValues
       }
       
   } catch (error) {
@@ -227,6 +234,9 @@ export const processWorkBookFromFile = async (id, fileName, version, termMapping
         const data = workbook.SheetNames.map(n => ({name: n, data: xlsx.utils.sheet_to_json(workbook.Sheets[n], {header: 1})}));
         const mappedData = determineFileNames(data, termMapping)
         const biom = await toBiom(mappedData, termMapping, processFn)
+        
+       
+        
         resolve(biom)
         }
       });
@@ -298,13 +308,41 @@ export const readXlsxHeaders = async (id, fileName, version) => {
         } else {
 
         const data = workbook.SheetNames.map(n => ({name: n, data: xlsx.utils.sheet_to_json(workbook.Sheets[n], {header: 1})}));
-        const {taxa, samples} = determineFileNames(data)
+        const {otuTable, taxa, samples, defaultValues} = determineFileNames(data)
 
-        let result = {
+        // If there are default values on a fourth sheet in the workbook, write a mapping 
+        if(defaultValues){
+          
+          await writeMapping(id, version, 
+            {
+              samples: {},
+              taxa: {},
+              defaultValues: defaultValues?.data?.slice(1).reduce((acc, curr) => {
+                acc[curr?.[0]] = curr?.[1]
+                return acc;
+              }, {})
+            })          
+        }
+        let headers = {
           sampleHeaders: samples?.data?.[0],
           taxonHeaders: taxa?.data?.[0]
         }
-        resolve(result)
+      const COLUMN_LIMIT = 100;
+       let sheets =  [otuTable, taxa, samples, defaultValues].filter(e => !!e).map(entity => {
+       const ROW_LIMIT = entity === defaultValues ? entity?.data?.length : 100;
+       return {
+          name: entity?.name,
+          headers: entity?.data?.[0].length > COLUMN_LIMIT  ? entity?.data?.[0].slice(0, COLUMN_LIMIT) : entity?.data?.[0],
+          rows: entity?.data?.[0].length > COLUMN_LIMIT ? entity?.data?.slice(0,ROW_LIMIT).map(r => r.slice(0, COLUMN_LIMIT)) : entity?.data?.slice(0,ROW_LIMIT),
+          isInConsistent: false,
+          numColumns: entity?.data?.[0].length,
+          columnLimit:  COLUMN_LIMIT
+      }
+    });
+
+       
+        
+        resolve( {headers, sheets})
         }
       });
       

@@ -74,15 +74,21 @@ export const validate = async (id, user) => {
 
     } else if(files.format === 'XLSX') {
       console.log("XLSX coming in")
-      let headers;
+      let headers_ = {};
+      let sheets_ = {};
       try {
-         headers = await readXlsxHeaders(id, files?.files[0]?.name, version)
+         const {headers, sheets} = await readXlsxHeaders(id, files?.files[0]?.name, version)
         
+         headers_ = headers
+         sheets_ = sheets
       } catch (error) {
         console.log(error)
       }
     
-     const report = {...processionReport, ...headers, unzip: false, files:{...files, id: id}};
+      if(sheets_ && files?.files?.[0]){
+        files.files[0].sheets = sheets_;
+      }
+     const report = {...processionReport, ...headers_, unzip: false, files:{...files, id: id}};
      await writeProcessingReport(id,version, report)
      return report
     } else if(files.format === 'ZIP') {
