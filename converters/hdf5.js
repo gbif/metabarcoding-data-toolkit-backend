@@ -7,6 +7,7 @@ const MAX_FIXED_STRING_LENGTH = 1024
 
 const init = async () => {
     h5wasm = await import("h5wasm");
+    await h5wasm?.ready
 }
 
 init();
@@ -129,7 +130,7 @@ export const writeHDF5 = async (biom, hdf5file) => {
     // console.log(biom.shape);
     // const h5wasm = await import("h5wasm");
     const errors = []
-    await h5wasm.ready;
+    await h5wasm?.ready || init();
     let columnOrientedSparseMatrix = [...biom.data].sort((a, b) => {
         return a[1] - b[1]
     })
@@ -224,7 +225,7 @@ export const writeHDF5 = async (biom, hdf5file) => {
         return { errors: errors}
 
     } catch (error) {
-        if (typeof f.close === 'function') {
+        if (f?.close && typeof f.close === 'function') {
             f.close()
         }
         console.log(error)
@@ -237,7 +238,7 @@ export const writeHDF5 = async (biom, hdf5file) => {
 // returns a Biom object
 export const readHDF5 = async (hdf5file) => {
     // const h5wasm = await import("h5wasm");
-    await h5wasm.ready;
+    await h5wasm?.ready || init();
 
     let f = new h5wasm.File(hdf5file/* "rich_sparse_otu_table_hdf5.biom" */, "r");
     console.log(f.keys())
@@ -360,7 +361,7 @@ export const getSamples = async (hdf5file) => {
 }
 
 export const getSparseMatrix = async  (hdf5file, sampleIndex) => {
-    await h5wasm.ready;
+    await h5wasm?.ready || init();
 
     let f = new h5wasm.File(hdf5file, "r");
    // console.log(f.keys())
@@ -384,7 +385,7 @@ export const getSparseMatrix = async  (hdf5file, sampleIndex) => {
 }
 
 export const getSampleTaxonomy = async  (hdf5file, sampleIndex) => {
-    await h5wasm.ready;
+    await h5wasm?.ready || init();
 
     let f = new h5wasm.File(hdf5file, "r");
     const data = f.get("observation/matrix/data").to_array();
@@ -442,7 +443,7 @@ export const getSampleTaxonomy = async  (hdf5file, sampleIndex) => {
 }
 
 export const getSampleCompositions = async  (hdf5file) => {
-    await h5wasm.ready;
+    await h5wasm?.ready || init();
     let f = new h5wasm.File(hdf5file, "r");
     const data = f.get("observation/matrix/data").to_array();
     const indices = f.get("observation/matrix/indices").to_array();

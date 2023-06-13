@@ -85,8 +85,14 @@ const determineFormat = (files) => {
 }
 
 export const getFileSize = file => {
-    const {size} = fs.statSync(file);
-    return size / (1024 * 1000)
+    try {
+        const {size} = fs.statSync(file);
+        return size / (1024 * 1000)
+    } catch (err){
+        console.log(err)
+        return 0;
+    }
+   
 }
 
 export const uploadedFilesAndTypes = async (id, version = 1) => {

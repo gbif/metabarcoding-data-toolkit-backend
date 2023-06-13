@@ -5,6 +5,7 @@ import {Biom} from 'biojs-io-biom';
 import config from '../config.js'
 import util from "../util/index.js"
 import {writeMapping} from '../util/filesAndDirectories.js'
+import {getGroupMetaDataAsJsonString} from '../validation/termMapper.js'
 
 
 
@@ -194,6 +195,7 @@ export const toBiom = async (otuTable, sampleMap, taxaMap, termMapping, processF
       console.log(`Taxa in metadata: ${taxaMap.size} in OTU table: ${rows.length}`)
       const biom = new Biom({
         rows: rows.map(r => ({id: r, metadata: taxaMap.get(r)})), 
+        comment: getGroupMetaDataAsJsonString(termMapping),
         columns: columns.map(c => ({id: c, metadata: sampleMap.get(c)})),
         matrix_type: 'sparse',
         shape: [rows.length, columns.length], //[taxaMap.size, sampleMap.size],
