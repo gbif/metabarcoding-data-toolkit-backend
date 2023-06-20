@@ -8,6 +8,7 @@ const MAX_FIXED_STRING_LENGTH = 1024
 const init = async () => {
     h5wasm = await import("h5wasm");
     await h5wasm?.ready
+    return h5wasm
 }
 
 init();
@@ -130,7 +131,10 @@ export const writeHDF5 = async (biom, hdf5file) => {
     // console.log(biom.shape);
     // const h5wasm = await import("h5wasm");
     const errors = []
-    await h5wasm?.ready || init();
+    if(!h5wasm){
+        await init()
+    }
+    await h5wasm?.ready;
     let columnOrientedSparseMatrix = [...biom.data].sort((a, b) => {
         return a[1] - b[1]
     })
@@ -238,7 +242,10 @@ export const writeHDF5 = async (biom, hdf5file) => {
 // returns a Biom object
 export const readHDF5 = async (hdf5file) => {
     // const h5wasm = await import("h5wasm");
-    await h5wasm?.ready || init();
+    if(!h5wasm){
+        await init()
+    }
+    await h5wasm?.ready ;
 
     let f = new h5wasm.File(hdf5file/* "rich_sparse_otu_table_hdf5.biom" */, "r");
     console.log(f.keys())
@@ -334,7 +341,7 @@ export const getSamplesForGeoJson = async (hdf5file) => {
     let decimalLatitude = f.get('sample/metadata/decimalLatitude').to_array()
     let id = f.get('sample/metadata/id').to_array()
   
-
+    f.close()
     return {id, decimalLatitude, decimalLongitude}
     } catch (error) {
         throw error
@@ -352,7 +359,7 @@ export const getSamples = async (hdf5file) => {
     keys.forEach(key => {
         res[key] = f.get(`sample/metadata/${key}`).to_array();
     })
-    
+    f.close()
     return res;
 } catch (error) {
     throw error
@@ -361,7 +368,10 @@ export const getSamples = async (hdf5file) => {
 }
 
 export const getSparseMatrix = async  (hdf5file, sampleIndex) => {
-    await h5wasm?.ready || init();
+    if(!h5wasm){
+        await init()
+    }
+    await h5wasm?.ready;
 
     let f = new h5wasm.File(hdf5file, "r");
    // console.log(f.keys())
@@ -385,7 +395,11 @@ export const getSparseMatrix = async  (hdf5file, sampleIndex) => {
 }
 
 export const getSampleTaxonomy = async  (hdf5file, sampleIndex) => {
-    await h5wasm?.ready || init();
+
+    if(!h5wasm){
+        await init()
+    }
+    await h5wasm?.ready;
 
     let f = new h5wasm.File(hdf5file, "r");
     const data = f.get("observation/matrix/data").to_array();
@@ -438,12 +452,15 @@ export const getSampleTaxonomy = async  (hdf5file, sampleIndex) => {
         return obj;
     })
 
-
+    f.close()
     return [...result, ...Array.from(parentMap).map(t => ({id: t[0] || "", parent: t[1].parentId, name: t[1].name, rank: t[1].rank}))];
 }
 
 export const getSampleCompositions = async  (hdf5file) => {
-    await h5wasm?.ready || init();
+    if(!h5wasm){
+        await init()
+    }
+    await h5wasm?.ready;
     let f = new h5wasm.File(hdf5file, "r");
     const data = f.get("observation/matrix/data").to_array();
     const indices = f.get("observation/matrix/indices").to_array();
@@ -452,7 +469,8 @@ export const getSampleCompositions = async  (hdf5file) => {
     let observationMetaData = {};
     // Why do we put the id in the taxonomy? It is the only unique handle for an ASV, the scientificName could very well be non-unique across taxa/ASVs
     f.get("observation/metadata").keys().filter(key => ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'id'].includes(key)).forEach(key => {
-        observationMetaData[key] = f.get(`observation/metadata/${key}`).to_array()
+        const rankData = f.get(`observation/metadata/${key}`);
+        observationMetaData[key] = rankData ? rankData.to_array() : []
     });
     // console.log( f.get(`observation/metadata/taxonomy`).dtype)
     let indptrIdx = 0;
@@ -466,7 +484,8 @@ export const getSampleCompositions = async  (hdf5file) => {
         }
         return res;
     })
-    const sampleIds = f.get(`sample/metadata/id`).to_array()
+    const sampleIdData = f.get(`sample/metadata/id`);
+    const sampleIds = sampleIdData ? sampleIdData.to_array(): []
     const result = sparseMatrix.reduce((acc, curr) => {
         if(acc?.[sampleIds[curr[1]]]){
             acc[sampleIds[curr[1]]].push(curr[0])
@@ -475,7 +494,7 @@ export const getSampleCompositions = async  (hdf5file) => {
         }
         return acc;
     }, {})
-
+    f.close()
     return result;
 
 }

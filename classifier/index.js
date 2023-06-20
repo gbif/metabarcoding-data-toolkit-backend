@@ -189,7 +189,7 @@ const blastAll = async (taxa, marker, processFn = (progress, total, message, sum
 export const assignTaxonomy = async (id, version, taxa, marker, processFn = (progress, total, message, summary) => {}) => {
     const taxonFilePath = `${config.dataStorage}${id}/${version}/taxonomy.tsv`
     try {
-        if(!supportedMarkers.includes((marker || '').toLowerCase())){
+        if(!supportedMarkers.map(m => m?.name).includes((marker || '').toLowerCase())){
             throw 'unsupported marker'
         }
         const taxonomyStream = fs.createWriteStream(taxonFilePath, {

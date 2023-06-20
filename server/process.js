@@ -44,12 +44,30 @@ const q = queue(async (options) => {
 
 
 const pushJob = async (id, assignTaxonomy, user) => {
+    let version
+    let newJob = { id: id, createdBy: user?.userName, assignTaxonomy: assignTaxonomy, filesAvailable: [], steps: [{ status: 'queued', time: Date.now() }] }
+    try {
+        version = await getCurrentDatasetVersion(id);
+       const existingReport = await getDataset(id, version);
+       if(existingReport?.sampleHeaders){
+        newJob.sampleHeaders = existingReport.sampleHeaders
+       }
+       if(existingReport?.taxonHeaders){
+        newJob.taxonHeaders = existingReport.taxonHeaders
+       }
+       if(existingReport?.files){
+        newJob.files = existingReport.files
+       }
+    } catch (error) {
+        // ignore, it has not been processed before so there is no report
+    }
+
 
     try {
         // in case the user starts the proceesing again 
-        let version = await getCurrentDatasetVersion(id);
+       // let version = await getCurrentDatasetVersion(id);
         await wipeGeneratedFilesAndResetProccessing(id, version)
-        runningJobs.set(id, { id: id, createdBy: user?.userName, assignTaxonomy: assignTaxonomy, filesAvailable: [], steps: [{ status: 'queued', time: Date.now() }] })
+        runningJobs.set(id, newJob)
         q.push({ id: id }, async (error, result) => {
             if (error) {
                 console.log(error);

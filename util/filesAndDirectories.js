@@ -3,7 +3,7 @@ import config from '../config.js'
 import {Biom} from 'biojs-io-biom';
 import child_process from 'child_process';
 import {spawn} from 'child_process';
-
+import {getDataset} from "./dataset.js"
 import parse from 'csv-parse';
 // import path from 'path';
 import json from 'big-json';
@@ -294,10 +294,32 @@ export const fileAtPathExists = async (file) => {
 })
 }
 
+
+const resetFilesAndProcessingStepsInReport = async (id, version) => {
+  let processingReportExists;
+  try {
+     processingReportExists = await fileExists(id, version, 'processing.json')
+      if(processingReportExists){
+        let report = await getDataset(id, version);
+        delete report?.filesAvailable;
+        delete report?.steps;
+        delete report?.dwc;
+      //  console.log("Write report")
+     //   console.log(report)
+        await writeProcessingReport(id, version, report)
+      } 
+  } catch (error) {
+    // If the report does not exist ignore error, just means that this is the first run
+    if(processingReportExists){
+      console.log(error)
+    }
+  }
+}
+
 export const wipeGeneratedFilesAndResetProccessing = async (id, version) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const files = ['data.biom.json', 'data.biom.h5', 'archive.zip', 'processing.json', 'archive/dna.txt', 'archive/occurrence.txt', 'archive/meta.xml'];
+      const files = ['data.biom.json', 'data.biom.h5', 'archive.zip', 'archive/dna.txt', 'archive/occurrence.txt', 'archive/meta.xml'];
       for (let f of files) {
         const exists = await fileExists(id, version, f)
         if(exists){
@@ -305,6 +327,7 @@ export const wipeGeneratedFilesAndResetProccessing = async (id, version) => {
         }
         
       }
+      await resetFilesAndProcessingStepsInReport(id, version)
       resolve(`Cleaned directories`)
     } catch (error) {
       reject(error)
