@@ -89,7 +89,7 @@ export const validate = async (id, user) => {
         files.files[0].sheets = sheets_;
       }
      const report = {...processionReport, ...headers_, unzip: false, files:{...files, id: id}};
-     await writeProcessingReport(id,version, report)
+     await writeProcessingReport(id, version, report)
      return report
     } else if(files.format === 'ZIP') {
       await unzip(req.params.id, files.files[0].name)
