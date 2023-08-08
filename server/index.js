@@ -12,6 +12,7 @@ import processing from './process.js'
 import dwc from './dwc.js'
 import terms from './terms.js';
 import enums from './enum.js';
+import datasets from './datasets.js';
 
 import mapping from './mapping.js';
 import files from './files.js';
@@ -70,6 +71,8 @@ mapping(app)
 files(app)
 // add routes for data display
 data(app)
+// Add routes for datasets
+datasets(app)
 
 
 

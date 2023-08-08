@@ -64,8 +64,11 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = tru
     console.log("Column ID term: "+columnIdTerm)
     const [otuTable, rows, columns] = await streamReader.readOtuTableToSparse(otuTableFile?.path, processFn, columnIdTerm, otuTableFile?.properties?.delimiter);
     console.log("Finished readOtuTableToSparse")
-    console.log("Columns "+columns.length)
-    console.log(columns)
+     console.log("Columns "+columns.length)
+     console.log(columns)
+     console.log("ROWS" + rows.length)
+     console.log(rows)
+   //console.log(rows.map(r => getMetaDataRow(samplesAsColumns ? taxa.get(r) : samples.get(r) )))
 
     /* in the case of sample ids not in the sample file, make blank sample records so the Biom creation does not break. 
     The missing ids should be reported back to the user
@@ -78,7 +81,8 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = tru
             samples.set(c, {id: c})
         }
     })
-
+    const cols = columns.map(c => getMetaDataRow(samplesAsColumns ? samples.get(c)  : taxa.get(c)))
+    const rws = rows.map(r => getMetaDataRow(samplesAsColumns ? taxa.get(r) : samples.get(r) ))
     try {
       const b = await new Promise((resolve, reject) => {
           try {
@@ -86,10 +90,10 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = tru
               const biom = new Biom({
                   id: id || null,
                   comment: getGroupMetaDataAsJsonString(termMapping),   // Biom v1 does not support group metadata where we store field default values. Therefore this is given as a JSON string in the comment field 
-                  rows: rows.map(r => getMetaDataRow(samplesAsColumns ? taxa.get(r) : samples.get(r) )), 
-                  columns: columns.map(c => getMetaDataRow(samplesAsColumns ? samples.get(c)  : taxa.get(c))),
+                  rows: rws,// rows.map(r => getMetaDataRow(samplesAsColumns ? taxa.get(r) : samples.get(r) )), 
+                  columns: cols, // columns.map(c => getMetaDataRow(samplesAsColumns ? samples.get(c)  : taxa.get(c))),
                   matrix_type: 'sparse',
-                  shape: samplesAsColumns ? [taxa.size, samples.size] : [samples.size, taxa.size],
+                  shape: [rows.length, cols.length], // samplesAsColumns ? [taxa.size, samples.size] : [samples.size, taxa.size],
                   data: otuTable
                 })
                 console.log("Biom created")

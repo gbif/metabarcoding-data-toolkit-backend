@@ -9,6 +9,7 @@ con.run('CREATE UNIQUE INDEX ud_idx ON Datasets (user_name, dataset_id)');
 
 const createUserDatasetStmt = con.prepare('INSERT INTO UserDatasets VALUES (?, ?)');
 const getDatasetsForUserStmt = con.prepare('SELECT dataset_id FROM UserDatasets WHERE user_name = ?');
+const getAllDatasetsStmt = con.prepare('SELECT dataset_id, user_name FROM UserDatasets');
 
 const createUserDataset = (userName, datasetId) => {
     return new Promise((resolve, reject) => {
@@ -40,7 +41,26 @@ const getUserDatasets = (userName) => {
     
 }
 
+const getAllDatasets = () => {
+    return new Promise((resolve, reject) => {
+        try {
+            getAllDatasetsStmt.all(function(err, res){
+                if (err) {
+                    reject(err)
+                  } else {
+                    resolve(res.map(element => element.dataset_id))       
+                  }
+                   
+               })
+        } catch (error) {
+            reject(error)
+        }
+    })
+    
+}
+
 export default {
     createUserDataset,
-    getUserDatasets
+    getUserDatasets,
+    getAllDatasets
 }

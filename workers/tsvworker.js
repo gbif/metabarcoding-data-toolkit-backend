@@ -107,7 +107,7 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
 
     beginStep('convertToBiom')
     updateStatusOnCurrentStep(0, taxa.size, 'Reading OTU table', {taxonCount: taxa.size});
-
+    console.log(`TSV worker running id ${id}`)
     const {biom, sampleIdsWithNoRecordInSampleFile} = await toBiom(fileMap?.otuTable, samples, taxa, samplesAsColumns,  updateStatusOnCurrentStep , mapping, id)
     if(sampleIdsWithNoRecordInSampleFile?.length > 0){
         // Some ids did not have a corresponding entry in the sample file
