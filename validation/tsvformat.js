@@ -81,7 +81,7 @@ export const otuTableHasSamplesAsColumns = async (files, sampleIdTerm) => {
             otuTableColumns = await readTsvHeaders(files.otuTable.path, files.otuTable.properties.delimiter);
            // console.log(otuTableColumns)
         } catch (error) {
-            let splitted = files.otuTable.split("/");
+            let splitted = files.otuTable.path.split("/");
             errors.push({file: splitted[splitted.length-1], message: error?.message})
             console.log(error?.message)
         }
@@ -100,7 +100,7 @@ export const otuTableHasSamplesAsColumns = async (files, sampleIdTerm) => {
 
         // Only generate this error if there is a mapping. Files are obviously uploaded before a mapping exists
         if(sampleIdTerm && sampleIdsNotInOtuTableColumns.length > 0){
-            let splitted = files.otuTable.split("/");
+            let splitted = files.otuTable.path.split("/");
             errors.push({file: splitted[splitted.length-1], message: `Some sampleIds are not in the OTU table: ${sampleIdsNotInOtuTableColumns.toString()}`})
         }
         // more than 95% of the samples has a corresponding column in the OTUtable - we could be more strict?

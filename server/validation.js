@@ -16,7 +16,7 @@ export const validate = async (id, user) => {
     const mapping = await readMapping(id, version);
 
     if(!processionReport){
-      processionReport= {id: id, createdBy: user?.userName}
+      processionReport= {id: id, createdBy: user?.userName, createdAt: new Date().toISOString()}
     }
     if(!!metadata){
       processionReport.metadata = metadata
