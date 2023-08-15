@@ -48,7 +48,7 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     finishedJobSuccesssFully('success')
     } catch (error) {
         console.log(error)
-        finishedJobWithError(error)   
+        finishedJobWithError(error?.message)   
     }
     
 }

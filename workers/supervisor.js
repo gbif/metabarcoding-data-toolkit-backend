@@ -5,8 +5,8 @@ import STEPS from '../enum/processingSteps.js'
 import DWCSTEPS from '../enum/dwcSteps.js'
 import config from '../config.js'
 import runningJobs from './runningJobs.js';
-import { uploadedFilesAndTypes, getMimeFromPath, getFileSize, unzip } from '../validation/files.js'
-import { determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders } from '../validation/tsvformat.js'
+import { uploadedFilesAndTypes, getFileSize, unzip } from '../validation/files.js'
+import { determineFileNames} from '../validation/tsvformat.js'
 import {  readTsvHeaders } from '../util/filesAndDirectories.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -133,6 +133,13 @@ export const processDataset = (id, version, job) => {
                 resolve()
             }
             if(message?.type === 'finishedJobWithError'){
+               
+               // Get the last step, add the error message and add it to the step 
+                if( job.steps.length > 0){
+                    job.steps[job.steps.length-1].message = message.payload
+                    job.steps[job.steps.length-1].status = "failed"
+                }
+                runningJobs.set(id, { ...job });
                 reject(message?.payload)
             }
       

@@ -1,6 +1,6 @@
 import {uploadedFilesAndTypes, unzip} from '../validation/files.js'
 import auth from './Auth/auth.js';
-import {determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders, analyseCsv} from '../validation/tsvformat.js'
+import {determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders, hasIdColumn} from '../validation/tsvformat.js'
 import {processWorkBookFromFile, readXlsxHeaders} from "../converters/excel.js"
 import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport, readMapping} from '../util/filesAndDirectories.js'
 import _ from "lodash"
@@ -13,7 +13,7 @@ export const validate = async (id, user) => {
     let files = await uploadedFilesAndTypes(id, version)
     let processionReport = await getProcessingReport(id, version)
     let metadata = await getMetadata(id, version)
-    const mapping = await readMapping(id, version);
+   // const mapping = await readMapping(id, version);
 
     if(!processionReport){
       processionReport= {id: id, createdBy: user?.userName, createdAt: new Date().toISOString()}
@@ -27,18 +27,28 @@ export const validate = async (id, user) => {
      // console.log(filePaths)
      const fileMap = _.keyBy(files.files, "type")
 
-      let samplesAsColumns;
-      try {
-       samplesAsColumns  = await otuTableHasSamplesAsColumns(fileMap, mapping ?  _.get(mapping, 'samples.id', 'id') : null);
-      } catch (errors) {
-        console.log(errors)
-        samplesAsColumns = false;
+     let validationErrors = []
+      
+      let {samplesAsColumns, errors, invalid}  = await otuTableHasSamplesAsColumns(fileMap, validationErrors);
+      validationErrors = [...validationErrors, ...errors]
+      if(invalid){
         files.format = "INVALID";
-        files.invalidErrors = errors;
-       // files.invalidMessage = error
-
       }
-                 
+      
+
+      if(fileMap?.taxa?.path){
+        // Check there is an "id" column in the taxon file
+        const {term, errors: idInvalidErrors} = await hasIdColumn(fileMap?.taxa?.path);
+        validationErrors = [...validationErrors, ...idInvalidErrors]
+        if(!term) {
+          files.format = "INVALID";
+        }
+      }
+
+      // Give the collected array of errors to the frontend
+      files.invalidErrors = validationErrors;
+      
+           
       let sequencesAsHeaders = false;
      
       if(!samplesAsColumns){
@@ -55,18 +65,12 @@ export const validate = async (id, user) => {
       let validationReport = {files: {...files, filePaths, samplesAsColumns, sequencesAsHeaders}}
       if(fileMap?.samples){
         validationReport.sampleHeaders = await readTsvHeaders(fileMap?.samples?.path, fileMap?.samples?.properties?.delimiter)
-      /*  const csvProperties = await analyseCsv(filePaths?.samples);
-       if(csvProperties?.headers){
-          validationReport.sampleHeaders = csvProperties?.headers
-       }; */
+     
        
       }
       if(fileMap?.taxa){
         validationReport.taxonHeaders = await readTsvHeaders(fileMap?.taxa?.path, fileMap?.taxa?.properties?.delimiter)
-       /*  const csvProperties = await analyseCsv(filePaths?.taxa);
-       if(csvProperties?.headers){
-          validationReport.taxonHeaders = csvProperties?.headers
-       }; */
+      
       }
       const report = {...processionReport, unzip: false, ...validationReport}
       await writeProcessingReport(id,version, report)
@@ -117,7 +121,7 @@ export default (app) => {
                 let report = await validate(req?.params?.id, req?.user)
                 res.json(report)
             } catch (error) {
-               // console.log(error)
+                console.log(error)
                 res.sendStatus(404);
             }
 

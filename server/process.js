@@ -35,7 +35,7 @@ const q = queue(async (options) => {
     } catch (error) {
         console.log("There was an error")
         console.log(error)
-        job.steps.push({ status: 'failed', message: error?.message, time: Date.now() })
+       // job.steps.push({ status: 'failed', message: error?.message, time: Date.now() })
         // throw error
         // callback(error)
     }
