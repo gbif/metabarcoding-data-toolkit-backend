@@ -11,7 +11,7 @@ const getMetaDataRow = row => {
     try {
         return {id: row.id, metadata: row}
     } catch (error) {
-       // console.log(row)
+       console.log(error)
     }
     
     }
@@ -93,7 +93,7 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = tru
                   rows: rws,// rows.map(r => getMetaDataRow(samplesAsColumns ? taxa.get(r) : samples.get(r) )), 
                   columns: cols, // columns.map(c => getMetaDataRow(samplesAsColumns ? samples.get(c)  : taxa.get(c))),
                   matrix_type: 'sparse',
-                  shape: [rows.length, cols.length], // samplesAsColumns ? [taxa.size, samples.size] : [samples.size, taxa.size],
+                  shape: [rws.length, cols.length], // samplesAsColumns ? [taxa.size, samples.size] : [samples.size, taxa.size],
                   data: otuTable
                 })
                 console.log("Biom created")
@@ -110,7 +110,8 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = tru
         })
         return b;
     } catch (err) {
-      throw err
+       console.log(err)
+      throw err?.message
     }
     
   }

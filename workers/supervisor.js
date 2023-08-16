@@ -135,8 +135,10 @@ export const processDataset = (id, version, job) => {
             if(message?.type === 'finishedJobWithError'){
                
                // Get the last step, add the error message and add it to the step 
+               console.log("############")
+               console.log(Object.keys(message.payload))
                 if( job.steps.length > 0){
-                    job.steps[job.steps.length-1].message = message.payload
+                    job.steps[job.steps.length-1].message = message.payload;
                     job.steps[job.steps.length-1].status = "failed"
                 }
                 runningJobs.set(id, { ...job });
