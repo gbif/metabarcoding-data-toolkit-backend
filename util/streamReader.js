@@ -45,6 +45,11 @@ export const readOtuTable = (path,  progressFn = ()=>{}, delimiter = "\t") => {
 
 }
 
+//This simply checks that there is an ID in the first pos in the array for a row
+const recordHasRowId = record => {
+  return !!record[0]
+}
+
 export const readOtuTableToSparse = (path, progressFn = (progress, total, message, summary)=>{}, columnIdTerm, delimiter = "\t") => {
   return new Promise((resolve, reject) => {
       const parser = parse( {
@@ -66,7 +71,8 @@ export const readOtuTableToSparse = (path, progressFn = (progress, total, messag
           while ((record = parser.read()) !== null) {
             if(!colums){
               colums = record.slice(1).map(c => (c === columnIdTerm ? 'id' : c)); // This is the header which gives the column order for the matrix
-            } else {
+           
+            } else if(recordHasRowId(record)) {
               record.slice(1).forEach((element, index) => {
                 if(!isNaN(Number(element)) && Number(element) > 0){
                   records.push([count, index, Number(element)])

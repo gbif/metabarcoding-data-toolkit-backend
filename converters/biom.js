@@ -6,7 +6,7 @@ import {getGroupMetaDataAsJsonString} from '../validation/termMapper.js'
 
 const getMetaDataRow = row => {
     if(!row?.id){
-       // console.log(row)
+       console.log(row)
     }
     try {
         return {id: row.id, metadata: row}
@@ -65,9 +65,9 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = tru
     const [otuTable, rows, columns] = await streamReader.readOtuTableToSparse(otuTableFile?.path, processFn, columnIdTerm, otuTableFile?.properties?.delimiter);
     console.log("Finished readOtuTableToSparse")
      console.log("Columns "+columns.length)
-     console.log(columns)
+    // console.log(columns)
      console.log("ROWS" + rows.length)
-     console.log(rows)
+  //   console.log(rows)
    //console.log(rows.map(r => getMetaDataRow(samplesAsColumns ? taxa.get(r) : samples.get(r) )))
 
     /* in the case of sample ids not in the sample file, make blank sample records so the Biom creation does not break. 
@@ -81,8 +81,13 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = tru
             samples.set(c, {id: c})
         }
     })
-    const cols = columns.map(c => getMetaDataRow(samplesAsColumns ? samples.get(c)  : taxa.get(c)))
-    const rws = rows.map(r => getMetaDataRow(samplesAsColumns ? taxa.get(r) : samples.get(r) ))
+
+    // The streamreader now filters out null ids  - it shouldnt be neccessary to filter before map?
+   // const cols = samplesAsColumns ? columns.filter(c => !!c).map(c => getMetaDataRow(samples.get(c))) : columns.filter(c => !!c).map(c => getMetaDataRow( taxa.get(c)));
+   // const rws = samplesAsColumns ? rows.filter(c => !!c).map(r => getMetaDataRow(taxa.get(r))) : rows.filter(c => !!c).map(r => getMetaDataRow(samples.get(r) ));
+     // The streamreader now filters out null ids  - it shouldnt be neccessary to filter before map?
+     const cols = samplesAsColumns ? columns.map(c => getMetaDataRow(samples.get(c))) : columns.map(c => getMetaDataRow( taxa.get(c)));
+     const rws = samplesAsColumns ? rows.map(r => getMetaDataRow(taxa.get(r))) : rows.map(r => getMetaDataRow(samples.get(r) ));
     try {
       const b = await new Promise((resolve, reject) => {
           try {
