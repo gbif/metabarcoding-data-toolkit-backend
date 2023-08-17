@@ -190,6 +190,12 @@ export const toBiom = async (otuTable, sampleMap, taxaMap, termMapping, processF
         }  
       })
       processFn(rows.length, rows.length, 'Reading OTU table  from spreadsheet', {taxonCount: rows.length});
+      let sampleIdsWithNoRecordInSampleFile = [];
+      columns.forEach(c => {
+        if(!sampleMap.has(c)){
+            sampleIdsWithNoRecordInSampleFile.push(c)
+        }
+      })
 
       console.log(`Samples in metadata: ${sampleMap.size} in OTU table: ${columns.length}`)
       console.log(`Taxa in metadata: ${taxaMap.size} in OTU table: ${rows.length}`)
@@ -201,7 +207,7 @@ export const toBiom = async (otuTable, sampleMap, taxaMap, termMapping, processF
         shape: [rows.length, columns.length], //[taxaMap.size, sampleMap.size],
         data: sparseData
       })
-      resolve(biom)
+      resolve({biom, sampleIdsWithNoRecordInSampleFile})
     } catch (error) {
       console.log(error)
       reject(error)

@@ -4,7 +4,7 @@ import { uploadedFilesAndTypes, getMimeFromPath, getFileSize, unzip } from '../v
 
 import _ from 'lodash'
 import { getCurrentDatasetVersion, writeProcessingReport, wipeGeneratedFilesAndResetProccessing, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
-import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats} from "./util.js"
+import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, missingSampleRecords} from "./util.js"
 import { assignTaxonomy } from '../classifier/index.js';
 
 
@@ -38,8 +38,11 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     }
     beginStep('convertToBiom')
    // const biom = await toBiom(filePaths.otuTable, filePaths.samples, filePaths.taxa, samplesAsColumns,  updateStatusOnCurrentStep , mapping, id)
-   const biom = await toBiom(otuTable, sampleMap, taxaMap, mapping, updateStatusOnCurrentStep)
-
+   const {biom, sampleIdsWithNoRecordInSampleFile} = await toBiom(otuTable, sampleMap, taxaMap, mapping, updateStatusOnCurrentStep)
+   if(sampleIdsWithNoRecordInSampleFile?.length > 0){
+    // Some ids did not have a corresponding entry in the sample file
+    missingSampleRecords(sampleIdsWithNoRecordInSampleFile)
+}
     stepFinished('convertToBiom');
     beginStep('addReadCounts')
     await addReadCounts(biom, updateStatusOnCurrentStep)
