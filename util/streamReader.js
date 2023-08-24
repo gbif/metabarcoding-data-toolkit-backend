@@ -50,7 +50,89 @@ const recordHasRowId = record => {
   return !!record[0]
 }
 
-export const readOtuTableToSparse = (path, progressFn = (progress, total, message, summary)=>{}, columnIdTerm, delimiter = "\t") => {
+const getConsistencyCheckForSamples = (columns, dimensionXdataMap) => {
+  const dimensionXSet = new Set([...dimensionXdataMap.keys()])
+  const dimensionXidsWithNoRecordInDataFile = columns.filter(c => {
+    if(dimensionXSet.has(c)){
+      dimensionXSet.delete(c)
+      return false
+    } else {
+      return true
+    }
+  })
+  // Returns an array of sampleIDs that are not in the sample file and an arrary of sampleIDs not in the OTU table
+  return {dimensionXidsWithNoRecordInDataFile, dimensionXidsWithNoRecordInOtuTable: [...dimensionXSet.keys()]}
+}
+
+export const readOtuTableToSparse = (path, progressFn = (progress, total, message, summary)=>{}, columnIdTerm, delimiter = "\t", dimensionXdataMap, dimensionYdataMap) => {
+  return new Promise((resolve, reject) => {
+  
+    let dimensionYidsWithNoRecordInDataFile = [];
+
+    const parser = parse( {
+          delimiter: delimiter || "\t",
+          columns: false,
+          ltrim: true,
+          rtrim: true,
+          escape: '\\',
+
+        })
+      const dimensionYSet = new Set([...dimensionYdataMap.keys()])
+      const records = [];
+      let columns;
+      let cols;
+      const rows = [];
+      let count = 0; // this is also the row index
+      parser.on('readable', function(){
+          let record;
+          while ((record = parser.read()) !== null) {
+            if(!columns){
+              columns = record.slice(1);
+           
+            } else if(recordHasRowId(record) && dimensionYSet.has(record[0])) {
+              record.slice(1).forEach((element, index) => {
+                if(!isNaN(Number(element)) && Number(element) > 0 && dimensionXdataMap.has(columns[index])){
+                  records.push([count, index, Number(element)])
+                  
+                }
+              });
+              // collect ordering of rows to sort metadata file
+              rows.push(record[0]);
+              dimensionYSet.delete(record[0]); // Remove the id so dimensionYSet end up with only ids missung in the OTU table
+              count ++;
+              if(count % 10000 === 0){
+                console.log("Count "+count)
+              }
+              if(count % 1000 === 0){
+                progressFn(count)
+              }
+            } else if(recordHasRowId(record) && !dimensionYSet.has(record[0])) {
+              dimensionYidsWithNoRecordInDataFile.push(record[0])
+            }  
+           // console.log(`dimensionYSet has ${record[0]} :${dimensionYSet.has(record[0])}`)
+           // console.log(`recordHasRowId ${record} :${recordHasRowId(record)}`)
+          }
+          // We are finished update to final count
+          progressFn(count, count, 'Reading data', {sampleCount: columns.filter(c => dimensionXdataMap.has(c)).length, taxonCount: rows.length})
+
+        });
+        // Catch any error
+        parser.on('error', function(err){
+          console.error(err.message);
+          reject(err)
+        });
+        // Test that the parsed records matched the expected records
+        parser.on('end', function(){
+          progressFn()
+          resolve([records, rows, columns.filter(c => dimensionXdataMap.has(c)), {dimensionYidsWithNoRecordInDataFile, dimensionYidsWithNoRecordInOtuTable: [...dimensionYSet], ...getConsistencyCheckForSamples(columns, dimensionXdataMap)}])
+        });
+      const inputStream = fs.createReadStream(path);    
+      inputStream.pipe(parser)
+  })
+
+}
+
+export const readOtuTableToSparse_old = (path, progressFn = (progress, total, message, summary)=>{}, columnIdTerm, delimiter = "\t") => {
   return new Promise((resolve, reject) => {
       const parser = parse( {
           delimiter: delimiter || "\t",
@@ -63,14 +145,14 @@ export const readOtuTableToSparse = (path, progressFn = (progress, total, messag
          // from_line: 2
         })
       const records = [];
-      let colums;
+      let columns;
       const rows = [];
       let count = 0; // this is also the row index
       parser.on('readable', function(){
           let record;
           while ((record = parser.read()) !== null) {
-            if(!colums){
-              colums = record.slice(1).map(c => (c === columnIdTerm ? 'id' : c)); // This is the header which gives the column order for the matrix
+            if(!columns){
+              columns = record.slice(1).map(c => (c === columnIdTerm ? 'id' : c)); // This is the header which gives the column order for the matrix
            
             } else if(recordHasRowId(record)) {
               record.slice(1).forEach((element, index) => {
@@ -100,7 +182,7 @@ export const readOtuTableToSparse = (path, progressFn = (progress, total, messag
         });
         // Test that the parsed records matched the expected records
         parser.on('end', function(){
-          resolve([records, rows, colums])
+          resolve([records, rows, columns])
         });
       const inputStream = fs.createReadStream(path);    
       inputStream.pipe(parser)

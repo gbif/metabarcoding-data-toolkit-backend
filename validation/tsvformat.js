@@ -94,6 +94,7 @@ export const otuTableHasSamplesAsColumns = async (files) => {
             
             console.log(error?.message)
         }
+        console.log("The sample id term is: "+sampleIdTerm)
         let otuTableColumns;
         try {
             console.log(`OTU table: ${files.otuTable.path} delimiter: ${files.otuTable.properties.delimiter}`)
@@ -140,13 +141,13 @@ export const otuTableHasSamplesAsColumns = async (files) => {
                 message: `${otuTableColumnsNotInSamples.length} of ${otuTableColumns.length -1 } columns in the OTU table does not have a corresponding row in the sample file`})
             }
         // more than 95% of the samples has a corresponding column in the OTUtable - we could be more strict?
-        const hasSamplesAsColumns = !!sampleIdTerm && (sampleIdsNotInOtuTableColumns.length /  samples.length * 100 ) < 25;
-        
-        return {
+        const hasSamplesAsColumns = !!sampleIdTerm && (sampleIdsNotInOtuTableColumns.length /  samples.length * 100 ) <= 5;
+        console.log(`##### hasSamplesAsColumns `+hasSamplesAsColumns)
+        return [
             hasSamplesAsColumns,
             errors,
-            invalid: !sampleIdTerm
-        }
+            !sampleIdTerm
+        ]
        /*  if(errors.length > 0){
            
             throw errors

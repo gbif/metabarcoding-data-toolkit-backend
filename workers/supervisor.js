@@ -112,6 +112,9 @@ export const processDataset = (id, version, job) => {
             if(message?.type === 'missingSampleRecords'){
                 job.processingErrors = { ...(job.processingErrors || {}), missingSamples: message?.payload }
             }
+            if(message?.type === 'consistencyCheck'){
+                job.processingErrors = { ...(job.processingErrors || {}), consistencyCheck: message?.payload }
+            }
 
             
 

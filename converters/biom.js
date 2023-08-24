@@ -51,8 +51,8 @@ export const metaDataFileToMap = async (file, mapping, processFn = (progress, to
 }
 
 // converts an otu table with sample and taxon metada files to BIOM format
-export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = true, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id) => {
-
+export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = false, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id) => {
+    console.log("SAMPLES AS COLUMNS: "+samplesAsColumns)
    /*  processFn(0, 0, 'Reading sample file')
     const samples = await streamReader.readMetaDataAsMap(sampleFile, processFn, termMapping.samples)
      processFn(0, 0, 'Reading taxon file', {sampleCount: samples.size});
@@ -62,7 +62,11 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = tru
     console.log(`Taxa: ${taxa.size} samples: ${samples.size}`) 
     const columnIdTerm = getColumnIdTerm(samplesAsColumns, termMapping)
     console.log("Column ID term: "+columnIdTerm)
-    const [otuTable, rows, columns] = await streamReader.readOtuTableToSparse(otuTableFile?.path, processFn, columnIdTerm, otuTableFile?.properties?.delimiter);
+
+
+    const dimensionXdataMap = samplesAsColumns ? samples : taxa;
+    const dimensionYdataMap = samplesAsColumns ? taxa : samples;
+    const [otuTable, rows, columns, consistencyCheck] = await streamReader.readOtuTableToSparse(otuTableFile?.path, processFn, columnIdTerm, otuTableFile?.properties?.delimiter, dimensionXdataMap, dimensionYdataMap);
     console.log("Finished readOtuTableToSparse")
      console.log("Columns "+columns.length)
     // console.log(columns)
@@ -70,24 +74,21 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = tru
   //   console.log(rows)
    //console.log(rows.map(r => getMetaDataRow(samplesAsColumns ? taxa.get(r) : samples.get(r) )))
 
-    /* in the case of sample ids not in the sample file, make blank sample records so the Biom creation does not break. 
-    The missing ids should be reported back to the user
-
-    */
-   let sampleIdsWithNoRecordInSampleFile = [];
+   
+  /*  let sampleIdsWithNoRecordInSampleFile = [];
     columns.forEach(c => {
         if(!samples.has(c)){
             sampleIdsWithNoRecordInSampleFile.push(c)
             samples.set(c, {id: c})
         }
-    })
-
-    // The streamreader now filters out null ids  - it shouldnt be neccessary to filter before map?
-   // const cols = samplesAsColumns ? columns.filter(c => !!c).map(c => getMetaDataRow(samples.get(c))) : columns.filter(c => !!c).map(c => getMetaDataRow( taxa.get(c)));
-   // const rws = samplesAsColumns ? rows.filter(c => !!c).map(r => getMetaDataRow(taxa.get(r))) : rows.filter(c => !!c).map(r => getMetaDataRow(samples.get(r) ));
-     // The streamreader now filters out null ids  - it shouldnt be neccessary to filter before map?
-     const cols = samplesAsColumns ? columns.map(c => getMetaDataRow(samples.get(c))) : columns.map(c => getMetaDataRow( taxa.get(c)));
-     const rws = samplesAsColumns ? rows.map(r => getMetaDataRow(taxa.get(r))) : rows.map(r => getMetaDataRow(samples.get(r) ));
+    }) */
+    const sampleIdsWithNoRecordInSampleFile = samplesAsColumns ? consistencyCheck.dimensionXidsWithNoRecordInDataFile : consistencyCheck.dimensionYidsWithNoRecordInDataFile;
+    const taxonIdsWithNoRecordInTaxonFile = samplesAsColumns ? consistencyCheck.dimensionYidsWithNoRecordInDataFile : consistencyCheck.dimensionXidsWithNoRecordInDataFile;
+    const sampleIdsWithNoRecordInOtuTable = samplesAsColumns ? consistencyCheck.dimensionXidsWithNoRecordInOtuTable : consistencyCheck.dimensionYidsWithNoRecordInOtuTable;
+    const taxonIdsWithNoRecordInOtuTable = samplesAsColumns ? consistencyCheck.dimensionYidsWithNoRecordInOtuTable : consistencyCheck.dimensionXidsWithNoRecordInOtuTable
+    
+    const cols = columns.map(c => getMetaDataRow(dimensionXdataMap.get(c))) ;
+     const rws = rows.map(r => getMetaDataRow(dimensionYdataMap.get(r))) ;
     try {
       const b = await new Promise((resolve, reject) => {
           try {
@@ -107,7 +108,7 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = tru
                   biom.transpose()
                 }
                 console.log("Resolve toBiom")
-               resolve({biom, sampleIdsWithNoRecordInSampleFile});
+               resolve({biom, consistencyCheck: {sampleIdsWithNoRecordInSampleFile, taxonIdsWithNoRecordInTaxonFile, sampleIdsWithNoRecordInOtuTable, taxonIdsWithNoRecordInOtuTable } /* sampleIdsWithNoRecordInSampleFile */});
           } catch (error) {
               reject(error)
           }

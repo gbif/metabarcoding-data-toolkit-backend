@@ -6,7 +6,7 @@ import { getCurrentDatasetVersion, writeProcessingReport, wipeGeneratedFilesAndR
 import { determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders } from '../validation/tsvformat.js'
 import {uploadedFilesAndTypes} from '../validation/files.js'
 
-import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, missingSampleRecords} from "./util.js"
+import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, missingSampleRecords, consistencyCheckReport} from "./util.js"
 import { assignTaxonomy } from '../classifier/index.js';
 
 
@@ -20,10 +20,9 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
 
    // const filePaths = await determineFileNames(id, version);
     
-    let samplesAsColumns;
 
-   
-    let {sequencesAsHeaders, errors} =   await otuTableHasSamplesAsColumns(fileMap/* , mapping ?  _.get(mapping, 'samples.id', 'id') : null */);
+    let sequencesAsHeaders;
+    const [samplesAsColumns, errors] =   await otuTableHasSamplesAsColumns(fileMap/* , mapping ?  _.get(mapping, 'samples.id', 'id') : null */);
     if (!samplesAsColumns) {
         sequencesAsHeaders = await otuTableHasSequencesAsColumnHeaders(fileMap.otuTable)
 
@@ -56,11 +55,13 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     beginStep('convertToBiom')
     updateStatusOnCurrentStep(0, taxa.size, 'Reading OTU table', {taxonCount: taxa.size});
     console.log(`TSV worker running id ${id}`)
-    const {biom, sampleIdsWithNoRecordInSampleFile} = await toBiom(fileMap?.otuTable, samples, taxa, samplesAsColumns,  updateStatusOnCurrentStep , mapping, id)
-    if(sampleIdsWithNoRecordInSampleFile?.length > 0){
+    console.log(`#### TSV worker samplesAsColumns ${samplesAsColumns}`)
+    const {biom, consistencyCheck} = await toBiom(fileMap?.otuTable, samples, taxa, samplesAsColumns,  updateStatusOnCurrentStep , mapping, id)
+    consistencyCheckReport(consistencyCheck)
+    /* if(sampleIdsWithNoRecordInSampleFile?.length > 0){
         // Some ids did not have a corresponding entry in the sample file
         missingSampleRecords(sampleIdsWithNoRecordInSampleFile)
-    }
+    } */
     stepFinished('convertToBiom');
     beginStep('addReadCounts')
     await addReadCounts(biom, updateStatusOnCurrentStep)

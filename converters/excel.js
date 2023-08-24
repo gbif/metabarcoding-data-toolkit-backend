@@ -6,7 +6,7 @@ import config from '../config.js'
 import util from "../util/index.js"
 import {writeMapping} from '../util/filesAndDirectories.js'
 import {getGroupMetaDataAsJsonString} from '../validation/termMapper.js'
-
+// import {getDataForBiomFile, getMetadataRowsWithNoIdInOTUtable} from './dataintegrity.js';
 
 
 const extractTaxaFromOTUtable = (otuTable, samples, termMapping ) => {
@@ -161,53 +161,64 @@ export const toBiom = async (otuTable, sampleMap, taxaMap, termMapping, processF
 
   return new Promise((resolve, reject) => {
     try {
-     /*  const {
-        otuTable, 
-        samples,
-        taxa
-    } = data;
-      const sampleMap = getMapFromMatrix(samples.data,  termMapping.samples)
-      const taxaMap = getMapFromMatrix(taxa.data, termMapping.taxa, true) */
+     
+      let sampleIdsWithNoRecordInSampleFile = []
+      let sampleIdsWithNoRecordInOtuTable = []
+      let taxonIdsWithNoRecordInTaxonFile = [];
+      let taxonIdsWithNoRecordInOtuTable = [];
       const sparseData = [];
       let columns = otuTable.data[0].slice(1);
-      processFn(columns.length, columns.length, 'Reading OTU table from spreadsheet', {sampleCount: columns.length});
-
+      const otuTableColumnIds = new Set(columns)
+      sampleIdsWithNoRecordInOtuTable = [...sampleMap].filter(e => !otuTableColumnIds.has(e[0])).map(e => e[0])
+      const cols = columns.filter(c => {
+        
+        if(sampleMap.has(c)){
+          return true
+        } else {
+          sampleIdsWithNoRecordInSampleFile.push(c)
+          return false;
+        }
+      })
+      processFn(columns.length, columns.length, 'Reading OTU table from spreadsheet', {sampleCount: columns.length - sampleIdsWithNoRecordInSampleFile.length});
+      // rows will only be rows that has a value in the taxon file
       let rows = [];
+      // otuTableRowIds will be all ids in the OTU table
+      const otuTableRowIds = new Set()
       console.log(otuTable.data.length)
 
       otuTable.data.slice(1).forEach((row, rowIndex) => {
-        if(!!row[0]){
+        if(!!row[0] && taxaMap.has(row[0])){
           row.slice(1).forEach((val, index) => {
-            if(!isNaN(Number(val)) && Number(val) > 0){
+            if(!isNaN(Number(val)) && Number(val) > 0 && sampleMap.has(columns[index])){
               sparseData.push([rowIndex, index, Number(val)])
-            }
+            } 
           })
           rows.push(row[0])
           if((rowIndex +1 % 100) === 0){
             processFn(rowIndex, rows.length, 'Reading OTU table  from spreadsheet', {taxonCount: rows.length});
 
           }
-        }  
-      })
-      processFn(rows.length, rows.length, 'Reading OTU table  from spreadsheet', {taxonCount: rows.length});
-      let sampleIdsWithNoRecordInSampleFile = [];
-      columns.forEach(c => {
-        if(!sampleMap.has(c)){
-            sampleIdsWithNoRecordInSampleFile.push(c)
+        } else if(!!row[0] && !taxaMap.has(row[0])){
+          taxonIdsWithNoRecordInTaxonFile.push(row[0])
+        }
+        if(!!row[0]){
+          otuTableRowIds.add(row[0])
         }
       })
+      taxonIdsWithNoRecordInOtuTable = [...taxaMap].filter(e => !otuTableRowIds.has(e[0])).map(e => e[0])
+      processFn(rows.length, rows.length, 'Reading OTU table  from spreadsheet', {taxonCount: rows.length});
 
-      console.log(`Samples in metadata: ${sampleMap.size} in OTU table: ${columns.length}`)
-      console.log(`Taxa in metadata: ${taxaMap.size} in OTU table: ${rows.length}`)
+      console.log(`Samples in metadata: ${sampleMap.size} in OTU table: ${columns.length} ${cols}`)
+      console.log(`Taxa in metadata: ${taxaMap.size} in OTU table: ${rows.length}  ${rows}`)
       const biom = new Biom({
-        rows: rows.map(r => ({id: r, metadata: taxaMap.get(r)})), 
+        rows: rows.map(r => ({id: r, metadata: taxaMap.get(r)})),// rows.map(r => ({id: r, metadata: taxaMap.get(r)})), 
         comment: getGroupMetaDataAsJsonString(termMapping),
-        columns: columns.map(c => ({id: c, metadata: sampleMap.get(c)})),
+        columns: cols.map(c => ({id: c, metadata: sampleMap.get(c)})),// columns.map(c => ({id: c, metadata: sampleMap.get(c)})),
         matrix_type: 'sparse',
-        shape: [rows.length, columns.length], //[taxaMap.size, sampleMap.size],
+        shape: [rows.length, cols.length], // [rows.length, columns.length], //[taxaMap.size, sampleMap.size],
         data: sparseData
       })
-      resolve({biom, sampleIdsWithNoRecordInSampleFile})
+      resolve({biom, consistencyCheck: {sampleIdsWithNoRecordInOtuTable, sampleIdsWithNoRecordInSampleFile, taxonIdsWithNoRecordInOtuTable, taxonIdsWithNoRecordInTaxonFile} /* sampleIdsWithNoRecordInSampleFile */})
     } catch (error) {
       console.log(error)
       reject(error)

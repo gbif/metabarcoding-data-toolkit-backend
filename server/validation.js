@@ -29,7 +29,7 @@ export const validate = async (id, user) => {
 
      let validationErrors = []
       
-      let {samplesAsColumns, errors, invalid}  = await otuTableHasSamplesAsColumns(fileMap, validationErrors);
+      let [samplesAsColumns, errors, invalid] = await otuTableHasSamplesAsColumns(fileMap, validationErrors);
       validationErrors = [...validationErrors, ...errors]
       if(invalid){
         files.format = "INVALID";

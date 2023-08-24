@@ -80,6 +80,20 @@ export const missingSampleRecords = errors => {
     }
 }
 
+export const consistencyCheckReport = data => {
+
+    if (typeof process?.send === 'function') {
+        // process.send('stepFinished')
+         process.send({
+            type: 'consistencyCheck',
+            payload: data
+
+        }
+            
+        ) 
+    }
+}
+
 export const blastErrors = errors => {
 
     if (typeof process?.send === 'function') {
