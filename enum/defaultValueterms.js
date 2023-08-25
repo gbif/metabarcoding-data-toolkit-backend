@@ -9,7 +9,7 @@ export default [
         name: 'target_gene',
         description: "The marker / target gene. Examples: ITS, 16S, 12S, COI",
         defaultRequired: true,
-        vocabulary: ["COI", "ITS", "ITS1", "ITS2", "16S", "18S", "23S", "5S"],
+        vocabulary: ["COI", "ITS", "ITS1", "ITS2", "12S", "16S", "18S", "23S", "5S"],
         biomGroup: 'sample'
     } ,
     {
