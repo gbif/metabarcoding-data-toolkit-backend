@@ -65,14 +65,19 @@ const unzipIfNeeded = async (id, version = 1) => {
     }   
 }
 
+const getfastaFile = (files) => files.find(f => f.name.endsWith('.fasta') || f.name.endsWith('.fa'))
+
 const determineFormat = (files) => {
-    // If we store a mapping json in the same directory this function will not work.
+    console.log("FILES:")
+    console.log(files)
+
     if(files.length === 1 && files[0].mimeType === 'application/x-hdf5'){
         return 'BIOM_2_1'
     } else if(files.length === 1 && files[0].mimeType === 'application/json'){
         return 'BIOM_1'
-    } else if(files.length === 1 && files[0].mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'){
-        return 'XLSX'
+    } else if(files.length < 3 && files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') ){
+        const fasta = getfastaFile(files);
+        return !!fasta ? 'XLSX_WITH_FASTA' : 'XLSX'
     } else if(files.length === 3){
         return 'TSV_3_FILE'
     } else if(files.length === 2){

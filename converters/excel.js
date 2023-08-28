@@ -208,8 +208,8 @@ export const toBiom = async (otuTable, sampleMap, taxaMap, termMapping, processF
       taxonIdsWithNoRecordInOtuTable = [...taxaMap].filter(e => !otuTableRowIds.has(e[0])).map(e => e[0])
       processFn(rows.length, rows.length, 'Reading OTU table  from spreadsheet', {taxonCount: rows.length});
 
-      console.log(`Samples in metadata: ${sampleMap.size} in OTU table: ${columns.length} ${cols}`)
-      console.log(`Taxa in metadata: ${taxaMap.size} in OTU table: ${rows.length}  ${rows}`)
+      console.log(`Samples in metadata: ${sampleMap.size} in OTU table: ${columns.length}`)
+      console.log(`Taxa in metadata: ${taxaMap.size} in OTU table: ${rows.length}`)
       const biom = new Biom({
         rows: rows.map(r => ({id: r, metadata: taxaMap.get(r)})),// rows.map(r => ({id: r, metadata: taxaMap.get(r)})), 
         comment: getGroupMetaDataAsJsonString(termMapping),

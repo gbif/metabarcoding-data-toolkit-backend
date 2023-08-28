@@ -13,7 +13,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const workers = {
     TSV_3_FILE: 'tsvworker.js',
-    XLSX: 'xlsxworker.js'
+    XLSX: 'xlsxworker.js',
+    XLSX_WITH_FASTA: 'xlsxworker.js'
 }
 
 const prepareForProcessing = async (id, version, job) => {

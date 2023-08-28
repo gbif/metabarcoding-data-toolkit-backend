@@ -357,4 +357,12 @@ export const wipeGeneratedDwcFiles = async (id, version) => {
 
 }
 
+export const mergeFastaMapIntoTaxonMap = (fastaMap, taxonMap) => {
+
+  taxonMap.forEach((value, key) => {
+    taxonMap.set(key, {...value, DNA_sequence: fastaMap.get(key) || ""})
+  })
+ return taxonMap;
+}
+
 

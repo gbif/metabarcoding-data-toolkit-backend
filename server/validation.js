@@ -76,12 +76,13 @@ export const validate = async (id, user) => {
       await writeProcessingReport(id,version, report)
       return report;
 
-    } else if(files.format === 'XLSX') {
+    } else if(files.format.startsWith('XLSX')) {
       console.log("XLSX coming in")
+      const xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
       let headers_ = {};
       let sheets_ = {};
       try {
-         const {headers, sheets} = await readXlsxHeaders(id, files?.files[0]?.name, version)
+         const {headers, sheets} = await readXlsxHeaders(id, xlsx?.name, version)
         
          headers_ = headers
          sheets_ = sheets
@@ -89,8 +90,8 @@ export const validate = async (id, user) => {
         console.log(error)
       }
     
-      if(sheets_ && files?.files?.[0]){
-        files.files[0].sheets = sheets_;
+      if(sheets_ && xlsx){
+        xlsx.sheets = sheets_;
       }
      const report = {...processionReport, ...headers_, unzip: false, files:{...files, id: id}};
      await writeProcessingReport(id, version, report)

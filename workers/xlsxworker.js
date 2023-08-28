@@ -1,12 +1,12 @@
 import { addReadCounts } from '../converters/biom.js';
 import { getMapFromMatrix, readWorkBookFromFile, toBiom } from "../converters/excel.js"
 import { uploadedFilesAndTypes, getMimeFromPath, getFileSize, unzip } from '../validation/files.js'
-
+import { readFastaAsMap } from '../util/streamReader.js';
 import _ from 'lodash'
-import { getCurrentDatasetVersion, writeProcessingReport, wipeGeneratedFilesAndResetProccessing, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
+import { mergeFastaMapIntoTaxonMap, readMapping } from '../util/filesAndDirectories.js'
 import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, consistencyCheckReport} from "./util.js"
 import { assignTaxonomy } from '../classifier/index.js';
-
+import config from '../config.js';
 
 
 const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
@@ -14,7 +14,8 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
         console.log("Processing dataset "+id + " version "+version)
     const mapping = await readMapping(id, version);
     const  files = await uploadedFilesAndTypes(id, version)
-
+    const xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    const fasta = files.files.find(f => f.name.endsWith('.fasta') || f.name.endsWith('.fa'))
    /*  if (filePaths?.samples) {
         job.sampleHeaders = await readTsvHeaders(filePaths?.samples)
     }
@@ -23,10 +24,15 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     } */
     beginStep('readData')
    // const biom = await toBiom(filePaths.otuTable, filePaths.samples, filePaths.taxa, samplesAsColumns,  updateStatusOnCurrentStep , mapping, id)
-   const {samples, taxa, otuTable} = await readWorkBookFromFile(id, files.files[0].name, version, mapping, updateStatusOnCurrentStep)
+   const {samples, taxa, otuTable} = await readWorkBookFromFile(id, xlsx.name, version, mapping, updateStatusOnCurrentStep)
 
    const sampleMap = getMapFromMatrix(samples.data,  mapping.samples)
-      const taxaMap = getMapFromMatrix(taxa.data, mapping.taxa, true)
+   const taxaMap = getMapFromMatrix(taxa.data, mapping.taxa, true)
+   if(fasta){
+    const fastaMap = await readFastaAsMap(`${config.dataStorage}${id}/${version}/original/${fasta.name}`);
+    // adds sequences from fasta to taxonomy file
+    mergeFastaMapIntoTaxonMap(fastaMap, taxaMap)
+   }
 
     stepFinished('readData');
 

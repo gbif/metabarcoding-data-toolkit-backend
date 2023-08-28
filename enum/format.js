@@ -4,6 +4,10 @@ export default {
          "name": "3 file TSV format",
          "description": "3 tab-delimited files: ASV Table, metadata for samples, metadata for taxa/ASVs (including the sequence)"
     },
+    "TSV_3_FILE_WITH_FASTA": {
+        "name": "3 file TSV format with a fasta file",
+        "description": "3 tab-delimited files: ASV Table, metadata for samples, metadata for taxa/ASVs, sequences in a separate fasta file"
+   },
     "TSV_2_FILE": {
         "name": "2 file TSV format",
         "description": "2 tab-delimited files: ASV Table with taxa as rows + a sample metadata file. Metadata about the taxa (including the sequence) are given in columns before or after sample IDs."
@@ -11,6 +15,10 @@ export default {
     "XLSX": {
         "name": "xlsx format",
         "description": "xlsx workbook with 3 sheets: ASV Table, metadata for samples, metadata for taxa/ASVs (including the sequence)"
+    },
+    "XLSX_WITH_FASTA": {
+        "name": "xlsx format with a fasta file",
+        "description": "xlsx workbook with 3 sheets: ASV Table, metadata for samples, metadata for taxa/ASVs (including the sequence), and a fasta file with sequences"
     },
     "BIOM_1": {
         "name": "BIOM 1.0 format",

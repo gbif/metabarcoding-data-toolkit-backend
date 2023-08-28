@@ -302,11 +302,59 @@ const mapRecord = record => {
   })
 }
 
+export const readFastaAsMap = (path, progressFn = ()=>{},) => {
+  return new Promise((resolve, reject) => {
+    const parser = parse({
+        delimiter: "\n",
+        record_delimiter: ">",
+        columns: false,
+        ltrim: true,
+        rtrim: true,
+        relax_column_count: true
+      })
+    const records = new Map();
+    let count = 0;
+    parser.on('readable', function(){
+        let record;
+        while ((record = parser.read()) !== null) {
+           
+         // const splitted = record[0].split("\n")
+          if(!!record[0] && !!record[1]){
+            records.set(record[0], record[1])  
+         count++;
+          }
+          
+          if(count % 1000 === 0){
+            try {
+              progressFn(count)
+            } catch (error) {
+              console.log(error)
+            }
+            
+            //  console.log("Count "+count)
+            } 
+        }
+      });
+      // Catch any error
+      parser.on('error', function(err){
+        console.error(err.message);
+        reject(err)
+      });
+      // Test that the parsed records matched the expected records
+      parser.on('end', function(){
+        resolve(records)
+      });
+    const inputStream = fs.createReadStream(path);    
+    inputStream.pipe(parser)
+})
+}
+
 export default {
   readOtuTable,
   readOtuTableToSparse,
   readMetaData,
-  readMetaDataAsMap
+  readMetaDataAsMap,
+  readFastaAsMap
 }
 
 /* module.exports = {
