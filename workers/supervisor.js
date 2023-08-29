@@ -12,7 +12,8 @@ import {  readTsvHeaders } from '../util/filesAndDirectories.js'
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const workers = {
-    TSV_3_FILE: 'tsvworker.js',
+    TSV: 'tsvworker.js',
+    TSV_WITH_FASTA: 'tsvworker.js',
     XLSX: 'xlsxworker.js',
     XLSX_WITH_FASTA: 'xlsxworker.js'
 }

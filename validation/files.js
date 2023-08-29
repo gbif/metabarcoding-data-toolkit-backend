@@ -2,6 +2,8 @@ import fs from 'fs'
 import config from '../config.js'
 import {execSync, exec}  from 'child_process';
 import { determineFileNames, analyseCsv } from './tsvformat.js';
+import {readDefaultValues} from '../util/streamReader.js';
+import {writeMapping} from '../util/filesAndDirectories.js'
 // there may be hidden 'application/octet-stream' files when unzipping an excel workbook
 const mimeTypesToBeRemoved = ['application/zip', 'application/octet-stream']
 
@@ -68,21 +70,20 @@ const unzipIfNeeded = async (id, version = 1) => {
 const getfastaFile = (files) => files.find(f => f.name.endsWith('.fasta') || f.name.endsWith('.fa'))
 
 const determineFormat = (files) => {
-    console.log("FILES:")
-    console.log(files)
-
+   
+    const fasta = getfastaFile(files);
     if(files.length === 1 && files[0].mimeType === 'application/x-hdf5'){
         return 'BIOM_2_1'
     } else if(files.length === 1 && files[0].mimeType === 'application/json'){
         return 'BIOM_1'
     } else if(files.length < 3 && files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') ){
-        const fasta = getfastaFile(files);
+        
         return !!fasta ? 'XLSX_WITH_FASTA' : 'XLSX'
-    } else if(files.length === 3){
-        return 'TSV_3_FILE'
-    } else if(files.length === 2){
+    } else if(files.length >= 2){
+        return  !!fasta ? 'TSV_WITH_FASTA' : 'TSV'
+    } /* else if(files.length === 2){
         return 'TSV_2_FILE'
-    } else {
+    } */ else {
         console.log('Unsupported format')
         console.log(JSON.stringify(files))
         return 'UNSUPPORTED_FORMAT'
@@ -114,7 +115,7 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
 
         const format = determineFormat(files);
 
-        if(['TSV_3_FILE', 'TSV_2_FILE'].includes(format)){
+        if(format.startsWith("TSV")){
             const filePaths = await determineFileNames(id, version);
 
              files = files.map( f => {
@@ -143,6 +144,20 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
             if(otuTableFile) {
                 const csvProperties = await analyseCsv(otuTableFile.path)
                 otuTableFile.properties =  csvProperties; // {delimiter : csvProperties.delimiter} ;
+            }
+
+            let defaultValuesFile = files.find(f => f.type === "defaultValues");
+            if(defaultValuesFile) {
+                const csvProperties = await analyseCsv(defaultValuesFile.path)
+                defaultValuesFile.properties =  csvProperties; // {delimiter : csvProperties.delimiter} ;
+                const defaultValues = await readDefaultValues(defaultValuesFile?.path, defaultValuesFile?.properties?.delimiter);
+                await writeMapping(id, version, 
+                    {
+                      samples: {},
+                      taxa: {},
+                      defaultValues
+                    })  
+
             }
 
         }

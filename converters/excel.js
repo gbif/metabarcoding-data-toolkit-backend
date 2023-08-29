@@ -61,9 +61,8 @@ const getTaxonHeaderIndicesFromOtuTable = (otuTable, samples, termMapping ) => {
 }
 
 const determineFileNames = (sheets, termMapping) => {
-  console.log('determineFileNames')
+
   try {
-      
       let otuTable = sheets.find(f => {
           
           let rawFileName = f.name.replace(/[^0-9a-z]/gi, '').toLowerCase();

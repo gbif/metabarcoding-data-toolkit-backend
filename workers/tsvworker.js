@@ -1,13 +1,15 @@
-import { writeBiom, toBiom, addReadCounts, metaDataFileToMap } from '../converters/biom.js';
-import { writeHDF5 } from '../converters/hdf5.js'
+import { toBiom, addReadCounts, metaDataFileToMap } from '../converters/biom.js';
 // import config from '../config.js'
 import _ from 'lodash'
-import { getCurrentDatasetVersion, writeProcessingReport, wipeGeneratedFilesAndResetProccessing, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
-import { determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders } from '../validation/tsvformat.js'
+import { mergeFastaMapIntoTaxonMap, readMapping } from '../util/filesAndDirectories.js'
+import { otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders } from '../validation/tsvformat.js'
 import {uploadedFilesAndTypes} from '../validation/files.js'
 
 import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, missingSampleRecords, consistencyCheckReport} from "./util.js"
+import { readFastaAsMap } from '../util/streamReader.js';
+
 import { assignTaxonomy } from '../classifier/index.js';
+import config from '../config.js';
 
 
 
@@ -18,7 +20,7 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     const files = await uploadedFilesAndTypes(id, version)
     const fileMap = _.keyBy(files.files, "type")
 
-   // const filePaths = await determineFileNames(id, version);
+    const fasta = files.files.find(f => f.name.endsWith('.fasta') || f.name.endsWith('.fa'))
     
 
     let sequencesAsHeaders;
@@ -28,14 +30,6 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
 
     } 
     
-     
-   /*  if (filePaths?.samples) {
-        job.sampleHeaders = await readTsvHeaders(filePaths?.samples)
-    }
-    if (filePaths?.taxa) {
-        job.taxonHeaders = await readTsvHeaders(filePaths?.taxa)
-    } */
-    
     beginStep('readData')
     updateStatusOnCurrentStep(0, 0, 'Reading sample file')
     const samples = await metaDataFileToMap(fileMap?.samples, mapping.samples, updateStatusOnCurrentStep)  // await streamReader.readMetaDataAsMap(sampleFile, processFn, termMapping.samples)
@@ -43,6 +37,11 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     const taxa = await metaDataFileToMap(fileMap?.taxa, mapping.taxa, updateStatusOnCurrentStep)// await streamReader.readMetaDataAsMap(taxaFile,  processFn, termMapping.taxa)
     updateStatusOnCurrentStep(taxa.size, taxa.size, 'Reading taxon file', {taxonCount: taxa.size});
 
+    if(fasta){
+        const fastaMap = await readFastaAsMap(`${config.dataStorage}${id}/${version}/original/${fasta.name}`);
+        // adds sequences from fasta to taxonomy file
+        mergeFastaMapIntoTaxonMap(fastaMap, taxa)
+       }
     stepFinished('readData');
 
     if(systemShouldAssignTaxonomy){
@@ -55,7 +54,7 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     beginStep('convertToBiom')
     updateStatusOnCurrentStep(0, taxa.size, 'Reading OTU table', {taxonCount: taxa.size});
     console.log(`TSV worker running id ${id}`)
-    console.log(`#### TSV worker samplesAsColumns ${samplesAsColumns}`)
+   // console.log(`#### TSV worker samplesAsColumns ${samplesAsColumns}`)
     const {biom, consistencyCheck} = await toBiom(fileMap?.otuTable, samples, taxa, samplesAsColumns,  updateStatusOnCurrentStep , mapping, id)
     consistencyCheckReport(consistencyCheck)
     /* if(sampleIdsWithNoRecordInSampleFile?.length > 0){

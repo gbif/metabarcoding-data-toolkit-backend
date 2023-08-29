@@ -10,31 +10,38 @@ const dnaSequencePattern = /[ACGTURYSWKMBDHVNacgturyswkmbdhvn]/g
 const minimumLengthForASequence = 100;
 
 
+
+
 export const determineFileNames = async (id, version) => {
-    console.log('determineFileNames')
+
     try {
         const fileList = await fs.promises.readdir(`${config.dataStorage}${id}/${version}/original`)
-        console.log(fileList)
         const otutable = fileList.find(f => {
             let splitted = f.split('.') // ignore file extension
             let rawFileName = splitted.slice(0,-1).join('.').replace(/[^0-9a-z]/gi, '').toLowerCase();
             return filenames.otutable.indexOf(rawFileName) > -1;
         })
-        console.log(`OTU table ${otutable}`)
+     //   console.log(`OTU table ${otutable}`)
         const samples = fileList.find(f => {
             let splitted = f.split('.')// ignore file extension
             let rawFileName = splitted.slice(0,-1).join('.').replace(/[^0-9a-z]/gi, '').toLowerCase();
             return filenames.samples.indexOf(rawFileName) > -1;
         })
 
-        console.log(`samples ${samples}`)
+     //   console.log(`samples ${samples}`)
         let taxa =  fileList.find(f => {
             let splitted = f.split('.')// ignore file extension
             let rawFileName = splitted.slice(0,-1).join('.').replace(/[^0-9a-z]/gi, '').toLowerCase();
             return filenames.taxa.indexOf(rawFileName) > -1;
         });
 
-        console.log(`taxa ${taxa}`)
+        let defaultvalues =  fileList.find(f => {
+            let splitted = f.split('.')// ignore file extension
+            let rawFileName = splitted.slice(0,-1).join('.').replace(/[^0-9a-z]/gi, '').toLowerCase();
+            return filenames.defaultvalues.indexOf(rawFileName) > -1;
+        });
+
+    //    console.log(`taxa ${taxa}`)
         let result =  {};
         if(taxa){
             result.taxa = `${config.dataStorage}${id}/${version}/original/${taxa}`
@@ -44,6 +51,9 @@ export const determineFileNames = async (id, version) => {
         }
         if(samples){
             result.samples = `${config.dataStorage}${id}/${version}/original/${samples}`
+        }
+        if(defaultvalues){
+            result.defaultValues = `${config.dataStorage}${id}/${version}/original/${defaultvalues}`
         }
         return result;
     } catch (error) {
@@ -69,7 +79,7 @@ export const hasIdColumn = async (path) => {
 // This function does more than just calculating the direction of the OTU table. It will test CSV parsing of the sample file and throw an error of more than 5% of the samples are not in the OTU table
 
 export const otuTableHasSamplesAsColumns = async (files) => {
-    console.log("hasSamplesAsColumns")
+    // console.log("hasSamplesAsColumns")
     if(!files.samples){
         throw "No sample file"
     } else if(!files.otuTable){
@@ -142,7 +152,7 @@ export const otuTableHasSamplesAsColumns = async (files) => {
             }
         // more than 95% of the samples has a corresponding column in the OTUtable - we could be more strict?
         const hasSamplesAsColumns = !!sampleIdTerm && (sampleIdsNotInOtuTableColumns.length /  samples.length * 100 ) <= 5;
-        console.log(`##### hasSamplesAsColumns `+hasSamplesAsColumns)
+       // console.log(`##### hasSamplesAsColumns `+hasSamplesAsColumns)
         return [
             hasSamplesAsColumns,
             errors,

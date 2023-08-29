@@ -51,6 +51,7 @@ export const validate = async (id, user) => {
            
       let sequencesAsHeaders = false;
      
+      
       if(!samplesAsColumns){
         try {
           sequencesAsHeaders = await otuTableHasSequencesAsColumnHeaders(fileMap.otuTable)
@@ -117,15 +118,13 @@ export default (app) => {
           res.sendStatus(404);
         } else {
             console.log(`Validating ${req.params.id}`)
-            try {
-                
+            try {            
                 let report = await validate(req?.params?.id, req?.user)
                 res.json(report)
             } catch (error) {
                 console.log(error)
                 res.sendStatus(404);
             }
-
           
         }
       });

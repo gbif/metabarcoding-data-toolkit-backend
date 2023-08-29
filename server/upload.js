@@ -26,7 +26,7 @@ const upload = multer({
 })
 
 export default  (app) => {
-  app.post('/dataset/upload', auth.appendUser(), upload.array('tables', 3), async function (req, res, next) {
+  app.post('/dataset/upload', auth.appendUser(), upload.array('tables', 5), async function (req, res, next) {
     if(req?.user){
       await db.createUserDataset(req?.user?.userName, req.id)
       console.log(`Dataset ${req.id} created by ${req?.user?.userName}`)
@@ -35,7 +35,7 @@ export default  (app) => {
     }
     res.send(req.id)
   })
-app.put('/dataset/:id/upload', auth.userCanModifyDataset(), upload.array('tables', 3), function (req, res, next) {
+app.put('/dataset/:id/upload', auth.userCanModifyDataset(), upload.array('tables', 5), function (req, res, next) {
     console.log(req.files)
     console.log(req.id)
     res.send(req?.params?.id)
