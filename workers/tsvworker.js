@@ -32,9 +32,9 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     
     beginStep('readData')
     updateStatusOnCurrentStep(0, 0, 'Reading sample file')
-    const samples = await metaDataFileToMap(fileMap?.samples, mapping.samples, updateStatusOnCurrentStep)  // await streamReader.readMetaDataAsMap(sampleFile, processFn, termMapping.samples)
+    const samples = await metaDataFileToMap(fileMap?.samples, mapping?.samples, updateStatusOnCurrentStep)  // await streamReader.readMetaDataAsMap(sampleFile, processFn, termMapping.samples)
     updateStatusOnCurrentStep(0, 0, 'Reading taxon file', {sampleCount: samples.size});
-    const taxa = await metaDataFileToMap(fileMap?.taxa, mapping.taxa, updateStatusOnCurrentStep)// await streamReader.readMetaDataAsMap(taxaFile,  processFn, termMapping.taxa)
+    const taxa = await metaDataFileToMap(fileMap?.taxa, mapping?.taxa, updateStatusOnCurrentStep)// await streamReader.readMetaDataAsMap(taxaFile,  processFn, termMapping.taxa)
     updateStatusOnCurrentStep(taxa.size, taxa.size, 'Reading taxon file', {taxonCount: taxa.size});
 
     if(fasta){

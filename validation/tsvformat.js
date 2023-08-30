@@ -63,7 +63,7 @@ export const determineFileNames = async (id, version) => {
 
 }
 
-// Check if there is an AD column in a tsv
+// Check if there is an ID column in a tsv
 export const hasIdColumn = async (path) => {
     const columns = await readTsvHeaders(path);
            // Accept id case insensitive
@@ -105,21 +105,22 @@ export const otuTableHasSamplesAsColumns = async (files) => {
             console.log(error?.message)
         }
         console.log("The sample id term is: "+sampleIdTerm)
-        let otuTableColumns;
-        try {
+        let otuTableColumns =  files.otuTable.properties.headers; 
+        let otuTableRowIds =  files.otuTable.properties.rows.slice(1).map(r => r[0]);
+       /*  try {
             console.log(`OTU table: ${files.otuTable.path} delimiter: ${files.otuTable.properties.delimiter}`)
-            otuTableColumns = await readTsvHeaders(files.otuTable.path, files.otuTable.properties.delimiter);
+            otuTableColumns =  files.otuTable.properties.headers; // await readTsvHeaders(files.otuTable.path, files.otuTable.properties.delimiter);
            // console.log(otuTableColumns)
         } catch (error) {
             let splitted = files.otuTable.path.split("/");
             errors.push({file: splitted[splitted.length-1], message: error?.message})
             console.log(error?.message)
-        }
+        } */
         
         
        // const otuTableColumns = await readTsvHeaders(files.otuTable);
        
-       
+       // Check if samples are columns
         const columns = new Set(otuTableColumns.slice(1));
         const sampleIds = new Set(samples.map(s => s[sampleIdTerm]))
         let sampleIdsNotInOtuTableColumns = [];
@@ -134,9 +135,29 @@ export const otuTableHasSamplesAsColumns = async (files) => {
                 otuTableColumnsNotInSamples.push(s);
             }
         })
-        console.log(`samples with no match in OTU table ${sampleIdsNotInOtuTableColumns.length}`)
+       // console.log(`samples with no match in OTU table ${sampleIdsNotInOtuTableColumns.length}`)
+        // Check if samples are rows
+        const rows = new Set(otuTableRowIds)
+        let sampleIdsNotInOtuTableRowIds = [];
+        let otuTableRowIdsNotInSamples = []
+        samples.forEach(s => {
+            if(!rows.has(s[sampleIdTerm])){
+                sampleIdsNotInOtuTableRowIds.push(s[sampleIdTerm]) // ++;
+            }
+        })
+        otuTableRowIds.forEach(rid => {
+            if(!sampleIds.has(rid)){
+                otuTableRowIdsNotInSamples.push(rid);
+            }
+        })
 
-        // Only generate this error if there is a mapping. Files are obviously uploaded before a mapping exists
+        let hasSamplesAsColumns = true;
+        // If there are more sample matches in rows than columns, samples must be in the rows (Y dimension)
+        if(otuTableRowIdsNotInSamples.length < otuTableColumnsNotInSamples.length) {
+            hasSamplesAsColumns = false;
+        }
+
+       if(hasSamplesAsColumns){
         if(sampleIdTerm && sampleIdsNotInOtuTableColumns.length > 0){
             let splitted = files.samples.path.split("/");
             
@@ -150,8 +171,23 @@ export const otuTableHasSamplesAsColumns = async (files) => {
                 file: splitted[splitted.length-1], 
                 message: `${otuTableColumnsNotInSamples.length} of ${otuTableColumns.length -1 } columns in the OTU table does not have a corresponding row in the sample file`})
             }
-        // more than 95% of the samples has a corresponding column in the OTUtable - we could be more strict?
-        const hasSamplesAsColumns = !!sampleIdTerm && (sampleIdsNotInOtuTableColumns.length /  samples.length * 100 ) <= 5;
+       } else {
+        if(sampleIdTerm && sampleIdsNotInOtuTableRowIds.length > 0){
+            let splitted = files.samples.path.split("/");
+            
+            errors.push({
+                file: splitted[splitted.length-1], 
+                message: `${rows.size > 99 ? 'At least ':''}${sampleIdsNotInOtuTableRowIds.length} of ${samples.length} samples are not in the OTU table`})
+        }
+        if(sampleIdTerm && otuTableRowIdsNotInSamples.length > 0){
+            let splitted = files.otuTable.path.split("/");
+            errors.push({
+                file: splitted[splitted.length-1], 
+                message: `${rows.size > 99 ? 'At least ':''}${otuTableRowIdsNotInSamples.length} of ${otuTableColumns.length -1 } columns in the OTU table does not have a corresponding row in the sample file`})
+            }
+       }
+
+        
        // console.log(`##### hasSamplesAsColumns `+hasSamplesAsColumns)
         return [
             hasSamplesAsColumns,

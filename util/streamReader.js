@@ -368,8 +368,7 @@ export const readDefaultValues = (path, delimiter = "\t") => {
          // const splitted = record[0].split("\n")
           if(!!record[0] && !!record[1]){
             records[record[0]] = record[1]  
-          }
-          
+          }     
           
         }
       });
