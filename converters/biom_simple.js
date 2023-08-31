@@ -1,5 +1,5 @@
 // This is simply the biom converter without the processFn used to report progress. For command line purposes it will be nice to have a "clean" converter
-import {streamReader} from '../util/index.js'
+import streamReader from '../util/streamReader.js'
 import fs from 'fs';
 import {Biom} from 'biojs-io-biom';
 const getMetaDataRow = row => ({id: row.id, metadata: row})

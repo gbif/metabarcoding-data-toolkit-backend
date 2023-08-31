@@ -7,7 +7,7 @@ import streamReader from '../util/streamReader.js'
 import {readTsvHeaders} from '../util/filesAndDirectories.js'
 import _ from "lodash"
 const dnaSequencePattern = /[ACGTURYSWKMBDHVNacgturyswkmbdhvn]/g
-const minimumLengthForASequence = 100;
+const minimumLengthForASequence = 75;
 
 
 
@@ -172,18 +172,21 @@ export const otuTableHasSamplesAsColumns = async (files) => {
                 message: `${otuTableColumnsNotInSamples.length} of ${otuTableColumns.length -1 } columns in the OTU table does not have a corresponding row in the sample file`})
             }
        } else {
-        if(sampleIdTerm && sampleIdsNotInOtuTableRowIds.length > 0){
+       /*  if(sampleIdTerm && sampleIdsNotInOtuTableRowIds.length > 0){
             let splitted = files.samples.path.split("/");
-            
+            console.log(`sampleIdsNotInOtuTableRowIds:::::`)
+            console.log(sampleIdsNotInOtuTableRowIds)
             errors.push({
                 file: splitted[splitted.length-1], 
-                message: `${rows.size > 99 ? 'At least ':''}${sampleIdsNotInOtuTableRowIds.length} of ${samples.length} samples are not in the OTU table`})
-        }
+                message: `${rows.size > 98 ? 'At least ':''}${sampleIdsNotInOtuTableRowIds.length} of ${samples.length} samples are not in the OTU table`})
+        } */
         if(sampleIdTerm && otuTableRowIdsNotInSamples.length > 0){
             let splitted = files.otuTable.path.split("/");
+            console.log(`otuTableRowIdsNotInSamples:::::`)
+            console.log(otuTableRowIdsNotInSamples)
             errors.push({
                 file: splitted[splitted.length-1], 
-                message: `${rows.size > 99 ? 'At least ':''}${otuTableRowIdsNotInSamples.length} of ${otuTableColumns.length -1 } columns in the OTU table does not have a corresponding row in the sample file`})
+                message: `${rows.size > 98 ? 'At least ':''}${otuTableRowIdsNotInSamples.length} ${rows.size < 99 ? 'of '+ otuTableColumns.length -1 : '' } rows in the OTU table does not have a corresponding row in the sample file`})
             }
        }
 
@@ -206,6 +209,7 @@ export const otuTableHasSamplesAsColumns = async (files) => {
         throw error;
     }
 }
+export const stringIsDNASequence = str => str.length > minimumLengthForASequence && dnaSequencePattern.test(str)
 
 export const otuTableHasSequencesAsColumnHeaders = async (otuTable) => {
     // console.log("otuTableHasSequencesAsColumnHeaders")
@@ -219,7 +223,7 @@ export const otuTableHasSequencesAsColumnHeaders = async (otuTable) => {
         let isSequenceHeaders = true;
 
         for(let i = 0; i < Math.min(columns.length, 10); i++){
-            if(columns[i].length < minimumLengthForASequence || !dnaSequencePattern.test(columns[i])){
+            if(!stringIsDNASequence(columns[i])){
                 isSequenceHeaders = false;
             }
         }
@@ -229,6 +233,8 @@ export const otuTableHasSequencesAsColumnHeaders = async (otuTable) => {
         throw error;
     }
 }
+
+
 
 /* export const otuTableHasSequencesAsColumnHeaders = async (files) => {
     console.log("otuTableHasSequencesAsColumnHeaders")

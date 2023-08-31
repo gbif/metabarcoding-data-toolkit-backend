@@ -1,13 +1,12 @@
 import { toBiom, addReadCounts, metaDataFileToMap } from '../converters/biom.js';
 // import config from '../config.js'
 import _ from 'lodash'
-import { mergeFastaMapIntoTaxonMap, readMapping } from '../util/filesAndDirectories.js'
+import { mergeFastaMapIntoTaxonMap, readMapping, readTsvHeaders } from '../util/filesAndDirectories.js'
 import { otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders } from '../validation/tsvformat.js'
 import {uploadedFilesAndTypes} from '../validation/files.js'
-
 import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, missingSampleRecords, consistencyCheckReport} from "./util.js"
+import { md5 } from '../util/index.js';
 import { readFastaAsMap } from '../util/streamReader.js';
-
 import { assignTaxonomy } from '../classifier/index.js';
 import config from '../config.js';
 
@@ -24,7 +23,7 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     
 
     let sequencesAsHeaders;
-    const [samplesAsColumns, errors] =   await otuTableHasSamplesAsColumns(fileMap/* , mapping ?  _.get(mapping, 'samples.id', 'id') : null */);
+    const [samplesAsColumns, errors] =   await otuTableHasSamplesAsColumns(fileMap);
     if (!samplesAsColumns) {
         sequencesAsHeaders = await otuTableHasSequencesAsColumnHeaders(fileMap.otuTable)
 
@@ -32,16 +31,33 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     
     beginStep('readData')
     updateStatusOnCurrentStep(0, 0, 'Reading sample file')
-    const samples = await metaDataFileToMap(fileMap?.samples, mapping?.samples, updateStatusOnCurrentStep)  // await streamReader.readMetaDataAsMap(sampleFile, processFn, termMapping.samples)
+    const samples = await metaDataFileToMap(fileMap?.samples, mapping?.samples, updateStatusOnCurrentStep)  
     updateStatusOnCurrentStep(0, 0, 'Reading taxon file', {sampleCount: samples.size});
-    const taxa = await metaDataFileToMap(fileMap?.taxa, mapping?.taxa, updateStatusOnCurrentStep)// await streamReader.readMetaDataAsMap(taxaFile,  processFn, termMapping.taxa)
-    updateStatusOnCurrentStep(taxa.size, taxa.size, 'Reading taxon file', {taxonCount: taxa.size});
-
+    let taxa = fileMap?.taxa ? await metaDataFileToMap(fileMap?.taxa, mapping.taxa, updateStatusOnCurrentStep, sequencesAsHeaders ? md5 : (key) => key) : null; // If there is no Taxon file, create an empty MAP
+    
     if(fasta){
         const fastaMap = await readFastaAsMap(`${config.dataStorage}${id}/${version}/original/${fasta.name}`);
         // adds sequences from fasta to taxonomy file
         mergeFastaMapIntoTaxonMap(fastaMap, taxa)
-       }
+    } else if(sequencesAsHeaders){
+       // console.log("#### IT HAS SEQ HEADERS")
+        const headers = await readTsvHeaders(fileMap?.otuTable?.path, fileMap?.otuTable?.properties?.delimiter);
+       // console.log(`Num sequences ${headers.length}`)
+        const fastaMap = new Map(
+            headers.slice(1).map(seq => {
+                const hash = md5(seq);
+                return [hash,{id: hash, DNA_sequence: seq}]
+            } )
+        )
+      //  console.log(`fastaMap size ${fastaMap.size}`)
+        if(!taxa){
+            taxa = fastaMap;
+        } else {
+            mergeFastaMapIntoTaxonMap(fastaMap, taxa)
+        }    
+    }
+    updateStatusOnCurrentStep(taxa.size, taxa.size, 'Reading taxon file', {taxonCount: taxa.size});
+
     stepFinished('readData');
 
     if(systemShouldAssignTaxonomy){

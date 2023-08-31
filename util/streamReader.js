@@ -2,7 +2,8 @@
 const parse = require("csv-parse"); */
 import fs from 'fs';
 import parse from 'csv-parse';
-
+import {stringIsDNASequence} from '../validation/tsvformat.js';
+import {md5} from '../util/index.js'
 const objectSwap = obj => Object.fromEntries(Object.entries(obj).map(([k, v]) => [v, k]))
 
 // import streamReader from '../util/streamreader.js';
@@ -43,6 +44,18 @@ export const readOtuTable = (path,  progressFn = ()=>{}, delimiter = "\t") => {
         inputStream.pipe(parser)
     })
 
+}
+
+const sequencesAsHeaders = (headers) => {
+  const max = Math.min(headers.length, 10)
+  let count = 0;
+  for(let i = 0; i <max; i++){
+    if(stringIsDNASequence(headers[i])){
+      count ++
+    }
+  }
+  //console.log(`### sequences as as headers ${count} ${max}`)
+   return count === max;
 }
 
 //This simply checks that there is an ID in the first pos in the array for a row
@@ -88,9 +101,14 @@ export const readOtuTableToSparse = (path, progressFn = (progress, total, messag
           while ((record = parser.read()) !== null) {
             if(!columns){
               columns = record.slice(1);
+              // If sequences are given as headers, md5 them. This should also be the case for dimensionXdataMap
+              if(sequencesAsHeaders(columns)){
+                columns = columns.map(c => md5(c))
+              }
            
             } else if(recordHasRowId(record) && dimensionYSet.has(record[0])) {
               record.slice(1).forEach((element, index) => {
+              //  console.log(`${columns[index]} in map ? ${columns[index]}`)
                 if(!isNaN(Number(element)) && Number(element) > 0 && dimensionXdataMap.has(columns[index])){
                   records.push([count, index, Number(element)])
                   
@@ -113,7 +131,7 @@ export const readOtuTableToSparse = (path, progressFn = (progress, total, messag
            // console.log(`recordHasRowId ${record} :${recordHasRowId(record)}`)
           }
           // We are finished update to final count
-          progressFn(count, count, 'Reading data', {sampleCount: columns.filter(c => dimensionXdataMap.has(c)).length, taxonCount: rows.length})
+         // progressFn(count, count, 'Reading data', {sampleCount: columns.filter(c => dimensionXdataMap.has(c)).length, taxonCount: rows.length})
 
         });
         // Catch any error
@@ -228,7 +246,7 @@ export const readMetaData = (path,  progressFn = ()=>{}, delimiter = "\t") => {
     })
 }
 
-export const readMetaDataAsMap = (path, /* idHeader = 'id', */ progressFn = ()=>{}, mapping = {}, delimiter = "\t") => {
+export const readMetaDataAsMap = (path, /* idHeader = 'id', */ progressFn = ()=>{}, mapping = {}, delimiter = "\t", formatKey = (key) => key) => {
 
   /**
  * Use a mapping object to rename terms corresponding to DWC / MiXS
@@ -274,8 +292,8 @@ const mapRecord = record => {
               console.log(record)
             }
             
-
-            records.set(mappedRecord.id, mappedRecord)  
+            // The key format function is used to md5 sequences if these are given as keys
+            records.set(formatKey(mappedRecord.id), mappedRecord)  
            count++;
             if(count % 1000 === 0){
               try {

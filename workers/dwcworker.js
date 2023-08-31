@@ -32,7 +32,7 @@ const createDwc = async (id, version, dataStorage) => {
         finishedJobSuccesssFully('success')
 
     } catch (error) {
-        console.log("#########")
+       // console.log("#########")
         console.log(error)
         finishedJobWithError(error)   
     }

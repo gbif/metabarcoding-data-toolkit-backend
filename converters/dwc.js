@@ -3,7 +3,8 @@ import fs from 'fs';
 import parse from 'csv-parse';
 import transform from "stream-transform";
 import util from "../util/index.js"
-const {streamReader} = util;
+import streamReader from '../util/streamReader.js';
+//const {streamReader} = util;
 
 const DEFAULT_UNIT = "DNA sequence reads";
 const BASIS_OF_RECORD = "Material Sample";

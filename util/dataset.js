@@ -11,11 +11,12 @@ export const getDataset = async (id, version) =>  {
        
         if(!report){
             report = {id: id, version: version}
-        }
-        const files = await uploadedFilesAndTypes(id, version)
-        if(!!files){
+            const files = await uploadedFilesAndTypes(id, version)
+            if(!!files){
             report.files = files
         }
+        }
+        
         const mapping = await readMapping(id, version);
         if(!!mapping){
             report.mapping = mapping

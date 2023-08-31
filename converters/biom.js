@@ -1,4 +1,4 @@
-import util, {streamReader} from '../util/index.js'
+import streamReader from '../util/streamReader.js'
 import fs from 'fs';
 import {Biom} from 'biojs-io-biom';
 import _ from 'lodash'
@@ -45,8 +45,8 @@ const getColumnIdTerm = (samplesAsColumns, termMapping) => {
     return samplesAsColumns ? _.get(termMapping, 'samples.id', 'id') :_.get(termMapping, 'taxa.id', 'id')
 }
 
-export const metaDataFileToMap = async (file, mapping, processFn = (progress, total, message, summary) => {}) => {
-    const data = await streamReader.readMetaDataAsMap(file?.path, processFn, mapping, file?.properties?.delimiter)
+export const metaDataFileToMap = async (file, mapping, processFn = (progress, total, message, summary) => {}, formatKey = (key) => key) => {
+    const data = await streamReader.readMetaDataAsMap(file?.path, processFn, mapping, file?.properties?.delimiter, formatKey = (key) => key)
     return data;
 }
 
@@ -67,6 +67,10 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = fal
     const dimensionXdataMap = samplesAsColumns ? samples : taxa;
     const dimensionYdataMap = samplesAsColumns ? taxa : samples;
     const [otuTable, rows, columns, consistencyCheck] = await streamReader.readOtuTableToSparse(otuTableFile?.path, processFn, columnIdTerm, otuTableFile?.properties?.delimiter, dimensionXdataMap, dimensionYdataMap);
+    
+    const sampleCount = samplesAsColumns ? columns.filter(c => dimensionXdataMap.has(c)).length : rows.filter(c => dimensionYdataMap.has(c)).length;
+    const taxonCount = samplesAsColumns ? rows.filter(c => dimensionYdataMap.has(c)).length : columns.filter(c => dimensionXdataMap.has(c)).length ;
+    processFn(rows.length, rows.length, 'Reading data', {sampleCount, taxonCount})
     console.log("Finished readOtuTableToSparse")
      console.log("Columns "+columns.length)
     // console.log(columns)
