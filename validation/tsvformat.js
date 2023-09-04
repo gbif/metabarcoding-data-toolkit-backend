@@ -182,11 +182,11 @@ export const otuTableHasSamplesAsColumns = async (files) => {
         } */
         if(sampleIdTerm && otuTableRowIdsNotInSamples.length > 0){
             let splitted = files.otuTable.path.split("/");
-            console.log(`otuTableRowIdsNotInSamples:::::`)
-            console.log(otuTableRowIdsNotInSamples)
+            // console.log(`otuTableRowIdsNotInSamples:::::`)
+           // console.log(otuTableRowIdsNotInSamples)
             errors.push({
                 file: splitted[splitted.length-1], 
-                message: `${rows.size > 98 ? 'At least ':''}${otuTableRowIdsNotInSamples.length} ${rows.size < 99 ? 'of '+ otuTableColumns.length -1 : '' } rows in the OTU table does not have a corresponding row in the sample file`})
+                message: `${rows.size > 98 ? 'At least ':''}${otuTableRowIdsNotInSamples.length} ${rows.size < 99 ? 'of '+  Number(otuTableColumns.length -1) : '' } rows in the OTU table does not have a corresponding row in the sample file`})
             }
        }
 

@@ -183,7 +183,7 @@ export const toBiom = async (otuTable, sampleMap, taxaMap, termMapping, processF
       let rows = [];
       // otuTableRowIds will be all ids in the OTU table
       const otuTableRowIds = new Set()
-      console.log(otuTable.data.length)
+     // console.log(otuTable.data.length)
 
       otuTable.data.slice(1).forEach((row, rowIndex) => {
         if(!!row[0] && taxaMap.has(row[0])){

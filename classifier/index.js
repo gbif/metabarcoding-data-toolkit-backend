@@ -37,7 +37,7 @@ export const blast = async ({ DNA_sequence, id}, marker , verbose = false) => {
                 return result;
             }
         } else {
-            throw "No blast respone"
+            throw "No blast response"
         }
     } catch (err){
         throw err
