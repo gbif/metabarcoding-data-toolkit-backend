@@ -8,6 +8,7 @@ import runningJobs from './runningJobs.js';
 import { uploadedFilesAndTypes, getFileSize, unzip } from '../validation/files.js'
 import { determineFileNames} from '../validation/tsvformat.js'
 import {  readTsvHeaders } from '../util/filesAndDirectories.js'
+import db from '../server/db/index.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -135,13 +136,16 @@ export const processDataset = (id, version, job) => {
                 runningJobs.set(id, { ...job });
             } 
             if(message?.type === 'finishedJobSuccesssFully'){
+                 if(job?.summary?.taxonCount && job?.summary?.sampleCount){
+                    db.updateCountsOnDataset(job.createdBy, id, job?.summary?.sampleCount, job?.summary?.taxonCount)
+                } 
                 resolve()
             }
             if(message?.type === 'finishedJobWithError'){
                
                // Get the last step, add the error message and add it to the step 
-               console.log("############")
-               console.log(Object.keys(message.payload))
+             //  console.log("############")
+             //  console.log(Object.keys(message.payload))
                 if( job.steps.length > 0){
                     job.steps[job.steps.length-1].message = message.payload;
                     job.steps[job.steps.length-1].status = "failed"
@@ -183,6 +187,10 @@ export const createDwc = (id, version, job) => {
             }
 
             if(message?.type === 'finishedJobSuccesssFully'){
+                    if(job?.summary?.occurrenceCount){
+                        
+                       db.updateOccurrenceCountOnDataset(job.createdBy, id, job?.summary?.occurrenceCount)
+                   }          
                 resolve()
             }
             if(message?.type === 'finishedJobWithError'){

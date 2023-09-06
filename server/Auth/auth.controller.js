@@ -35,7 +35,7 @@ export default  (app) => {
            const user = await User.getFromToken(req.headers.authorization)
            if (user) {
             const datasets = await db.getUserDatasets(user?.userName)
-
+            
             res.setHeader('token', user?.token);
             res.json({...user, datasets: datasets })
         } else {

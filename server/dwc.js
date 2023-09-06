@@ -74,8 +74,8 @@ import {createDwc} from '../workers/supervisor.js'
 
 }, 3)
 
-const pushJob = async (id, version) => {
-    runningJobs.set(id, { id: id, version, steps: [{ status: 'queued', time: Date.now() }] })
+const pushJob = async (id, version, user) => {
+    runningJobs.set(id, { id: id, version, createdBy: user?.userName, steps: [{ status: 'queued', time: Date.now() }] })
     // remove previously generated files
     await wipeGeneratedDwcFiles(id, version)
     try {
@@ -131,7 +131,7 @@ const processDwc = async function (req, res) {
                 // Make sure a job is not already running
                 if(!runningJobs.has(req.params.id)){
                     console.log("Push job")
-                    pushJob(req.params.id, version );
+                    pushJob(req.params.id, version, req.user );
                     res.sendStatus(201)
                 } else {
                     res.sendStatus(302)

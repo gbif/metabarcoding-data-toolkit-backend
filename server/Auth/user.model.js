@@ -38,7 +38,13 @@ async function getFromToken(auth) {
         let response = await axios(options);
         let user = response?.data;
         if(user){
-            const datasets = await db.getUserDatasets(user?.userName)
+            let datasets 
+            try {
+                datasets = await db.getUserDatasets(user?.userName)
+            } catch (error) {
+                console.log(error)
+            }
+           // console.log(datasets)
             return {...user,datasets: datasets, token: response?.headers?.token || ''};
         } else {
             throw "No user from that token, expired?"

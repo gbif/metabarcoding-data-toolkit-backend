@@ -90,9 +90,11 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
         });
       let occStreamClosed = false;
       let dnaStreamClosed = false; 
-
+      
+      let occurrenceCount = 0;
       occStream.on('finish', () => {
         console.log("OCC stream finished")
+        processFn(biomData.columns.length, biomData.columns.length, 'Finished writing DWC Ocurrences and DNA sequences', {occurrenceCount})
         occStreamClosed = true;
         if(dnaStreamClosed){
           resolve()
@@ -132,6 +134,8 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
                   let dnaSampleData = getDataForTermfromSample(c, relevantDnaTerms);         
                   let dnaTaxonData = getDataForTermFromTaxon(row, relevantDnaTerms);
                   dnaStream.write(`${occurrenceId}\t${dnaSampleData ? `${dnaSampleData}\t` : ""}${dnaTaxonData ? dnaTaxonData : ""}\n`);
+
+                  occurrenceCount ++
               }
            })
            processFn(cidx, biomData.columns.length, 'Writing DWC Ocurrences and DNA sequences')

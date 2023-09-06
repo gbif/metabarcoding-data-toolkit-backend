@@ -22,7 +22,8 @@ const appendUser = () => {
                 next();
             })
             .catch(function(err) {
-                res.sendStatus(err.statusCode || 500)
+               
+                res.sendStatus(err?.response?.status || 500)
                // next(err);
             });
         });
@@ -38,7 +39,7 @@ const userCanModifyDataset = () => {
                     req.user = user;
                     const datasets = user?.datasets || [];
 
-                    if(datasets.includes(req?.params?.id)){
+                    if(datasets.map(d => d.dataset_id).includes(req?.params?.id)){
                         console.log('userCanModifyDataset true')
                         next();
                     }

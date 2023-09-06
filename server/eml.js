@@ -4,6 +4,7 @@ import fs from 'fs';
 import { getEml } from '../util/Eml/index.js';
 import {writeEmlJson, writeEmlXml, getCurrentDatasetVersion} from '../util/filesAndDirectories.js'
 import auth from './Auth/auth.js';
+import db from './db/index.js'
 
 
 const processEml = async function (req, res) {
@@ -18,6 +19,7 @@ const processEml = async function (req, res) {
             await writeEmlJson(req.params.id, version, req.body)
             const xml = getEml({...req.body, id : req.params.id})
             await writeEmlXml(req.params.id, version, xml)
+            await db.updateTitleOnDataset(req?.user?.userName, req.params.id, req.body?.title)
            // console.log(eml)
             res.send(req.body) 
         } catch (error) {

@@ -3,6 +3,7 @@ import fs from 'fs';
 import config from '../config.js'
 import auth from './Auth/auth.js';
 import db from './db/index.js'
+import {writeEmlJson, writeEmlXml, getCurrentDatasetVersion} from '../util/filesAndDirectories.js'
 
 const storage = multer.diskStorage({
   //Specify the destination directory where the file needs to be saved
@@ -27,13 +28,23 @@ const upload = multer({
 
 export default  (app) => {
   app.post('/dataset/upload', auth.appendUser(), upload.array('tables', 5), async function (req, res, next) {
-    if(req?.user){
-      await db.createUserDataset(req?.user?.userName, req.id)
-      console.log(`Dataset ${req.id} created by ${req?.user?.userName}`)
-    } else {
-      console.log("Upload attention: no user logged in" )
+    try {
+      if(req?.user){
+        const datasetTitle = req.body?.datasetTitle || ""
+        await db.createUserDataset(req?.user?.userName, req.id, datasetTitle)
+        console.log(`Dataset ${req.id} created by ${req?.user?.userName}. Title: ${datasetTitle}`)
+        if(datasetTitle){
+          await writeEmlJson(req.id, req?.query?.version ?? "1", {title: datasetTitle})
+        }
+      } else {
+        console.log("Upload attention: no user logged in" )
+      }
+      res.send(req.id)
+    } catch (error) {
+      console.log(error)
+      res.sendStatus(500)
     }
-    res.send(req.id)
+    
   })
 app.put('/dataset/:id/upload', auth.userCanModifyDataset(), upload.array('tables', 5), function (req, res, next) {
     console.log(req.files)
