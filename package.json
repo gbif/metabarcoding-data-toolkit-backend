@@ -8,7 +8,7 @@
         "composable-middleware": "^0.3.1",
         "cors": "^2.8.5",
         "csv-parse": "^4.3.4",
-        "duckdb": "^0.7.1",
+        "duckdb": "^0.8.1",
         "express": "^4.18.2",
         "express-request-id": "^3.0.0",
         "h5wasm": "^0.6.1",
