@@ -396,7 +396,7 @@ export const getSparseMatrix = async  (hdf5file, sampleIndex) => {
     const data = f.get("observation/matrix/data").to_array();
     const indices = f.get("observation/matrix/indices").to_array();
     const indptr = f.get("observation/matrix/indptr").to_array();
-
+    f.close()
     let indptrIdx = 0;
     let numRows = indptr[indptrIdx + 1] - indptr[indptrIdx];
     const sparseMatrix = data.map((d, idx) => {
@@ -474,6 +474,7 @@ export const getSampleTaxonomy = async  (hdf5file, sampleIndex) => {
     return [...result, ...Array.from(parentMap).map(t => ({id: t[0] || "", parent: t[1].parentId, name: t[1].name, rank: t[1].rank}))];
 }
 
+
 export const getSampleCompositions = async  (hdf5file) => {
     if(!h5wasm){
         await init()
@@ -484,12 +485,12 @@ export const getSampleCompositions = async  (hdf5file) => {
     const indices = f.get("observation/matrix/indices").to_array();
     const indptr = f.get("observation/matrix/indptr").to_array();
 
-    let observationMetaData = {};
+  /*   let observationMetaData = {};
     // Why do we put the id in the taxonomy? It is the only unique handle for an ASV, the scientificName could very well be non-unique across taxa/ASVs
     f.get("observation/metadata").keys().filter(key => ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'id'].includes(key)).forEach(key => {
         const rankData = f.get(`observation/metadata/${key}`);
         observationMetaData[key] = rankData ? rankData.to_array() : []
-    });
+    }); */
     // console.log( f.get(`observation/metadata/taxonomy`).dtype)
     let indptrIdx = 0;
     let numRows = indptr[indptrIdx + 1] - indptr[indptrIdx];
@@ -515,6 +516,69 @@ export const getSampleCompositions = async  (hdf5file) => {
     f.close()
     return result;
 
+}
+
+export const getTaxonomyForAllSamples = async  (hdf5file) => {
+
+    if(!h5wasm){
+        await init()
+    }
+    await h5wasm?.ready;
+
+    let f = new h5wasm.File(hdf5file, "r");
+    const data = f.get("observation/matrix/data").to_array();
+    const indices = f.get("observation/matrix/indices").to_array();
+    const indptr = f.get("observation/matrix/indptr").to_array();
+
+    let observationMetaData = {};
+    // Why do we put the id in the taxonomy? It is the only unique handle for an ASV, the scientificName could very well be non-unique across taxa/ASVs
+    f.get("observation/metadata").keys().filter(key => ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'id'].includes(key)).forEach(key => {
+        observationMetaData[key] = f.get(`observation/metadata/${key}`).to_array()
+    });
+    const sampleIds = f.get(`sample/metadata/id`).to_array()
+    f.close()
+
+    const result = sampleIds.map(id => ({id, taxonomy: []}))
+    // console.log( f.get(`observation/metadata/taxonomy`).dtype)
+    let indptrIdx = 0;
+    let numRows = indptr[indptrIdx + 1] - indptr[indptrIdx];
+    const sparseMatrix = data.map((d, idx) => {
+        let res = [indptrIdx, indices[idx], d];
+        numRows--;
+        if (numRows === 0) {
+            indptrIdx++
+            numRows = indptr[indptrIdx + 1] - indptr[indptrIdx];
+        }
+        return res;
+    })
+    // const idx = Number(sampleIndex);
+    
+    // const filteredSparseMatrix = sparseMatrix.filter(row => row[1] === idx);
+    const headers = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'id'].filter(h => Object.keys(observationMetaData).includes(h));
+
+    sparseMatrix.forEach(row => {
+        const sampleIndex = row[1]
+      //  const parentMap = new Map();
+        let obj = {};
+        let _id = ""
+        for(let i = 0; i < headers.length; i++){
+            obj[headers[i]] = observationMetaData[headers[i]][row[0]]
+            if(i === headers.length -1){
+                obj.name = observationMetaData[headers[i]][row[0]]
+                obj.parent = _id
+                obj.rank = "ASV"
+                obj.value = 1;
+            }
+            
+            
+        }
+        obj.readCount = row[2];
+        result[sampleIndex].taxonomy.push(obj)
+        //return [...obj, ...Array.from(parentMap).map(t => ({id: t[0] || "", parent: t[1].parentId, name: t[1].name, rank: t[1].rank}))]// obj;
+    })
+
+   
+    return result; // [...result, ...Array.from(parentMap).map(t => ({id: t[0] || "", parent: t[1].parentId, name: t[1].name, rank: t[1].rank}))];
 }
 
 

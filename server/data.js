@@ -1,6 +1,6 @@
 import util from "../util/index.js";
 import license from "../enum/license.js";
-import {getSamplesForGeoJson, getSamples, getSparseMatrix, getSampleTaxonomy, getSampleCompositions} from "../converters/hdf5.js"
+import {getSamplesForGeoJson, getSamples, getSparseMatrix, getSampleTaxonomy, /* getSampleCompositions, */ getTaxonomyForAllSamples} from "../converters/hdf5.js"
 import {writeEmlJson, writeEmlXml, getCurrentDatasetVersion} from '../util/filesAndDirectories.js'
 import config from '../config.js'
 
@@ -110,7 +110,29 @@ export default  (app) => {
         
     })
 
-    app.get("/dataset/:id/data/ordination", async (req, res) => {
+    app.get("/dataset/:id/data/taxonomy", async (req, res) => {
+
+        if (!req.params.id ) {
+            res.sendStatus(400);
+          } else {
+              try {
+                  let version = req?.query?.version;
+                  if(!version){
+                      version = await getCurrentDatasetVersion(req.params.id)
+                  } 
+                const data =  await getTaxonomyForAllSamples(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`)
+            
+                 // console.log(eml)data
+                  res.send(data) 
+              } catch (error) {
+                  console.log(error)
+                  res.sendStatus(500)
+              }
+          }   
+        
+    })
+
+/*     app.get("/dataset/:id/data/ordination", async (req, res) => {
 
         if (!req.params.id ) {
             res.sendStatus(400);
@@ -130,7 +152,7 @@ export default  (app) => {
               }
           }   
         
-    })
+    }) */
 
 
 

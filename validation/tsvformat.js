@@ -107,6 +107,9 @@ export const otuTableHasSamplesAsColumns = async (files) => {
         console.log("The sample id term is: "+sampleIdTerm)
         let otuTableColumns =  files.otuTable.properties.headers; 
         let otuTableRowIds =  files.otuTable.properties.rows.slice(1).map(r => r[0]);
+
+        const otuTableColumnsAreTruncated = ((files?.otuTable?.properties?.columnLimit || 0) < (files?.otuTable?.properties?.numColumns || 0))
+
        /*  try {
             console.log(`OTU table: ${files.otuTable.path} delimiter: ${files.otuTable.properties.delimiter}`)
             otuTableColumns =  files.otuTable.properties.headers; // await readTsvHeaders(files.otuTable.path, files.otuTable.properties.delimiter);
@@ -124,7 +127,7 @@ export const otuTableHasSamplesAsColumns = async (files) => {
         const columns = new Set(otuTableColumns.slice(1));
         const sampleIds = new Set(samples.map(s => s[sampleIdTerm]))
         let sampleIdsNotInOtuTableColumns = [];
-        let otuTableColumnsNotInSamples = []
+        let otuTableColumnsNotInSamples = [];
         samples.forEach(s => {
             if(!columns.has(s[sampleIdTerm])){
                 sampleIdsNotInOtuTableColumns.push(s[sampleIdTerm]) // ++;
@@ -158,7 +161,7 @@ export const otuTableHasSamplesAsColumns = async (files) => {
         }
 
        if(hasSamplesAsColumns){
-        if(sampleIdTerm && sampleIdsNotInOtuTableColumns.length > 0){
+        if(!otuTableColumnsAreTruncated && sampleIdTerm && sampleIdsNotInOtuTableColumns.length > 0){
             let splitted = files.samples.path.split("/");
             
             errors.push({
