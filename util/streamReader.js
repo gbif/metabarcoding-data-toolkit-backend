@@ -107,10 +107,13 @@ export const readOtuTableToSparse = (path, progressFn = (progress, total, messag
               }
            
             } else if(recordHasRowId(record) && dimensionYSet.has(record[0])) {
+              // Don´t rely on the record index - some columns might not be in the dimensionXdataMap, only raise the index if there is a valid column ID
+              let columnIdx = 0;
               record.slice(1).forEach((element, index) => {
               //  console.log(`${columns[index]} in map ? ${columns[index]}`)
                 if(!isNaN(Number(element)) && Number(element) > 0 && dimensionXdataMap.has(columns[index])){
-                  records.push([count, index, Number(element)])
+                  records.push([count, columnIdx, Number(element)])
+                  columnIdx ++;
                   
                 }
               });

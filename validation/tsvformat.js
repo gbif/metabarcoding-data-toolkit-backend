@@ -64,12 +64,14 @@ export const determineFileNames = async (id, version) => {
 }
 
 // Check if there is an ID column in a tsv
-export const hasIdColumn = async (path) => {
-    const columns = await readTsvHeaders(path);
+export const hasIdColumn = async (path, delimiter) => {
+    const columns = await readTsvHeaders(path, delimiter);
            // Accept id case insensitive
     const term = columns.find(c => !!c && c.toLowerCase() === "id");
    let  errors = []
     if(!term){
+        console.log("# hasIdColumn ")
+        console.log(columns)
         let splitted = path.split("/");
         errors.push({file: splitted[splitted.length-1], message: `No "id" column found in file ${splitted[splitted.length-1]}`})
 
@@ -80,7 +82,10 @@ export const hasIdColumn = async (path) => {
 
 export const otuTableHasSamplesAsColumns = async (files) => {
     // console.log("hasSamplesAsColumns")
-    if(!files.samples){
+    if(!files.samples && !files.otuTable){
+        throw "No Otu table and no sample file"
+    }
+    else if(!files.samples){
         throw "No sample file"
     } else if(!files.otuTable){
         throw "No Otu table"
@@ -94,7 +99,7 @@ export const otuTableHasSamplesAsColumns = async (files) => {
         try {
             console.log(`Sample file: ${files.samples.path} - delimiter ${ files.samples.properties.delimiter}`)
             samples = await streamReader.readMetaData(files.samples.path, ()=>{}, files.samples.properties.delimiter); // readTsvHeaders(`${config.dataStorage}${id}/${version}/original/${files.samples}`);
-            const {term, errors: idErrors} = await hasIdColumn(files.samples.path)
+            const {term, errors: idErrors} = await hasIdColumn(files.samples.path, files.samples.properties.delimiter)
             sampleIdTerm = term;
             errors = [...errors, ...idErrors]
 

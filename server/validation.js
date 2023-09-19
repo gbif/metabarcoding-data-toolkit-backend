@@ -28,17 +28,24 @@ export const validate = async (id, user) => {
      const fileMap = _.keyBy(files.files, "type")
 
      let validationErrors = []
-      
-      let [samplesAsColumns, errors, invalid] = await otuTableHasSamplesAsColumns(fileMap, validationErrors);
+     let samplesAsColumns, errors, invalid;
+      try {
+         [samplesAsColumns, errors, invalid] = await otuTableHasSamplesAsColumns(fileMap, validationErrors);
       validationErrors = [...validationErrors, ...errors]
       if(invalid){
         files.format = "INVALID";
       }
+      } catch (error) {
+        validationErrors.push(error)
+        files.invalidMessage = error
+        files.format = "INVALID";
+      }
+      
       
 
       if(fileMap?.taxa?.path){
         // Check there is an "id" column in the taxon file
-        const {term, errors: idInvalidErrors} = await hasIdColumn(fileMap?.taxa?.path);
+        const {term, errors: idInvalidErrors} = await hasIdColumn(fileMap?.taxa?.path, fileMap?.taxa?.properties?.delimiter);
         validationErrors = [...validationErrors, ...idInvalidErrors]
         if(!term) {
           files.format = "INVALID";
@@ -59,7 +66,7 @@ export const validate = async (id, user) => {
           console.log(error)
           sequencesAsHeaders = false;
           files.format = "INVALID";
-          files.invalidMessage = error
+         // files.invalidMessage = error
         }
       }
       
