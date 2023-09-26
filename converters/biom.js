@@ -74,7 +74,7 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = fal
     console.log("Finished readOtuTableToSparse")
      console.log("Columns "+columns.length)
     // console.log(columns)
-     console.log("ROWS" + rows.length)
+     console.log("Rows " + rows.length)
   //   console.log(rows)
    //console.log(rows.map(r => getMetaDataRow(samplesAsColumns ? taxa.get(r) : samples.get(r) )))
 

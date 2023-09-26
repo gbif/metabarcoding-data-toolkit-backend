@@ -101,6 +101,7 @@ export const readOtuTableToSparse = (path, progressFn = (progress, total, messag
           while ((record = parser.read()) !== null) {
             if(!columns){
               columns = record.slice(1);
+            //  console.log(columns)
               // If sequences are given as headers, md5 them. This should also be the case for dimensionXdataMap
               if(sequencesAsHeaders(columns)){
                 columns = columns.map(c => md5(c))
@@ -109,12 +110,18 @@ export const readOtuTableToSparse = (path, progressFn = (progress, total, messag
             } else if(recordHasRowId(record) && dimensionYSet.has(record[0])) {
               // Don´t rely on the record index - some columns might not be in the dimensionXdataMap, only raise the index if there is a valid column ID
               let columnIdx = 0;
+              // console.log(record.slice(1))
               record.slice(1).forEach((element, index) => {
               //  console.log(`${columns[index]} in map ? ${columns[index]}`)
+            //  console.log("idx " + columns[index] + " is in map? "+dimensionXdataMap.has(columns[index]))
                 if(!isNaN(Number(element)) && Number(element) > 0 && dimensionXdataMap.has(columns[index])){
                   records.push([count, columnIdx, Number(element)])
+                  // console.log(`index ${index} columnIdx ${columnIdx}`)
+                  // console.log("push "+[count, columnIdx, Number(element)])
+                   
+                }
+                if(dimensionXdataMap.has(columns[index])){
                   columnIdx ++;
-                  
                 }
               });
               // collect ordering of rows to sort metadata file
