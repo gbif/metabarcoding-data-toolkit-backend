@@ -17,6 +17,8 @@ export const getDatasetById = dbImplementation.getDatasetById
 
 export const updateOccurrenceCountOnDataset = dbImplementation.updateOccurrenceCountOnDataset
 
+export const initialize = dbImplementation.initialize
+
 export default {
     createUserDataset,
     getUserDatasets,
@@ -24,5 +26,6 @@ export default {
     getDatasetById,
     updateCountsOnDataset,
     updateOccurrenceCountOnDataset,
-    updateTitleOnDataset
+    updateTitleOnDataset,
+    initialize
 }

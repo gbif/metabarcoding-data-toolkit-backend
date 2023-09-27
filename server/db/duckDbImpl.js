@@ -1,7 +1,10 @@
 import duckdb from 'duckdb';
 import config from '../../config.js'
+import datasets from '../datasets.js';
 
-const db = new duckdb.Database(config.duckdb);
+// const db = new duckdb.Database(config.duckdb);
+
+const db = new duckdb.Database(':memory:');
 const con = db.connect();
 
 con.run('CREATE TABLE UserDatasets (user_name STRING, dataset_id STRING, title STRING, created DATE, sample_count INTEGER DEFAULT 0, taxon_count INTEGER DEFAULT 0, occurrence_count INTEGER DEFAULT 0)');
@@ -131,6 +134,30 @@ const getAllDatasets = () => {
     })
     
 }
+// con.run('CREATE TABLE UserDatasets (user_name STRING, dataset_id STRING, title STRING, created DATE, sample_count INTEGER DEFAULT 0, taxon_count INTEGER DEFAULT 0, occurrence_count INTEGER DEFAULT 0)');
+
+const initialize = (datasets) => {
+
+    return new Promise((resolve, reject) => {
+        try {
+            datasets.forEach(d => createUserDatasetStmt.run(d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count , (err, res) => {
+                if(err){
+                    console.log(err)
+                    console.log(`${d.user_name}, ${d.dataset_id}, ${d.title}, ${d.created}, ${d.sample_count}, ${d.taxon_count}, ${d.occurrence_count}`)
+                    reject(err)
+                }
+            } ))
+   
+           // createUserDatasetStmt.finalize();  
+            resolve()
+        } catch (error) {
+            console.log(error)
+            reject(error)
+        }
+    })
+
+    
+}
 
 export default {
     createUserDataset,
@@ -139,5 +166,6 @@ export default {
     getDatasetById,
     updateCountsOnDataset,
     updateOccurrenceCountOnDataset,
-    updateTitleOnDataset
+    updateTitleOnDataset,
+    initialize
 }

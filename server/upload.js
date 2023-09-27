@@ -38,6 +38,7 @@ export default  (app) => {
         }
       } else {
         console.log("Upload attention: no user logged in" )
+        res.sendStatus(401) 
       }
       res.send(req.id)
     } catch (error) {

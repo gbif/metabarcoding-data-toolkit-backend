@@ -49,7 +49,10 @@ const pushJob = async (id, assignTaxonomy, user) => {
     try {
         version = await getCurrentDatasetVersion(id);
        const existingReport = await getDataset(id, version);
-       if(existingReport?.sampleHeaders){
+       if(existingReport){
+        newJob = {...existingReport, ...newJob}
+       }
+       /* if(existingReport?.sampleHeaders){
         newJob.sampleHeaders = existingReport.sampleHeaders
        }
        if(existingReport?.taxonHeaders){
@@ -57,7 +60,7 @@ const pushJob = async (id, assignTaxonomy, user) => {
        }
        if(existingReport?.files){
         newJob.files = existingReport.files
-       }
+       } */
     } catch (error) {
         // ignore, it has not been processed before so there is no report
     }

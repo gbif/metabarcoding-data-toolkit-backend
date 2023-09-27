@@ -5,8 +5,9 @@ import child_process from 'child_process';
 import {spawn} from 'child_process';
 import {getDataset} from "./dataset.js"
 import parse from 'csv-parse';
-// import path from 'path';
+import db from '../server/db/index.js'
 import json from 'big-json';
+import { error } from 'console';
 
 
 
@@ -53,7 +54,7 @@ export const parseBigJson = async (file,  processFn = (progress, total, message,
 export const getCurrentDatasetVersion = async id => {
     try {
         let versionList = await fs.promises.readdir(`${config.dataStorage}${id}`)
-        return  Math.max(...versionList.filter(v => !isNaN(v)))
+        return  Math.max(...versionList.filter(v => !isNaN(v) && fs.lstatSync(`${config.dataStorage}${id}/${v}`).isDirectory()))
     } catch (error) {
         console.log(error)
         throw "not found"
@@ -365,4 +366,43 @@ export const mergeFastaMapIntoTaxonMap = (fastaMap, taxonMap) => {
  return taxonMap;
 }
 
+export const readDataStorage = async () => {
+  try{
+    const datasets = []
+    const dirs = await fs.promises.readdir(`${config.dataStorage}`)
+    for(const dir of dirs){
+      if(fs.lstatSync(`${config.dataStorage}${dir}`).isDirectory()){
+        const versions = await fs.promises.readdir(`${config.dataStorage}${dir}`)
+        const validVersions = versions.filter(v => !isNaN(Number(v)) && fs.lstatSync(`${config.dataStorage}${dir}/${v}`).isDirectory());
+        const currentVersion = Math.max(validVersions);
+
+        // user_name STRING, dataset_id STRING, title STRING, created DATE, sample_count INTEGER DEFAULT 0, taxon_count INTEGER DEFAULT 0, occurrence_count INTEGER DEFAULT 0
+        const storedDataset = await getDataset(dir, currentVersion);
+        datasets.push({
+          user_name: storedDataset?.createdBy,
+          dataset_id: storedDataset?.id,
+          title: storedDataset?.metadata?.title || '',
+          created: storedDataset?.createdAt ? storedDataset?.createdAt.split('T')[0] : storedDataset?.steps?.[0]?.time ? new Date(storedDataset?.steps?.[0]?.time).toISOString().split('T')[0] : null/* new Date().toISOString().split('T')[0] */,
+          sample_count: storedDataset?.summary?.sampleCount || 0,
+          taxon_count: storedDataset?.summary?.taxonCount || 0,
+          occurrence_count: storedDataset?.dwc?.summary?.occurrenceCount || 0
+        })
+      } 
+    }
+   // console.log(datasets)
+    return datasets;
+  } catch(err){
+    console.log(err)
+    throw error
+  }
+}
+
+export const initDatabase = async () => {
+  try {
+    const datasets = await readDataStorage();
+    await db.initialize(datasets)
+  } catch (err){
+    console.log(err)
+  }
+}
 

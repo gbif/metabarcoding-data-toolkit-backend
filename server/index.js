@@ -20,8 +20,9 @@ import data from './data.js';
 import cors from 'cors'
 import authController from './Auth/auth.controller.js'
 import userController from './Auth/user.controller.js'
-import { getCurrentDatasetVersion, writeProcessingReport, getProcessingReport } from '../util/filesAndDirectories.js'
+import { getCurrentDatasetVersion, writeProcessingReport, initDatabase } from '../util/filesAndDirectories.js'
 
+initDatabase()
 const config = {
     EXPRESS_PORT: 9000
 }
@@ -74,32 +75,6 @@ data(app)
 // Add routes for datasets
 datasets(app)
 
-
-
-app.get("/dataset/:id", async function (req, res) {
-    if (!req.params.id) {
-        res.sendStatus(404);
-    } else {
-
-        try {
-            let version = req.query?.version;
-            if(!version){
-                version = await getCurrentDatasetVersion(req.params.id);
-            } 
-            const report = await getProcessingReport(req.params.id, version);
-            if(report){
-                res.json(report)
-            } else {
-                res.status(404)
-            }
-        } catch (error) {
-            console.log(error)
-            res.status(404)
-        }
-        
-
-    }
-});
 
 app.listen(config.EXPRESS_PORT, function() {
     // console.log("Config "+config.INPUT_PATH )

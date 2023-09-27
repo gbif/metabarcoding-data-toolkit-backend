@@ -25,7 +25,7 @@ const env = process.env.NODE_ENV || 'local';
 const config = {
     local: {
         env: 'local',
-        duckdb:  __dirname + "../ednaToolData/edna_duck.db",
+    //    duckdb:  __dirname + "../ednaToolData/edna_duck.db",
         dataStorage :  __dirname + "../ednaToolData/data/",
         ebiOntologyService: 'https://www.ebi.ac.uk/ols/api/search',
         dwcPublicAccessUrl: 'http://labs.gbif.org/~tsjeppesen/edna/',
@@ -41,7 +41,7 @@ const config = {
     },
     uat: {
         env: 'uat',
-        duckdb:  __dirname + "../edna-tool-data/edna_duck.db",
+     //   duckdb:  __dirname + "../edna-tool-data/edna_duck.db",
         dataStorage : "/mnt/auto/misc/hosted-datasets.gbif-uat.org/edna/",
         ebiOntologyService: "https://www.ebi.ac.uk/ols/api/search",
         dwcPublicAccessUrl: "https://hosted-datasets.gbif-uat.org/edna/",  // 'http://labs.gbif.org/~tsjeppesen/edna/',
