@@ -186,11 +186,17 @@ export const toBiom = async (otuTable, sampleMap, taxaMap, termMapping, processF
      // console.log(otuTable.data.length)
 
       otuTable.data.slice(1).forEach((row, rowIndex) => {
+
+
         if(!!row[0] && taxaMap.has(row[0])){
+          let columnIdx = 0;
           row.slice(1).forEach((val, index) => {
             if(!isNaN(Number(val)) && Number(val) > 0 && sampleMap.has(columns[index])){
-              sparseData.push([rowIndex, index, Number(val)])
+              sparseData.push([rowIndex, columnIdx, Number(val)])
             } 
+            if(sampleMap.has(columns[index])){
+              columnIdx ++;
+            }
           })
           rows.push(row[0])
           if((rowIndex +1 % 100) === 0){
@@ -327,7 +333,10 @@ export const readXlsxHeaders = async (id, fileName, version) => {
 
         const data = workbook.SheetNames.map(n => ({name: n, data: xlsx.utils.sheet_to_json(workbook.Sheets[n], {header: 1})}));
         const {otuTable, taxa, samples, defaultValues} = determineFileNames(data)
-
+        
+        const otuTableColumns = otuTable?.data?.[0]?.slice(1) || [];
+       const otuColumnSet = new Set(otuTableColumns)
+       
         // If there are default values on a fourth sheet in the workbook, write a mapping 
         if(defaultValues){
           
@@ -345,20 +354,47 @@ export const readXlsxHeaders = async (id, fileName, version) => {
           sampleHeaders: samples?.data?.[0],
           taxonHeaders: taxa?.data?.[0]
         }
+
+  
+    let sampleId = headers.sampleHeaders.find(e => !!e && ['id', 'sampleid'].includes(e.toLowerCase()) )
+  
+  
+  const sampleIdIndex = headers.sampleHeaders.indexOf(sampleId);
+  // Create a Set if sample IDs:
+  const sampleIds = samples?.data.slice(1).map(s => s[sampleIdIndex])
+  
+
+  const sampleSet = new Set(sampleIds)
+
+       // const sampleSet = new Set(headers.sampleHeaders)
+      const sampleIdsNotInOtuTableHeaders = sampleIds.reduce((acc, curr) => !otuColumnSet.has(curr) ? acc+1 : acc, 0)
+      const otuTableHeadersNotInSampleIds = otuTableColumns.reduce((acc, curr) => !sampleSet.has(curr) ? acc +1 : acc, 0)
+
+
       const COLUMN_LIMIT = 100;
        let sheets =  [otuTable, taxa, samples, defaultValues].filter(e => !!e).map(entity => {
        const ROW_LIMIT = entity === defaultValues ? entity?.data?.length : 100;
+       const errors = [];
+        
+       if(entity === otuTable && otuTableHeadersNotInSampleIds > 0){
+        errors.push(`${otuTableHeadersNotInSampleIds} of ${otuTableColumns.length } columns in the OTU table does not have a corresponding row in the sample file`)
+       }
+       if(entity === samples && sampleIdsNotInOtuTableHeaders > 0){
+        errors.push(`${sampleIdsNotInOtuTableHeaders} of ${sampleIds.length } samples are not in the OTU table`)
+       }
+
        return {
           name: entity?.name,
           headers: entity?.data?.[0].length > COLUMN_LIMIT  ? entity?.data?.[0].slice(0, COLUMN_LIMIT) : entity?.data?.[0],
           rows: entity?.data?.[0].length > COLUMN_LIMIT ? entity?.data?.slice(0,ROW_LIMIT).map(r => r.slice(0, COLUMN_LIMIT)) : entity?.data?.slice(0,ROW_LIMIT),
           isInConsistent: false,
           numColumns: entity?.data?.[0].length,
-          columnLimit:  COLUMN_LIMIT
+          columnLimit:  COLUMN_LIMIT,
+          errors
+          
       }
     });
-
-       
+  
         
         resolve( {headers, sheets})
         }

@@ -94,6 +94,8 @@ export const validate = async (id, user) => {
         
          headers_ = headers
          sheets_ = sheets
+         const xlsxErrors = sheets.reduce((acc, curr) => [...acc, ...(curr?.errors || []).map(e => ({message: e}))],[])
+         xlsx.errors = xlsxErrors;
       } catch (error) {
         console.log(error)
       }
