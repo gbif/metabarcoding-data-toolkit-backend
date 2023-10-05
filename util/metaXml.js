@@ -1,11 +1,13 @@
+import {encode} from 'html-entities';
+
 export default (occCore, dnaExt) => {
 const coreTerms = occCore.filter(term => !term.default).map((term, idx) => `<field index="${idx+1}" term="${term.qualName}"/>`).join(`
 `);
-const coreDefaultValueTerms = occCore.filter(term => !!term.default).map((term, idx) => `<field default="${term.default}" term="${term.qualName}"/>`).join(`
+const coreDefaultValueTerms = occCore.filter(term => !!term.default).map((term, idx) => `<field default="${encode(term.default, {mode: 'nonAsciiPrintable', level: 'xml'})}" term="${term.qualName}"/>`).join(`
 `);
 const dnaTerms = dnaExt.filter(term => !term.default).map((term, idx) => `<field index="${idx+1}" term="${term.qualName}"/>`).join(`
 `);
-const dnaDefaultValueTerms = dnaExt.filter(term => !!term.default).map((term, idx) => `<field default="${term.default}" term="${term.qualName}"/>`).join(`
+const dnaDefaultValueTerms = dnaExt.filter(term => !!term.default).map((term, idx) => `<field default="${encode(term.default, {mode: 'nonAsciiPrintable', level: 'xml'})}" term="${term.qualName}"/>`).join(`
 `);
 
 return `<archive
