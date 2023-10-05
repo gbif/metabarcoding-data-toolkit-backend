@@ -152,7 +152,7 @@ const mapRecord = record => {
 
    }).map(mapRecord)
 
-   return new Map(arr.filter(d => !!d.id).map(d => ([d.id,  d])))
+   return new Map(arr.filter(d => !!d.id).map(d => ([d.id.trim(),  d])))
 }
 
 // converts an otu table with sample and taxon metada files to BIOM format
@@ -166,7 +166,7 @@ export const toBiom = async (otuTable, sampleMap, taxaMap, termMapping, processF
       let taxonIdsWithNoRecordInTaxonFile = [];
       let taxonIdsWithNoRecordInOtuTable = [];
       const sparseData = [];
-      let columns = otuTable.data[0].slice(1);
+      let columns = otuTable.data[0].slice(1).map(c => c.trim());
       const otuTableColumnIds = new Set(columns)
       sampleIdsWithNoRecordInOtuTable = [...sampleMap].filter(e => !otuTableColumnIds.has(e[0])).map(e => e[0])
       const cols = columns.filter(c => {
@@ -334,7 +334,7 @@ export const readXlsxHeaders = async (id, fileName, version) => {
         const data = workbook.SheetNames.map(n => ({name: n, data: xlsx.utils.sheet_to_json(workbook.Sheets[n], {header: 1})}));
         const {otuTable, taxa, samples, defaultValues} = determineFileNames(data)
         
-        const otuTableColumns = otuTable?.data?.[0]?.slice(1) || [];
+        const otuTableColumns = (otuTable?.data?.[0]?.slice(1) || []).map(c => c.trim());
        const otuColumnSet = new Set(otuTableColumns)
        
         // If there are default values on a fourth sheet in the workbook, write a mapping 
@@ -361,7 +361,7 @@ export const readXlsxHeaders = async (id, fileName, version) => {
   
   const sampleIdIndex = headers.sampleHeaders.indexOf(sampleId);
   // Create a Set if sample IDs:
-  const sampleIds = samples?.data.slice(1).map(s => s[sampleIdIndex])
+  const sampleIds = samples?.data.slice(1).map(s => s[sampleIdIndex].trim())
   
 
   const sampleSet = new Set(sampleIds)

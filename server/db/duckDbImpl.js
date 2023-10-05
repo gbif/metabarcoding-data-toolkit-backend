@@ -17,7 +17,7 @@ const updateOccurrenceCountOnDatasetStmt = con.prepare('UPDATE UserDatasets SET 
 const updateTitleOnDatasetStmt = con.prepare('UPDATE UserDatasets SET title=? WHERE dataset_id=? AND user_name=?');
 
 const getDatasetByIdStmt = con.prepare('SELECT * FROM UserDatasets WHERE dataset_id = ?');
-const getDatasetsForUserStmt = con.prepare('SELECT * FROM UserDatasets WHERE user_name = ?');
+const getDatasetsForUserStmt = con.prepare('SELECT * FROM UserDatasets WHERE user_name = ? ORDER BY created ASC');
 const getAllDatasetsStmt = con.prepare('SELECT * FROM UserDatasets');
 
 
