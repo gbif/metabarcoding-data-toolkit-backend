@@ -11,9 +11,14 @@ const RANKS = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'specie
 const gbifBaseUrl = config.gbifBaseUrlProd
 
 
+const randomizer = () => {
+    return Math.random() <   0.8//0.01;
+};
 
 export const blast = async ({ DNA_sequence, id}, marker , verbose = false) => {
-
+     if(randomizer()) {
+        throw new Error("test error")
+    } 
     try {
         let response = await axios({
             method: 'POST',
@@ -146,13 +151,13 @@ const writeRow = (stream, blastResult, seq) => {
     stream.write(`${blastResult?.id}\t${blastResult?.matchType}\t${!isNaN(blastResult?.bitScore) ? blastResult?.bitScore: ''}\t${!isNaN(blastResult?.expectValue) ? blastResult?.expectValue: ''}\t${!isNaN(blastResult?.qcovs) ? blastResult?.qcovs : '' }\t${classification}\t${blastResult?.name || ''}\t${seq}\n`);
 }
 
-const blastAll = async (taxa, marker, processFn = (progress, total, message, summary) => {}, path, taxonomyStream) => {
+const blastAll = async (taxa, marker, processFn = (progress, total, message, summary) => {}, path, taxonomyStream, erroredItems = new Map(), retries = 5, matchCount = 0, total_) => {
     const blastlimit = pLimit(BLAST_CONCURRENCY);
 
-    let erroredItems = [];
-    let retries = 5;
-    let matchCount = 0;
-    let total = taxa.size;
+   // let erroredItems = new Map();
+   // let retries = 5;
+   // let matchCount = 0;
+    let total =  total_ ? total_ : taxa.size;
     
 
     let res = await Promise.all(([...taxa.values()]/* .slice(0,10) */).map(async (s) => {
@@ -166,24 +171,26 @@ const blastAll = async (taxa, marker, processFn = (progress, total, message, sum
                     processFn(matchCount, total)
                     console.log(`Blasted ${matchCount} of ${total} sequences`)
                 }
+                if(erroredItems.has(s.id)){
+                    erroredItems.delete(s.id)
+                }
                 return res
         } catch (error) {
-            erroredItems.push(s)
+            erroredItems.set(s.id, s)
+           // erroredItems.push(s)
         }
         }))
         // TODO handle retries
 
-         if ( erroredItems.length > 0 && retries > 0 ) {
+         if ( erroredItems.size > 0 && retries > 0 ) {
+            console.log(`${erroredItems.size} failed blasts, ${retries} left`)
             retries --;
-            blastAll(erroredItems, marker, processFn, path);
-        } else if (erroredItems.length > 0 && retries < 1) {
-            
-            
+           await blastAll(erroredItems, marker, processFn, path, taxonomyStream, erroredItems, retries, matchCount, total);
         } 
-        return {errors : erroredItems.length > 0 ? [`Failed to match ${erroredItems.length} of ${taxa.size} sequences`] : []}
-
+        return {errors : erroredItems.size > 0 ? [`Failed to match ${erroredItems.size} of ${taxa.size} sequences`] : []}
 
 }
+
 
 // Taxa should be a Map, keyed by taxon (ASV) id
 export const assignTaxonomy = async (id, version, taxa, marker, processFn = (progress, total, message, summary) => {}) => {
