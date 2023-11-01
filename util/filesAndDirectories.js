@@ -385,7 +385,8 @@ export const readDataStorage = async () => {
           created: storedDataset?.createdAt ? storedDataset?.createdAt.split('T')[0] : storedDataset?.steps?.[0]?.time ? new Date(storedDataset?.steps?.[0]?.time).toISOString().split('T')[0] : null/* new Date().toISOString().split('T')[0] */,
           sample_count: storedDataset?.summary?.sampleCount || 0,
           taxon_count: storedDataset?.summary?.taxonCount || 0,
-          occurrence_count: storedDataset?.dwc?.summary?.occurrenceCount || 0
+          occurrence_count: storedDataset?.dwc?.summary?.occurrenceCount || 0,
+          gbif_uat_key: storedDataset?.publishing?.gbifDatasetKey || ""
         })
       } 
     }

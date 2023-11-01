@@ -7,18 +7,18 @@ import datasets from '../datasets.js';
 const db = new duckdb.Database(':memory:');
 const con = db.connect();
 
-con.run('CREATE TABLE UserDatasets (user_name STRING, dataset_id STRING, title STRING, created DATE, sample_count INTEGER DEFAULT 0, taxon_count INTEGER DEFAULT 0, occurrence_count INTEGER DEFAULT 0)');
+con.run('CREATE TABLE UserDatasets (user_name STRING, dataset_id STRING, title STRING, created DATE, sample_count INTEGER DEFAULT 0, taxon_count INTEGER DEFAULT 0, occurrence_count INTEGER DEFAULT 0, gbif_uat_key STRING)');
 con.run('CREATE UNIQUE INDEX ud_idx ON Datasets (user_name, dataset_id)');
 
-const createUserDatasetStmt = con.prepare('INSERT INTO UserDatasets VALUES (?, ?, ?, ?, ?, ?, ?)');
+const createUserDatasetStmt = con.prepare('INSERT INTO UserDatasets VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 const updateCountsOnDatasetStmt = con.prepare('UPDATE UserDatasets SET sample_count=?, taxon_count=? WHERE dataset_id=? AND user_name=?');
 const updateOccurrenceCountOnDatasetStmt = con.prepare('UPDATE UserDatasets SET occurrence_count=? WHERE dataset_id=? AND user_name=?');
 
 const updateTitleOnDatasetStmt = con.prepare('UPDATE UserDatasets SET title=? WHERE dataset_id=? AND user_name=?');
 
 const getDatasetByIdStmt = con.prepare('SELECT * FROM UserDatasets WHERE dataset_id = ?');
-const getDatasetsForUserStmt = con.prepare('SELECT * FROM UserDatasets WHERE user_name = ? ORDER BY created ASC');
-const getAllDatasetsStmt = con.prepare('SELECT * FROM UserDatasets');
+const getDatasetsForUserStmt = con.prepare('SELECT * FROM UserDatasets WHERE user_name = ? ORDER BY created DESC');
+const getAllDatasetsStmt = con.prepare('SELECT * FROM UserDatasets ORDER BY created DESC');
 
 
 const createUserDataset = (userName, datasetId, title ="") => {
@@ -26,7 +26,7 @@ const createUserDataset = (userName, datasetId, title ="") => {
     const sqlDate = now.toISOString().split('T')[0]
     return new Promise((resolve, reject) => {
         try {
-            createUserDatasetStmt.run(userName, datasetId, title, sqlDate, 0, 0, 0);
+            createUserDatasetStmt.run(userName, datasetId, title, sqlDate, 0, 0, 0, "");
             resolve()
         } catch (error) {
             console.log("duckDB Error")
@@ -140,10 +140,10 @@ const initialize = (datasets) => {
 
     return new Promise((resolve, reject) => {
         try {
-            datasets.forEach(d => createUserDatasetStmt.run(d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count , (err, res) => {
+            datasets.forEach(d => createUserDatasetStmt.run(d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key , (err, res) => {
                 if(err){
                     console.log(err)
-                    console.log(`${d.user_name}, ${d.dataset_id}, ${d.title}, ${d.created}, ${d.sample_count}, ${d.taxon_count}, ${d.occurrence_count}`)
+                    console.log(`${d.user_name}, ${d.dataset_id}, ${d.title}, ${d.created}, ${d.sample_count}, ${d.taxon_count}, ${d.occurrence_count}, ${d.gbif_uat_key}`)
                     reject(err)
                 }
             } ))
