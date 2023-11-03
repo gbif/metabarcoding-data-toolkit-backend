@@ -360,9 +360,11 @@ export const readXlsxHeaders = async (id, fileName, version) => {
   
   
   const sampleIdIndex = headers.sampleHeaders.indexOf(sampleId);
+
   // Create a Set if sample IDs:
-  const sampleIds = samples?.data.slice(1).map(s => s[sampleIdIndex].trim())
+  const sampleIds = samples?.data.slice(1).filter(s => !!s[sampleIdIndex]).map(s => s[sampleIdIndex].trim())
   
+
 
   const sampleSet = new Set(sampleIds)
 

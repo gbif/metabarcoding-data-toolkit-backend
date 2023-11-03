@@ -379,7 +379,7 @@ export const readDataStorage = async () => {
         // user_name STRING, dataset_id STRING, title STRING, created DATE, sample_count INTEGER DEFAULT 0, taxon_count INTEGER DEFAULT 0, occurrence_count INTEGER DEFAULT 0
         const storedDataset = await getDataset(dir, currentVersion);
         datasets.push({
-          user_name: storedDataset?.createdBy,
+          user_name: storedDataset?.createdBy || "",
           dataset_id: storedDataset?.id,
           title: storedDataset?.metadata?.title || '',
           created: storedDataset?.createdAt ? storedDataset?.createdAt.split('T')[0] : storedDataset?.steps?.[0]?.time ? new Date(storedDataset?.steps?.[0]?.time).toISOString().split('T')[0] : null/* new Date().toISOString().split('T')[0] */,
