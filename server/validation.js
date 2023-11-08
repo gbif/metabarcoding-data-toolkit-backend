@@ -86,7 +86,7 @@ export const validate = async (id, user) => {
 
     } else if(files.format.startsWith('XLSX')) {
       console.log("XLSX coming in")
-      const xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      let xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
       let headers_ = {};
       let sheets_ = {};
       try {
@@ -97,7 +97,14 @@ export const validate = async (id, user) => {
          const xlsxErrors = sheets.reduce((acc, curr) => [...acc, ...(curr?.errors || []).map(e => ({message: e}))],[])
          xlsx.errors = xlsxErrors;
       } catch (error) {
-        console.log(error)
+        if(typeof error === 'string'){
+          xlsx.errors = [{file: xlsx.name, message: error}]
+        }
+        const report = {...processionReport, ...headers_, unzip: false, files:{...files, format: 'INVALID', id: id}};
+        await writeProcessingReport(id, version, report)
+
+        throw error
+        
       }
     
       if(sheets_ && xlsx){
@@ -131,8 +138,15 @@ export default (app) => {
                 let report = await validate(req?.params?.id, req?.user)
                 res.json(report)
             } catch (error) {
+                if(error === 'not found'){
+                  res.sendStatus(404);
+                } else if(typeof error === 'string') {
+                  res.status(422).send(error)
+                } else {
+                  res.sendStatus(500);
+                }
                 console.log(error)
-                res.sendStatus(404);
+                
             }
           
         }
