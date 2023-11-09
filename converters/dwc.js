@@ -67,19 +67,21 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
       const sampleHeaders = Object.keys(_.get(biomData, 'columns[0].metadata'));
   
       const defaults = getDefaultTermsForMetaXml(biomData, dnaTerms, occTerms)
-  
+    // Make a set of sampleHeaders to avoid terms exist in both taxon and sample 
+      const sampleHeaderSet = new Set(sampleHeaders)
       const relevantOccTerms  = [...sampleHeaders.filter(key => occTerms.has(sampleTerm(key)) && !defaults.keySet.has(key)).map(key => occTerms.get(sampleTerm(key))),
-          ...taxonHeaders.filter(key => occTerms.has(taxonTerm(key))  && !defaults.keySet.has(key)).map(key => occTerms.get(taxonTerm(key))),
+          ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && occTerms.has(taxonTerm(key))  && !defaults.keySet.has(key)).map(key => occTerms.get(taxonTerm(key))),
           ...defaults.occDefaultTerms
         ];
       const relevantDnaTerms = [...sampleHeaders.filter(key => dnaTerms.has(sampleTerm(key)) && !defaults.keySet.has(key)).map(key => dnaTerms.get(sampleTerm(key))),
-          ...taxonHeaders.filter(key => dnaTerms.has(taxonTerm(key)) && !defaults.keySet.has(key)).map(key => dnaTerms.get(taxonTerm(key))),
+          ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && dnaTerms.has(taxonTerm(key)) && !defaults.keySet.has(key)).map(key => dnaTerms.get(taxonTerm(key))),
           ...defaults.dnaDefaultTerms
         ];
-      
-     
+        console.log("Sample headers: " +sampleHeaders)
+
+     console.log("Taxon headers: " +taxonHeaders)
       //  console.log("Relevant DNA terms: "+ relevantDnaTerms.map(k => k.name))
-     //   console.log("Relevant OCC terms: "+ relevantOccTerms.map(k => k.name))
+        console.log("Relevant OCC terms: "+ relevantOccTerms.map(k => k.name))
       await writeMetaXml([...relevantOccTerms, occTerms.get('sampleSizeValue'), occTerms.get('sampleSizeUnit'), occTerms.get('organismQuantity'), occTerms.get('organismQuantityType'), occTerms.get('basisOfRecord'), occTerms.get('eventID')],relevantDnaTerms, path)
        
       const occStream = fs.createWriteStream(`${path}/archive/occurrence.txt`, {
@@ -116,7 +118,7 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
       })
 
       const getDataForTermfromSample = (sample, terms) => terms.filter(term => reverseSampleTerm(term.name) in sample.metadata).map(term => sample.metadata[reverseSampleTerm(term.name)] || "").join("\t");
-      const getDataForTermFromTaxon = (taxon, terms) => terms.filter(term => reverseTaxonTerm(term.name) in taxon.metadata).map(term => taxon.metadata[reverseTaxonTerm(term.name)] || "").join("\t"); 
+      const getDataForTermFromTaxon = (taxon, terms) => terms.filter(term => !sampleHeaderSet.has(reverseTaxonTerm(term.name)) && reverseTaxonTerm(term.name) in taxon.metadata).map(term => taxon.metadata[reverseTaxonTerm(term.name)] || "").join("\t"); 
         biomData.columns.forEach((c, cidx) => {
            const rowData = biomData.getDataColumn(c.id);
            rowData.forEach((r, i) => {
@@ -177,10 +179,12 @@ export const otuTableToDWC = async (otuTableFile, sampleFile, taxaFile, termMapp
     // console.log(taxonHeaders)
     const sampleHeaders = Object.keys(samples.entries().next().value[1]);
     // console.log(sampleHeaders)
+    const sampleHeaderSet = new Set(sampleHeaders)
+
     const relevantOccTerms  = [...sampleHeaders.filter(key => occTerms.has(sampleTerm(key))).map(key => occTerms.get(sampleTerm(key))),
-        ...taxonHeaders.filter(key => occTerms.has(taxonTerm(key))).map(key => occTerms.get(taxonTerm(key)))];
+        ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && occTerms.has(taxonTerm(key))).map(key => occTerms.get(taxonTerm(key)))];
     const relevantDnaTerms = [...sampleHeaders.filter(key => dnaTerms.has(sampleTerm(key))).map(key => dnaTerms.get(sampleTerm(key))),
-        ...taxonHeaders.filter(key => dnaTerms.has(taxonTerm(key))).map(key => dnaTerms.get(taxonTerm(key))),
+        ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && dnaTerms.has(taxonTerm(key))).map(key => dnaTerms.get(taxonTerm(key))),
       ];
     await writeMetaXml([...relevantOccTerms, occTerms.get('sampleSizeValue'), occTerms.get('sampleSizeUnit'), occTerms.get('organismQuantity'), occTerms.get('organismQuantityType'),],relevantDnaTerms)
 
@@ -192,7 +196,7 @@ export const otuTableToDWC = async (otuTableFile, sampleFile, taxaFile, termMapp
         flags: "a",
       });
       const getDataForTermfromSample = (sample, terms) => terms.filter(term => reverseSampleTerm(term.name) in sample.metadata).map(term => sample.metadata[reverseSampleTerm(term.name)] || "").join("\t");
-      const getDataForTermFromTaxon = (taxon, terms) => terms.filter(term => reverseTaxonTerm(term.name) in taxon.metadata).map(term => taxon.metadata[reverseTaxonTerm(term.name)] || "").join("\t"); 
+      const getDataForTermFromTaxon = (taxon, terms) => terms.filter(term => !sampleHeaderSet.has(reverseTaxonTerm(term.name)) && reverseTaxonTerm(term.name) in taxon.metadata).map(term => taxon.metadata[reverseTaxonTerm(term.name)] || "").join("\t"); 
     let sampleIdToArrayIndex;
     let count = 0;
     const transformer = transform((record, callback) => {
