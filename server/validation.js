@@ -1,6 +1,7 @@
 import {uploadedFilesAndTypes, unzip} from '../validation/files.js'
 import auth from './Auth/auth.js';
 import {determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders, hasIdColumn} from '../validation/tsvformat.js'
+import {getArrayIntersection} from '../validation/misc.js'
 import {processWorkBookFromFile, readXlsxHeaders} from "../converters/excel.js"
 import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport, readMapping} from '../util/filesAndDirectories.js'
 import _ from "lodash"
@@ -80,6 +81,20 @@ export const validate = async (id, user) => {
         validationReport.taxonHeaders = await readTsvHeaders(fileMap?.taxa?.path, fileMap?.taxa?.properties?.delimiter)
       
       }
+      if(validationReport.sampleHeaders && validationReport.taxonHeaders ){
+        const sampeTaxonHeaderIntersection = getArrayIntersection(validationReport?.sampleHeaders, validationReport?.taxonHeaders);
+         if(sampeTaxonHeaderIntersection.length > 0) {
+          const plural = sampeTaxonHeaderIntersection.length > 1;
+          
+          const taxFile = files.files.find(f => f?.type === 'taxa')
+          if(taxFile){
+            taxFile.errors = taxFile.errors || [];
+            taxFile.errors.push({file: fileMap.taxa.name, message: `The column${plural ? 's':''} ${sampeTaxonHeaderIntersection.join(', ')} ${plural ? 'are' : 'is'} present in both the sample and taxon file. Only the value from the sample file will be added to the DWC archive.`})
+          }
+          
+        
+         }
+      }
       const report = {...processionReport, unzip: false, ...validationReport}
       await writeProcessingReport(id,version, report)
       return report;
@@ -96,6 +111,12 @@ export const validate = async (id, user) => {
          sheets_ = sheets
          const xlsxErrors = sheets.reduce((acc, curr) => [...acc, ...(curr?.errors || []).map(e => ({message: e}))],[])
          xlsx.errors = xlsxErrors;
+
+         const sampeTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders, headers?.taxonHeaders);
+         if(sampeTaxonHeaderIntersection.length > 0) {
+          const plural = sampeTaxonHeaderIntersection.length > 1;
+          xlsx.errors.push({file: xlsx.name, message: `The column${plural ? 's':''} ${sampeTaxonHeaderIntersection.join(', ')} ${plural ? 'are' : 'is'} present in both the sample and taxon sheet. Only the value from the sample sheet will be added to the DWC archive.`})
+         }
       } catch (error) {
         if(typeof error === 'string'){
           xlsx.errors = [{file: xlsx.name, message: error}]
