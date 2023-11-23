@@ -99,6 +99,7 @@ const getDatasetById = (dataset_id) => {
 }
 const getUserDatasets = (userName) => {
     return new Promise((resolve, reject) => {
+        console.log("getDatasetsForUserStmt")
         try {
             getDatasetsForUserStmt.all(userName, function(err, res){
                 if (err) {
@@ -119,16 +120,20 @@ const getUserDatasets = (userName) => {
 
 const getAllDatasets = () => {
     return new Promise((resolve, reject) => {
+        console.log("getAllDatasetsStmt")
         try {
             getAllDatasetsStmt.all(function(err, res){
                 if (err) {
+                    console.log(err)
                     reject(err)
                   } else {
-                    resolve(res/* .map(element => element.dataset_id) */)       
+                    resolve(res)       
                   }
                    
                })
         } catch (error) {
+            console.log(err)
+
             reject(error)
         }
     })
@@ -151,6 +156,7 @@ const initialize = (datasets) => {
            // createUserDatasetStmt.finalize();  
             resolve()
         } catch (error) {
+            console.log(`DB INIT ERROR ${initialize}`)
             console.log(error)
             reject(error)
         }

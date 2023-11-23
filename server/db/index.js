@@ -1,5 +1,5 @@
 
-import dbImplementation from './duckDbImpl.js'
+import dbImplementation from './duckDbAsyncImpl.js'
 
 
 

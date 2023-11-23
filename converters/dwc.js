@@ -77,7 +77,7 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
           ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && dnaTerms.has(taxonTerm(key)) && !defaults.keySet.has(key)).map(key => dnaTerms.get(taxonTerm(key))),
           ...defaults.dnaDefaultTerms
         ];
-        console.log("Sample headers: " +sampleHeaders)
+       // console.log("Sample headers: " +sampleHeaders)
 
      console.log("Taxon headers: " +taxonHeaders)
       //  console.log("Relevant DNA terms: "+ relevantDnaTerms.map(k => k.name))
