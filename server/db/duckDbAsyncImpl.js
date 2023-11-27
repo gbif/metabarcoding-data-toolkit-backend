@@ -32,7 +32,7 @@ const createUserDataset = async (userName, datasetId, title ="") => {
     try {
         const stmt = await con.prepare(createUserDatasetStmt)
 
-         await stmt.run(userName, datasetId, title, sqlDate, 0, 0, 0, "");
+         await stmt.run(userName, datasetId, title, sqlDate, 0, 0, 0, "", null);
          await stmt.finalize()
 
     } catch (error) {
