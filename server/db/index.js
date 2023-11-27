@@ -5,6 +5,8 @@ import dbImplementation from './duckDbAsyncImpl.js'
 
 export const createUserDataset = dbImplementation.createUserDataset;
 
+export const deleteUserDataset = dbImplementation.deleteUserDataset;
+
 export const getUserDatasets = dbImplementation.getUserDatasets;
 
 export const getAllDatasets = dbImplementation.getAllDatasets;
@@ -21,6 +23,7 @@ export const initialize = dbImplementation.initialize
 
 export default {
     createUserDataset,
+    deleteUserDataset,
     getUserDatasets,
     getAllDatasets,
     getDatasetById,
