@@ -208,20 +208,24 @@ export const toBiom = async (
 
       otuTable.data.slice(1).forEach((row, rowIndex) => {
         if (!!row[0] && taxaMap.has(row[0])) {
+         
           let columnIdx = 0;
+          rows.push(row[0]);
+        
           row.slice(1).forEach((val, index) => {
             if (
               !isNaN(Number(val)) &&
               Number(val) > 0 &&
               sampleMap.has(columns[index])
             ) {
-              sparseData.push([rowIndex, columnIdx, Number(val)]);
+              // cannot rely on rowIndex if there are rows in the OTU table that has taxon ids not in the taxon file
+              sparseData.push([rows.length-1/* rowIndex */, columnIdx, Number(val)]);
             }
             if (sampleMap.has(columns[index])) {
               columnIdx++;
             }
           });
-          rows.push(row[0]);
+          
           if (rowIndex + (1 % 100) === 0) {
             processFn(
               rowIndex,
@@ -246,13 +250,16 @@ export const toBiom = async (
         "Reading OTU table  from spreadsheet",
         { taxonCount: rows.length }
       );
-
+      
+      console.log("taxonIdsWithNoRecordInTaxonFile length "+ taxonIdsWithNoRecordInTaxonFile.length)
       console.log(
         `Samples in metadata: ${sampleMap.size} in OTU table: ${columns.length}`
       );
+      console.log(`Cols length: ${cols.length}`)
       console.log(
         `Taxa in metadata: ${taxaMap.size} in OTU table: ${rows.length}`
       );
+      console.log(`Rows length: ${rows.length}`)
       const biom = new Biom({
         rows: rows.map((r) => ({ id: r, metadata: taxaMap.get(r) })), // rows.map(r => ({id: r, metadata: taxaMap.get(r)})),
         comment: getGroupMetaDataAsJsonString(termMapping),
