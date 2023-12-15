@@ -21,8 +21,8 @@ import cors from 'cors'
 import authController from './Auth/auth.controller.js'
 import userController from './Auth/user.controller.js'
 import { getCurrentDatasetVersion, writeProcessingReport, initDatabase } from '../util/filesAndDirectories.js'
-import SegfaultHandler from 'segfault-handler';
-SegfaultHandler.registerHandler('crash.log');
+/* import SegfaultHandler from 'segfault-handler';
+SegfaultHandler.registerHandler('crash.log'); */
 
 
 initDatabase()
