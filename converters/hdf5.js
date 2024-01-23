@@ -6,7 +6,7 @@ const generatedByString = "GBIF eDNA Tool";
 const MAX_FIXED_STRING_LENGTH = 1024
 
 const init = async () => {
-    h5wasm = await import("h5wasm");
+    h5wasm = await import("h5wasm/node");
     await h5wasm?.ready
     return h5wasm
 }
