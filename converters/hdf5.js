@@ -90,7 +90,7 @@ const getTypeAndValues = (arr, attr) => {
                 length = data.length;
             }
         } else if (typeof data === 'number') {
-            type = 'f'
+            type = 'd'
         } else {
             // console.log('H5 type guesser '+attr+ ' '+ typeof data)
             /* if (_.isUndefined(data)) {
@@ -110,7 +110,7 @@ const getTypeAndValues = (arr, attr) => {
         type = "S";
         length = 1
     } else if(allValuesAreNumbers){
-         type = 'f'
+         type = 'd'
     }
     let key = attr.split('metadata.')?.[1]
     // Skip columns with strings longer than MAX_FIXED_STRING_LENGTH, and report to the user which columns have been skipped. But what if the sequences are longer?
