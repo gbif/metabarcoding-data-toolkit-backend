@@ -52,7 +52,10 @@ async function getFromToken(auth) {
         
 
     } catch (error) {
-        console.log(error)
+        if(error?.response?.status || error?.response?.statusText){
+            console.log(`Status: ${error?.response?.status} ${error?.response?.statusText || ""}`)
+        }
+       // console.log(error)
         throw error;  
     }
     
