@@ -1,5 +1,5 @@
 
-import {deleteOriginalFile, getCurrentDatasetVersion} from '../util/filesAndDirectories.js'
+import {deleteOriginalFile, getCurrentDatasetVersion, fileExists, wipeGeneratedFilesAndResetProccessing} from '../util/filesAndDirectories.js'
 import {validate} from './validation.js'
 import {getMimeFromPath} from '../validation/files.js'
 import auth from './Auth/auth.js';
@@ -17,6 +17,10 @@ const deleteUploadedFile = async  (req, res) => {
             } 
             await deleteOriginalFile(req.params.id, version, req.params.filename)
             await validate(req.params.id)
+            const hasBiom = await fileExists(req.params.id, version, 'data.biom.json')
+            if(hasBiom){
+                await wipeGeneratedFilesAndResetProccessing(req.params.id, version)
+            }
             res.sendStatus(200) 
         } catch (error) {
             console.log(error)

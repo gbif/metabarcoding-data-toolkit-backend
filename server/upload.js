@@ -3,7 +3,7 @@ import fs from 'fs';
 import config from '../config.js'
 import auth from './Auth/auth.js';
 import db from './db/index.js'
-import {writeEmlJson, writeEmlXml, getCurrentDatasetVersion} from '../util/filesAndDirectories.js'
+import {writeEmlJson,fileExists, wipeGeneratedFilesAndResetProccessing, getMetadata, writeEmlXml, getCurrentDatasetVersion} from '../util/filesAndDirectories.js'
 
 const storage = multer.diskStorage({
   //Specify the destination directory where the file needs to be saved
@@ -47,9 +47,38 @@ export default  (app) => {
     }
     
   })
-app.put('/dataset/:id/upload', auth.userCanModifyDataset(), upload.array('tables', 5), function (req, res, next) {
-    console.log(req.files)
-    console.log(req.id)
-    res.send(req?.params?.id)
+app.put('/dataset/:id/upload', auth.userCanModifyDataset(), upload.array('tables', 5), async function (req, res, next) {
+  try {
+    let version = req?.query?.version;
+    if(!version){
+        version = await getCurrentDatasetVersion(req.params.id)
+    }  
+    const hasBiom = await fileExists(req.params.id, version, 'data.biom.json')
+    if(hasBiom){
+        await wipeGeneratedFilesAndResetProccessing(req.params.id, version)
+    }
+    const datasetTitle = req.body?.datasetTitle || ""
+    console.log(`Dataset ${req.params.id} changed by ${req?.user?.userName}. Title: ${datasetTitle}`)
+    if(datasetTitle){
+      let metadata = await getMetadata(req.params.id, version)
+      if(metadata?.title !== datasetTitle){
+        await writeEmlJson(req.params.id, version, {...metadata, title: datasetTitle})
+        try {
+          await db.updateTitleOnDataset(req?.user?.userName, req.params.id, datasetTitle)
+        } catch (error) {
+          console.log(`Could not update datazset title in DB for dataset: ${req.params.id}`)
+          console.log(error)
+        }
+        
+      }
+    }
+    //res.send(req?.params?.id)
+    res.sendStatus(204)
+ 
+} catch (error) {
+    console.log(error)
+    res.sendStatus(500)
+}
+  
   })
 }

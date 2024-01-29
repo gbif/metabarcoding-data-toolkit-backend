@@ -305,6 +305,7 @@ const resetFilesAndProcessingStepsInReport = async (id, version) => {
         delete report?.filesAvailable;
         delete report?.steps;
         delete report?.dwc;
+        delete report?.summary;
       //  console.log("Write report")
      //   console.log(report)
         await writeProcessingReport(id, version, report)
