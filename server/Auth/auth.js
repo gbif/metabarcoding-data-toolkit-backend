@@ -37,6 +37,7 @@ const userCanModifyDataset = () => {
             .then((user) => {
                 if (user) {
                     req.user = user;
+                    res.setHeader('token', user?.token);
                     const datasets = user?.datasets || [];
 
                     if(datasets.map(d => d.dataset_id).includes(req?.params?.id)){
@@ -46,6 +47,8 @@ const userCanModifyDataset = () => {
 
                 } else {
                     console.log('userCanModifyDataset false')
+                    res.removeHeader('token');
+                    delete req.user;
                     res.sendStatus(403)
                 }
                 
