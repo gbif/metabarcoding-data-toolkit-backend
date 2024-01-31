@@ -30,7 +30,7 @@ const config = {
     EXPRESS_PORT: 9000
 }
 
-app.use(cors())
+app.use(cors({exposedHeaders: ['token']}))
 app.use(addRequestId());
 app.use(bodyParser.json({
     limit: '1mb'
