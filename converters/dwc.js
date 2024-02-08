@@ -7,7 +7,7 @@ import streamReader from '../util/streamReader.js';
 //const {streamReader} = util;
 
 const DEFAULT_UNIT = "DNA sequence reads";
-const BASIS_OF_RECORD = "Material Sample";
+const BASIS_OF_RECORD = "MATERIAL_SAMPLE";
 
 const writeMetaXml = async (occCore, dnaExt, path ) =>  await fs.promises.writeFile(`${path}/archive/meta.xml`, util.metaXml(occCore, dnaExt))
 

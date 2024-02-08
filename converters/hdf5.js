@@ -72,7 +72,7 @@ const getTypeAndValues = (arr, attr) => {
     const values = arr.map(elm => {
         const data = _.get(elm, attr)
 
-        if(isNaN(Number(data))){
+        if(typeof data === 'object' || isNaN(Number(data))){
             allValuesAreNumbers = false;
         }
         if (_.isArray(data)) {
@@ -91,15 +91,16 @@ const getTypeAndValues = (arr, attr) => {
             }
         } else if (typeof data === 'number') {
             type = 'd'
-        } else {
-            // console.log('H5 type guesser '+attr+ ' '+ typeof data)
-            /* if (_.isUndefined(data)) {
-                type = 'S';
-                length = 1;
-            } */
+        } else if(typeof data === 'object' && data instanceof Date) {
+            type = 'S';
+            const dateString = data.toISOString();
+            const datePart = dateString.split("T")[0]
+            length = datePart.length
+            return datePart;
         }
-        return _.isUndefined(data) ? "" : data;
+        return _.isUndefined(data) ? "" /* : (typeof data === 'object' && data instanceof Date) ? data.toString() */ : data;
     })
+
    /*  if(attr === 'e_value'){
         console.log("e_value type "+ type)
     }
@@ -229,8 +230,9 @@ export const writeHDF5 = async (biom, hdf5file) => {
         
             Object.keys(biom.rows[0].metadata).forEach(key => {
                 let data;
+                
             try {
-                data = getTypeAndValues(biom.rows, `metadata.${key}`);
+                data = getTypeAndValues(biom.rows, `metadata.${key}`);    
                 // f.get('observation/metadata').create_dataset(key, data.values, null, data.type)
                 f.get('observation/metadata').create_dataset({name: key,data: data.values, dtype: data.type})
 
