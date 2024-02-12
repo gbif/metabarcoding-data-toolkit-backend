@@ -1,7 +1,7 @@
 import { biomToDwc } from '../converters/dwc.js';
 //import config from '../config.js'
 import _ from 'lodash'
-import {  readBiom, zipDwcArchive } from '../util/filesAndDirectories.js'
+import {  readBiom, zipDwcArchive, readMapping } from '../util/filesAndDirectories.js'
 import {updateStatusOnCurrentStep, beginStep, stepFinished,  finishedJobSuccesssFully, finishedJobWithError } from "./util.js"
 
 
@@ -19,8 +19,8 @@ const createDwc = async (id, version, dataStorage) => {
         
         beginStep('writeDwc')
         console.log("Begin write dwc from worker")
-
-        await biomToDwc(biom, undefined, `${dataStorage}${id}/${version}`, updateStatusOnCurrentStep)
+        const mapping = await readMapping(id, version)
+        await biomToDwc(biom,  mapping, `${dataStorage}${id}/${version}`, updateStatusOnCurrentStep)
         
         stepFinished('writeDwc')
         

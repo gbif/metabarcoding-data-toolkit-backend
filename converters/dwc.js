@@ -9,7 +9,7 @@ import streamReader from '../util/streamReader.js';
 const DEFAULT_UNIT = "DNA sequence reads";
 const BASIS_OF_RECORD = "MATERIAL_SAMPLE";
 
-const writeMetaXml = async (occCore, dnaExt, path ) =>  await fs.promises.writeFile(`${path}/archive/meta.xml`, util.metaXml(occCore, dnaExt))
+const writeMetaXml = async (hasEmof, occCore, dnaExt, path ) =>  await fs.promises.writeFile(`${path}/archive/meta.xml`, util.metaXml(occCore, dnaExt, hasEmof))
 
 const getDefaultTermsForMetaXml = (biomData, dnaTerms, occTerms) => {
   let occDefaultTerms = []
@@ -45,21 +45,35 @@ const getDefaultTermsForMetaXml = (biomData, dnaTerms, occTerms) => {
   return {occDefaultTerms, dnaDefaultTerms, keySet}
 }
 
+const writeEmofForRow = (emofStream, termMapping, sample, occurrenceId) => {
 
-export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}, path, processFn = (progress, total, message, summary) => {}) => {
+  try {
+    let dataString = "";
+    const measurements = termMapping?.measurements || {};
+    Object.keys(measurements).forEach(m => {
+      dataString += `${occurrenceId}\t${measurements[m]?.measurementType || ""}\t${sample?.metadata?.[m]}\t${measurements[m]?.measurementUnit || ""}\t${measurements[m]?.measurementAccurracy || ""}\t${measurements[m]?.measurementMethod || ""}\n`
+    })
+    emofStream.write(dataString)
+  } catch (error) {
+    console.log("EMOF ERROR")
+    console.log(error)
+  }
+}
 
+export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}, defaultValues: {}, measurements: {}}, path, processFn = (progress, total, message, summary) => {}) => {
+  const hasEmof = Object.keys(termMapping?.measurements).length > 0;
   return new Promise(async (resolve, reject) => {
     try{
 
       if (!fs.existsSync(`${path}/archive`)){
        await fs.promises.mkdir(`${path}/archive`, { recursive: true });
     }
-      const reverseTaxonTerms = util.objectSwap(termMapping.taxa)
-      const reverseSampleTerms = util.objectSwap(termMapping.samples)
-      const taxonTerm = key => _.get(termMapping, `taxa.${key}`, key);
-      const sampleTerm = key =>  _.get(termMapping, `samples.${key}`, key);
-      const reverseSampleTerm = key => _.get(reverseSampleTerms, `${key}`, key);
-      const reverseTaxonTerm = key => _.get(reverseTaxonTerms, `${key}`, key);
+      // const reverseTaxonTerms = util.objectSwap(termMapping.taxa)
+     // const reverseSampleTerms = util.objectSwap(termMapping.samples)
+     // const taxonTerm = key =>   key // _.get(termMapping, `taxa.${key}`, key);
+     // const sampleTerm = key =>  key // _.get(termMapping, `samples.${key}`, key);
+     // const reverseSampleTerm = key =>  key// _.get(reverseSampleTerms, `${key}`, key);
+     // const reverseTaxonTerm = key =>  key //_.get(reverseTaxonTerms, `${key}`, key);
       const dnaTerms = await util.dwcTerms('dna_derived_data');
       const occTerms = await util.dwcTerms('dwc_occurrence');
       const taxonHeaders = Object.keys(_.get(biomData, 'rows[0].metadata'));
@@ -69,12 +83,12 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
       const defaults = getDefaultTermsForMetaXml(biomData, dnaTerms, occTerms)
     // Make a set of sampleHeaders to avoid terms exist in both taxon and sample 
       const sampleHeaderSet = new Set(sampleHeaders)
-      const relevantOccTerms  = [...sampleHeaders.filter(key => occTerms.has(sampleTerm(key)) && !defaults.keySet.has(key)).map(key => occTerms.get(sampleTerm(key))),
-          ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && occTerms.has(taxonTerm(key))  && !defaults.keySet.has(key)).map(key => occTerms.get(taxonTerm(key))),
+      const relevantOccTerms  = [...sampleHeaders.filter(key => occTerms.has(key) && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
+          ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && occTerms.has(key)  && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
           ...defaults.occDefaultTerms
         ];
-      const relevantDnaTerms = [...sampleHeaders.filter(key => dnaTerms.has(sampleTerm(key)) && !defaults.keySet.has(key)).map(key => dnaTerms.get(sampleTerm(key))),
-          ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && dnaTerms.has(taxonTerm(key)) && !defaults.keySet.has(key)).map(key => dnaTerms.get(taxonTerm(key))),
+      const relevantDnaTerms = [...sampleHeaders.filter(key => dnaTerms.has(key) && !defaults.keySet.has(key)).map(key => dnaTerms.get(key)),
+          ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && dnaTerms.has(key) && !defaults.keySet.has(key)).map(key => dnaTerms.get(key)),
           ...defaults.dnaDefaultTerms
         ];
        // console.log("Sample headers: " +sampleHeaders)
@@ -82,7 +96,7 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
      console.log("Taxon headers: " +taxonHeaders)
       //  console.log("Relevant DNA terms: "+ relevantDnaTerms.map(k => k.name))
         console.log("Relevant OCC terms: "+ relevantOccTerms.map(k => k.name))
-      await writeMetaXml([...relevantOccTerms, occTerms.get('sampleSizeValue'), occTerms.get('sampleSizeUnit'), occTerms.get('organismQuantity'), occTerms.get('organismQuantityType'), occTerms.get('basisOfRecord'), occTerms.get('eventID')],relevantDnaTerms, path)
+      await writeMetaXml(hasEmof, [...relevantOccTerms, occTerms.get('sampleSizeValue'), occTerms.get('sampleSizeUnit'), occTerms.get('organismQuantity'), occTerms.get('organismQuantityType'), occTerms.get('basisOfRecord'), occTerms.get('eventID')],relevantDnaTerms, path)
        
       const occStream = fs.createWriteStream(`${path}/archive/occurrence.txt`, {
           flags: "a",
@@ -90,15 +104,19 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
       const dnaStream = fs.createWriteStream(`${path}/archive/dna.txt`, {
           flags: "a",
         });
+      const emofStream = hasEmof ? fs.createWriteStream(`${path}/archive/emof.txt`, {
+          flags: "a",
+        }) : null;
       let occStreamClosed = false;
       let dnaStreamClosed = false; 
-      
+      let emofStreamClosed = hasEmof ? false : true;
+
       let occurrenceCount = 0;
       occStream.on('finish', () => {
         console.log("OCC stream finished")
         processFn(biomData.columns.length, biomData.columns.length, 'Finished writing DWC Ocurrences and DNA sequences', {occurrenceCount})
         occStreamClosed = true;
-        if(dnaStreamClosed){
+        if(dnaStreamClosed && emofStreamClosed){
           resolve()
         }
       })
@@ -106,7 +124,15 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
         console.log("DNA stream finished")
 
         dnaStreamClosed = true;
-        if(occStreamClosed){
+        if(occStreamClosed && emofStreamClosed){
+          resolve()
+        }
+      })
+      emofStream?.on('finish', () => {
+        console.log("EMOF stream finished")
+
+        emofStreamClosed = true;
+        if(occStreamClosed && dnaStreamClosed){
           resolve()
         }
       })
@@ -116,9 +142,12 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
       dnaStream.on('error', (err) => {
         reject(err)
       })
+      emofStream?.on('error', (err) => {
+        reject(err)
+      })
 
-      const getDataForTermfromSample = (sample, terms) => terms.filter(term => reverseSampleTerm(term.name) in sample.metadata).map(term => sample.metadata[reverseSampleTerm(term.name)] || "").join("\t");
-      const getDataForTermFromTaxon = (taxon, terms) => terms.filter(term => !sampleHeaderSet.has(reverseTaxonTerm(term.name)) && reverseTaxonTerm(term.name) in taxon.metadata).map(term => taxon.metadata[reverseTaxonTerm(term.name)] || "").join("\t"); 
+      const getDataForTermfromSample = (sample, terms) => terms.filter(term => term.name in sample.metadata).map(term => sample.metadata[term.name] || "").join("\t");
+      const getDataForTermFromTaxon = (taxon, terms) => terms.filter(term => !sampleHeaderSet.has(term.name) && term.name in taxon.metadata).map(term => taxon.metadata[term.name] || "").join("\t"); 
         biomData.columns.forEach((c, cidx) => {
            const rowData = biomData.getDataColumn(c.id);
            rowData.forEach((r, i) => {
@@ -136,7 +165,10 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
                   let dnaSampleData = getDataForTermfromSample(c, relevantDnaTerms);         
                   let dnaTaxonData = getDataForTermFromTaxon(row, relevantDnaTerms);
                   dnaStream.write(`${occurrenceId}\t${dnaSampleData ? `${dnaSampleData}\t` : ""}${dnaTaxonData ? dnaTaxonData : ""}\n`);
-
+                 if(hasEmof){
+                  writeEmofForRow(emofStream, termMapping, c, occurrenceId)
+                 }
+                  
                   occurrenceCount ++
               }
            })
@@ -145,7 +177,7 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
         })
         occStream.close()
         dnaStream.close()
-
+        emofStream?.close()
       } catch (error){
         console.log(error)
         reject(error)
@@ -156,6 +188,8 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}}
 
 
 export const otuTableToDWC = async (otuTableFile, sampleFile, taxaFile, termMapping, path, delimiter) => {
+  const hasEmof = Object.keys(termMapping?.measurements).length > 0;
+
   try{
 
     if (!fs.existsSync(`${path}/archive`)){
@@ -186,7 +220,7 @@ export const otuTableToDWC = async (otuTableFile, sampleFile, taxaFile, termMapp
     const relevantDnaTerms = [...sampleHeaders.filter(key => dnaTerms.has(sampleTerm(key))).map(key => dnaTerms.get(sampleTerm(key))),
         ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && dnaTerms.has(taxonTerm(key))).map(key => dnaTerms.get(taxonTerm(key))),
       ];
-    await writeMetaXml([...relevantOccTerms, occTerms.get('sampleSizeValue'), occTerms.get('sampleSizeUnit'), occTerms.get('organismQuantity'), occTerms.get('organismQuantityType'),],relevantDnaTerms)
+    await writeMetaXml(hasEmof, [...relevantOccTerms, occTerms.get('sampleSizeValue'), occTerms.get('sampleSizeUnit'), occTerms.get('organismQuantity'), occTerms.get('organismQuantityType'),],relevantDnaTerms)
 
    
     const occStream = fs.createWriteStream(`${path}/archive/occurrence.txt`, {

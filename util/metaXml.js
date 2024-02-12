@@ -1,6 +1,6 @@
 import {encode} from 'html-entities';
 
-export default (occCore, dnaExt) => {
+export default (occCore, dnaExt, hasEmof) => {
 const coreTerms = occCore.filter(term => !term.default).map((term, idx) => `<field index="${idx+1}" term="${term.qualName}"/>`).join(`
 `);
 const coreDefaultValueTerms = occCore.filter(term => !!term.default).map((term, idx) => `<field default="${encode(term.default, {mode: 'nonAsciiPrintable', level: 'xml'})}" term="${term.qualName}"/>`).join(`
@@ -9,6 +9,18 @@ const dnaTerms = dnaExt.filter(term => !term.default).map((term, idx) => `<field
 `);
 const dnaDefaultValueTerms = dnaExt.filter(term => !!term.default).map((term, idx) => `<field default="${encode(term.default, {mode: 'nonAsciiPrintable', level: 'xml'})}" term="${term.qualName}"/>`).join(`
 `);
+
+const emof = hasEmof ? `<extension encoding="UTF-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy='' ignoreHeaderLines="0" rowType="http://rs.iobis.org/obis/terms/ExtendedMeasurementOrFact">
+<files>
+  <location>emof.txt</location>
+</files>
+<coreid index="0" />
+    <field index="1" term="http://rs.tdwg.org/dwc/terms/measurementType"/>
+    <field index="2" term="http://rs.tdwg.org/dwc/terms/measurementValue"/>
+    <field index="3" term="http://rs.tdwg.org/dwc/terms/measurementUnit"/>
+    <field index="4" term="http://rs.tdwg.org/dwc/terms/measurementAccuracy"/>
+    <field index="5" term="http://rs.tdwg.org/dwc/terms/measurementMethod"/>
+</extension>` : "";
 
 return `<archive
 xmlns="http://rs.tdwg.org/dwc/text/" metadata="eml.xml">
@@ -30,6 +42,7 @@ xmlns="http://rs.tdwg.org/dwc/text/" metadata="eml.xml">
     ${dnaTerms}
     ${dnaDefaultValueTerms}
 </extension>
+${emof}
 </archive>
 `
 }
