@@ -10,7 +10,7 @@ const getBibliography = (biblioGraphicReferences) => {
     if(!biblioGraphicReferences){
         return ""
     } else {
-      const refs = Object.keys(biblioGraphicReferences).map(k => `<citation identifier="DOI:${k}">${escapeHtml(biblioGraphicReferences[k])}</citation>`)
+      const refs = Object.keys(biblioGraphicReferences).map(k => `<citation identifier="DOI:${escapeHtml(k)}">${escapeHtml(biblioGraphicReferences[k])}</citation>`)
       return `<bibliography>${refs.join("")}</bibliography>`
     }
 }
@@ -32,7 +32,8 @@ const getKeywords = (keywords) => {
         return ""
     } else {
       let kWords = keywords.map(s => `<keyword>${escapeHtml(s)}</keyword>`).join("")
-      return `<keywordSet>${kWords}</keywordSet>`
+      return `<keywordSet>${kWords}<keywordThesaurus>${escapeHtml("N/A")}</keywordThesaurus>
+      </keywordSet>`
     }
 }
 
