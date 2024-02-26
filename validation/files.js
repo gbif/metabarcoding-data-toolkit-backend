@@ -3,7 +3,7 @@ import config from '../config.js'
 import {execSync, exec}  from 'child_process';
 import { determineFileNames, analyseCsv } from './tsvformat.js';
 import {readDefaultValues} from '../util/streamReader.js';
-import {writeMapping} from '../util/filesAndDirectories.js'
+import {writeMapping, readMapping} from '../util/filesAndDirectories.js'
 // there may be hidden 'application/octet-stream' files when unzipping an excel workbook
 const mimeTypesToBeRemoved = ['application/zip', 'application/octet-stream']
 
@@ -151,10 +151,11 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
                 const csvProperties = await analyseCsv(defaultValuesFile.path)
                 defaultValuesFile.properties =  csvProperties; // {delimiter : csvProperties.delimiter} ;
                 const defaultValues = await readDefaultValues(defaultValuesFile?.path, defaultValuesFile?.properties?.delimiter);
+                const mapping = await readMapping(id, version)
                 await writeMapping(id, version, 
                     {
-                      samples: {},
-                      taxa: {},
+                      samples: mapping?.samples || {},
+                      taxa: mapping?.taxa || {},
                       defaultValues
                     })  
 

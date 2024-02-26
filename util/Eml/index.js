@@ -3,7 +3,6 @@ import {encode} from 'html-entities';
 
 const escapeHtml = (unsafe) => {
     return encode(unsafe, {mode: 'nonAsciiPrintable', level: 'xml'})
-   // return unsafe.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
 
 const getBibliography = (biblioGraphicReferences) => {
