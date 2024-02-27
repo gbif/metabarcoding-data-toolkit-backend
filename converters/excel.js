@@ -6,6 +6,7 @@ import config from "../config.js";
 import util from "../util/index.js";
 import { writeMapping } from "../util/filesAndDirectories.js";
 import { getGroupMetaDataAsJsonString } from "../validation/termMapper.js";
+import { getMetaDataRow } from "../util/index.js";
 // import {getDataForBiomFile, getMetadataRowsWithNoIdInOTUtable} from './dataintegrity.js';
 
 const extractTaxaFromOTUtable = (otuTable, samples, termMapping) => {
@@ -261,7 +262,7 @@ export const toBiom = async (
       );
       console.log(`Rows length: ${rows.length}`)
       const biom = new Biom({
-        rows: rows.map((r) => ({ id: r, metadata: taxaMap.get(r) })), // rows.map(r => ({id: r, metadata: taxaMap.get(r)})),
+        rows: rows.map((r) =>  getMetaDataRow(taxaMap.get(r) )), //({ id: r, metadata: taxaMap.get(r) })), // rows.map(r => ({id: r, metadata: taxaMap.get(r)})),
         comment: getGroupMetaDataAsJsonString(termMapping),
         columns: cols.map((c) => ({ id: c, metadata: sampleMap.get(c) })), // columns.map(c => ({id: c, metadata: sampleMap.get(c)})),
         matrix_type: "sparse",

@@ -3,8 +3,8 @@ import fs from 'fs';
 import {Biom} from 'biojs-io-biom';
 import _ from 'lodash'
 import {getGroupMetaDataAsJsonString} from '../validation/termMapper.js'
-
-const getMetaDataRow = row => {
+import {getMetaDataRow} from '../util/index.js'
+/* const getMetaDataRow = row => {
     if(!row?.id){
        console.log(row)
     }
@@ -14,7 +14,7 @@ const getMetaDataRow = row => {
        console.log(error)
     }
     
-    }
+    } */
 const getReadCount = (biom, column) => biom.getDataColumn(column).reduce((partialSum, a) => partialSum + Number(a), 0);
 
 // Calculate total reads in sample and set in metadata

@@ -348,7 +348,7 @@ export const readFastaAsMap = (path, progressFn = ()=>{},) => {
            
          // const splitted = record[0].split("\n")
           if(!!record[0] && !!record[1]){
-            records.set(record[0], record[1])  
+            records.set(record[0], record[1].toUpperCase())  
          count++;
           }
           
