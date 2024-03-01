@@ -55,7 +55,7 @@ const config = {
         gbifUsername: gbifCredentials?.username,
         gbifPassword: gbifCredentials?.password
     },
-    uat: {
+    prod: {
         env: 'prod',
      //   duckdb:  __dirname + "../edna-tool-data/edna_duck.db",
         dataStorage : "/mnt/auto/misc/hosted-datasets.gbif.org/edna/",
