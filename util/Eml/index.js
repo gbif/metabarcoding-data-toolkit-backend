@@ -82,10 +82,10 @@ export const getEml = ({id, license, title, description, contact, creator, metho
           ${new Date().toISOString().split("T")[0]}
           </pubDate>
             <language>ENGLISH</language>
-            ${description ? `<abstract>
-            <para>${escapeHtml(description)}</para>
+            <abstract>
+            ${description ? `<para>${escapeHtml(description)}</para>` : "" }
             <para>[This dataset was processed using the GBIF eDNA converter tool.]</para>
-        </abstract>` : "" }
+        </abstract>
             ${getKeywords(keywords)}
             <intellectualRights>
                 <para>This work is licensed under a 
