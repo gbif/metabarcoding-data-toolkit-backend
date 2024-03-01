@@ -5,11 +5,11 @@ const escapeHtml = (unsafe) => {
     return encode(unsafe, {mode: 'nonAsciiPrintable', level: 'xml'})
 }
 
-const getBibliography = (biblioGraphicReferences) => {
-    if(!biblioGraphicReferences){
+const getBibliography = (bibliographicReferences) => {
+    if(!bibliographicReferences){
         return ""
     } else {
-      const refs = Object.keys(biblioGraphicReferences).map(k => `<citation identifier="DOI:${escapeHtml(k)}">${escapeHtml(biblioGraphicReferences[k])}</citation>`)
+      const refs = bibliographicReferences.map(ref => `<citation identifier="DOI:${escapeHtml(ref?.key)}">${escapeHtml(ref?.value)}</citation>`)
       return `<bibliography>${refs.join("")}</bibliography>`
     }
 }
@@ -62,7 +62,7 @@ const getAgent = (agent, type) => {
     } 
 }
 
-export const getEml = ({id, license, title, description, contact, creator, methodSteps, doi, url, biblioGraphicReferences, keywords}) => {
+export const getEml = ({id, license, title, description, contact, creator, methodSteps, doi, url, bibliographicReferences, keywords}) => {
     if(!licenseEnum[license]){
         throw "invalid or missing license"
     }
@@ -84,6 +84,7 @@ export const getEml = ({id, license, title, description, contact, creator, metho
             <language>ENGLISH</language>
             ${description ? `<abstract>
             <para>${escapeHtml(description)}</para>
+            <para>[This dataset was processed using the GBIF eDNA converter tool.]</para>
         </abstract>` : "" }
             ${getKeywords(keywords)}
             <intellectualRights>
@@ -104,7 +105,7 @@ export const getEml = ({id, license, title, description, contact, creator, metho
         <additionalMetadata>
             <metadata>
                 <gbif>
-                    ${getBibliography(biblioGraphicReferences)}
+                    ${getBibliography(bibliographicReferences)}
                 </gbif>
             </metadata>
         </additionalMetadata>

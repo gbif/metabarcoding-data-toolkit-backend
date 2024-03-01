@@ -61,7 +61,7 @@ const writeEmofForRow = (emofStream, termMapping, sample, occurrenceId) => {
 }
 
 export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}, defaultValues: {}, measurements: {}}, path, processFn = (progress, total, message, summary) => {}) => {
-  const hasEmof = Object.keys(termMapping?.measurements).length > 0;
+  const hasEmof = Object.keys((termMapping?.measurements || {})).length > 0;
   return new Promise(async (resolve, reject) => {
     try{
 

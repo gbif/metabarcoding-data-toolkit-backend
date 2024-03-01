@@ -15,13 +15,13 @@ export default {
             }, 
              {
                 name: 'decimalLatitude',
-                description: "The latitude of the sample",
+                description: "The latitude of the sample in decmal degrees, Example: 51,65774",
                 synonyms: ['latitude', 'lat'],
                 isRequired: true
             } , 
              {
                 name: 'decimalLongitude',
-                description: "The longitude of the sample",
+                description: "The longitude of the sample in decmal degrees, Example: 6,48859",
                 synonyms: ['longitude', 'lng', 'lon', 'long'],
                 isRequired: true
             } , 
