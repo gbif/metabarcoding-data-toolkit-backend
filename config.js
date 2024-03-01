@@ -55,6 +55,22 @@ const config = {
         gbifUsername: gbifCredentials?.username,
         gbifPassword: gbifCredentials?.password
     },
+    uat: {
+        env: 'prod',
+     //   duckdb:  __dirname + "../edna-tool-data/edna_duck.db",
+        dataStorage : "/mnt/auto/misc/hosted-datasets.gbif.org/edna/",
+        ebiOntologyService: "https://www.ebi.ac.uk/ols/api/search",
+        dwcPublicAccessUrl: "https://hosted-datasets.gbif.org/edna/",  // 'http://labs.gbif.org/~tsjeppesen/edna/',
+        rsyncDirectory: '', // Only for dev env, will already be accessible via http on UAT
+        gbifBaseUrl: "https://api.gbif-uat.org/v1/",
+        gbifBaseUrlProd: "https://api.gbif.org/v1/",
+        gbifRegistryBaseUrl: 'https://registry-api.gbif.org/',
+        blastService: "http://blast.gbif-dev.org",
+        installationKey: "aec88852-acfa-4b12-af59-b4b50d6f07b2",
+        publishingOrganizationKey: "f7ecf12b-221d-4eea-806d-fb4b37face25",
+        gbifUsername: gbifCredentials?.username,
+        gbifPassword: gbifCredentials?.password
+    },
 }
 
 
