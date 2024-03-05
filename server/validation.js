@@ -101,18 +101,22 @@ export const validate = async (id, user) => {
 
     } else if(files.format.startsWith('XLSX')) {
       console.log("XLSX coming in")
-      let xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      let xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || f?.name?.endsWith('.xlsx'))
       let headers_ = {};
       let sheets_ = {};
       try {
+
          const {headers, sheets} = await readXlsxHeaders(id, xlsx?.name, version)
-        
+
          headers_ = headers
          sheets_ = sheets
+
          const xlsxErrors = sheets.reduce((acc, curr) => [...acc, ...(curr?.errors || []).map(e => ({message: e}))],[])
          xlsx.errors = xlsxErrors;
+         
 
          const sampeTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders, headers?.taxonHeaders);
+
          if(sampeTaxonHeaderIntersection.length > 0) {
           const plural = sampeTaxonHeaderIntersection.length > 1;
           xlsx.errors.push({file: xlsx.name, message: `The column${plural ? 's':''} ${sampeTaxonHeaderIntersection.join(', ')} ${plural ? 'are' : 'is'} present in both the sample and taxon sheet. Only the value from the sample sheet will be added to the DWC archive.`})

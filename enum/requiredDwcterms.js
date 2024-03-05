@@ -36,6 +36,12 @@ export default {
                 description: "Database used for classification. Strongly recommended if identifictations of OTUs are provided.",
                 synonyms: ['reflib'],
                 isRequired: false
+            },
+            {
+                name: 'materialSampleID',
+                description: "Typically the ENA or NCBI sample accession",
+                synonyms: ['sample_accession'],
+                isRequired: false
             }   
         
         ],

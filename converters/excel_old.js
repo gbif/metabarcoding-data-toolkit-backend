@@ -6,8 +6,6 @@ import config from "../config.js";
 import util from "../util/index.js";
 import { writeMapping } from "../util/filesAndDirectories.js";
 import { getGroupMetaDataAsJsonString } from "../validation/termMapper.js";
-import {getStreamAsArrayBuffer} from 'get-stream';
-
 // import {getDataForBiomFile, getMetadataRowsWithNoIdInOTUtable} from './dataintegrity.js';
 
 const extractTaxaFromOTUtable = (otuTable, samples, termMapping) => {
@@ -162,7 +160,7 @@ export const getMapFromMatrix = (matrix, mapping) => {
     })
     .map(mapRecord);
 
-  return new Map(arr.filter((d) => !!d.id).map((d) => [ typeof d.id === "string" ? d.id.trim() :d.id, d]));
+  return new Map(arr.filter((d) => !!d.id).map((d) => [d.id?.toString().trim(), d]));
 };
 
 // converts an otu table with sample and taxon metada files to BIOM format
@@ -293,42 +291,47 @@ export const processWorkBookFromFile = async (
   termMapping,
   processFn = (progress, total, message, summary) => {}
 ) => {
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     try {
       const stream = fs.createReadStream(
         `${config.dataStorage}${id}/${version}/original/${fileName}`
       );
+
+      const buffers = [];
+      stream.on("data", function (data) {
+        buffers.push(data);
+      });
       stream.on("error", (error) => {
         reject(error);
       });
-      try {
-        const buffer = await getStreamAsArrayBuffer(stream) //Buffer.concat(buffers);
-        // console.log(buffer)
-         const workbook = xlsx.read(buffer, {type: "array", dense: true, cellDates: true });
-
-        console.log(workbook.SheetNames);
-        if (workbook.SheetNames.length < 2) {
-          throw "There must be minimum 2 sheets, otuTable and samples";
-        } else {
-          // const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          //  const data = xlsx.utils.sheet_to_json(sheet)
-          // console.log(data)
-          //        workbook.SheetNames.map(n => ({name: n, data: xlsx.utils.sheet_to_json(workbook.Sheets[n])}))
-
-          const data = workbook.SheetNames.map((n) => ({
-            name: n,
-            data: xlsx.utils.sheet_to_json(workbook.Sheets[n], { header: 1 }),
-          }));
-          const mappedData = determineFileNames(data, termMapping);
-          const biom = await toBiom(mappedData, termMapping, processFn);
-
-          resolve(biom);
+      stream.on("end", async () => {
+        try {
+          const buffer = Buffer.concat(buffers);
+          const workbook = xlsx.read(buffer, { cellDates: true });
+  
+          console.log(workbook.SheetNames);
+          if (workbook.SheetNames.length < 2) {
+            throw "There must be minimum 2 sheets, otuTable and samples";
+          } else {
+            // const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            //  const data = xlsx.utils.sheet_to_json(sheet)
+            // console.log(data)
+            //        workbook.SheetNames.map(n => ({name: n, data: xlsx.utils.sheet_to_json(workbook.Sheets[n])}))
+  
+            const data = workbook.SheetNames.map((n) => ({
+              name: n,
+              data: xlsx.utils.sheet_to_json(workbook.Sheets[n], { header: 1 }),
+            }));
+            const mappedData = determineFileNames(data, termMapping);
+            const biom = await toBiom(mappedData, termMapping, processFn);
+  
+            resolve(biom);
+          }
+        } catch (error) {
+          reject(error)
         }
-      } catch (error) {
-        reject(error)
-      }
-     
-      
+       
+      });
     } catch (error) {
       reject(error);
     }
@@ -342,43 +345,48 @@ export const readWorkBookFromFile = async (
   termMapping,
   processFn = (progress, total, message, summary) => {}
 ) => {
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     try {
       const stream = fs.createReadStream(
         `${config.dataStorage}${id}/${version}/original/${fileName}`
       );
 
-     
+      const buffers = [];
+      stream.on("data", function (data) {
+        buffers.push(data);
+      });
       stream.on("error", (error) => {
         reject(error);
       });
-      try {
-        const buffer = await getStreamAsArrayBuffer(stream) //Buffer.concat(buffers);
-        // console.log(buffer)
-         const workbook = xlsx.read(buffer, {type: "array", dense: true, cellDates: true });
+      stream.on("end", async () => {
+        try {
+          const buffer = Buffer.concat(buffers);
+          const workbook = xlsx.read(buffer, { cellDates: true });
+  
+          console.log(workbook.SheetNames);
+          if (workbook.SheetNames.length < 2) {
+            throw "There must be minimum 2 sheets, otuTable and samples";
+          } else {
+            // const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            //  const data = xlsx.utils.sheet_to_json(sheet)
+            // console.log(data)
+            //        workbook.SheetNames.map(n => ({name: n, data: xlsx.utils.sheet_to_json(workbook.Sheets[n])}))
+  
+            const data = workbook.SheetNames.map((n) => ({
+              name: n,
+              data: xlsx.utils.sheet_to_json(workbook.Sheets[n], { header: 1 }),
+            }));
+            const mappedData = determineFileNames(data, termMapping);
+            resolve(mappedData);
+            /*  const biom = await toBiom(mappedData, termMapping, processFn)
+          resolve(biom) */
+          }
+        } catch (error) {
+          reject(error);
 
-        console.log(workbook.SheetNames);
-        if (workbook.SheetNames.length < 2) {
-          throw "There must be minimum 2 sheets, otuTable and samples";
-        } else {
-          // const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          //  const data = xlsx.utils.sheet_to_json(sheet)
-          // console.log(data)
-          //        workbook.SheetNames.map(n => ({name: n, data: xlsx.utils.sheet_to_json(workbook.Sheets[n])}))
-
-          const data = workbook.SheetNames.map((n) => ({
-            name: n,
-            data: xlsx.utils.sheet_to_json(workbook.Sheets[n], { header: 1 }),
-          }));
-          const mappedData = determineFileNames(data, termMapping);
-          resolve(mappedData);
-          /*  const biom = await toBiom(mappedData, termMapping, processFn)
-        resolve(biom) */
         }
-      } catch (error) {
-        reject(error);
-
-      }
+       
+      });
     } catch (error) {
       reject(error);
     }
@@ -386,122 +394,126 @@ export const readWorkBookFromFile = async (
 };
 
 export const readXlsxHeaders = async (id, fileName, version) => {
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     try {
       const stream = fs.createReadStream(
         `${config.dataStorage}${id}/${version}/original/${fileName}`
       );
 
-      
+      const buffers = [];
+      stream.on("data", function (data) {
+        buffers.push(data);
+      });
       stream.on("error", (error) => {
         reject(error);
       });
-      try {
-        const buffer = await getStreamAsArrayBuffer(stream) //Buffer.concat(buffers);
-       // console.log(buffer)
-        const workbook = xlsx.read(buffer, {type: "array", dense: true, cellDates: true });
+      stream.on("end", async () => {
+        try {
+          const buffer = Buffer.concat(buffers);
+        const workbook = xlsx.read(buffer, { cellDates: true });
 
-      console.log(workbook.SheetNames);
-      if (workbook.SheetNames.length < 2) {
-        throw "There must be minimum 2 sheets, otuTable and samples";
-      } else {
-        const data = workbook.SheetNames.map((n) => ({
-          name: n,
-          data: xlsx.utils.sheet_to_json(workbook.Sheets[n], { header: 1 }),
-        }));
-        const { otuTable, taxa, samples, defaultValues } =
-          determineFileNames(data);
+        console.log(workbook.SheetNames);
+        if (workbook.SheetNames.length < 2) {
+          throw "There must be minimum 2 sheets, otuTable and samples";
+        } else {
+          const data = workbook.SheetNames.map((n) => ({
+            name: n,
+            data: xlsx.utils.sheet_to_json(workbook.Sheets[n], { header: 1 }),
+          }));
+          const { otuTable, taxa, samples, defaultValues } =
+            determineFileNames(data);
 
-        const otuTableColumns = (otuTable?.data?.[0]?.slice(1) || []).map(
-          (c) => c.trim()
-        );
-        const otuColumnSet = new Set(otuTableColumns);
+          const otuTableColumns = (otuTable?.data?.[0]?.slice(1) || []).map(
+            (c) => c.trim()
+          );
+          const otuColumnSet = new Set(otuTableColumns);
 
-        // If there are default values on a fourth sheet in the workbook, write a mapping
-        if (defaultValues) {
-          await writeMapping(id, version, {
-            samples: {},
-            taxa: {},
-            defaultValues: defaultValues?.data
-              ?.slice(1)
-              .reduce((acc, curr) => {
-                acc[curr?.[0]] = curr?.[1];
-                return acc;
-              }, {}),
-          });
+          // If there are default values on a fourth sheet in the workbook, write a mapping
+          if (defaultValues) {
+            await writeMapping(id, version, {
+              samples: {},
+              taxa: {},
+              defaultValues: defaultValues?.data
+                ?.slice(1)
+                .reduce((acc, curr) => {
+                  acc[curr?.[0]] = curr?.[1];
+                  return acc;
+                }, {}),
+            });
+          }
+          let headers = {
+            sampleHeaders: samples?.data?.[0],
+            taxonHeaders: taxa?.data?.[0],
+          };
+
+          let sampleId = headers.sampleHeaders.find(
+            (e) => !!e && ["id", "sampleid"].includes(e.toLowerCase())
+          );
+
+          const sampleIdIndex = headers.sampleHeaders.indexOf(sampleId);
+
+          // Create a Set if sample IDs:
+          const sampleIds = samples?.data
+            .slice(1)
+            .filter((s) => !!s[sampleIdIndex])
+            .map((s) => s[sampleIdIndex].trim());
+
+          const sampleSet = new Set(sampleIds);
+
+          // const sampleSet = new Set(headers.sampleHeaders)
+          const sampleIdsNotInOtuTableHeaders = sampleIds.reduce(
+            (acc, curr) => (!otuColumnSet.has(curr) ? acc + 1 : acc),
+            0
+          );
+          const otuTableHeadersNotInSampleIds = otuTableColumns.reduce(
+            (acc, curr) => (!sampleSet.has(curr) ? acc + 1 : acc),
+            0
+          );
+
+          const COLUMN_LIMIT = 100;
+          let sheets = [otuTable, taxa, samples, defaultValues]
+            .filter((e) => !!e)
+            .map((entity) => {
+              const ROW_LIMIT =
+                entity === defaultValues ? entity?.data?.length : 100;
+              const errors = [];
+
+              if (entity === otuTable && otuTableHeadersNotInSampleIds > 0) {
+                errors.push(
+                  `${otuTableHeadersNotInSampleIds} of ${otuTableColumns.length} columns in the OTU table does not have a corresponding row in the sample file`
+                );
+              }
+              if (entity === samples && sampleIdsNotInOtuTableHeaders > 0) {
+                errors.push(
+                  `${sampleIdsNotInOtuTableHeaders} of ${sampleIds.length} samples are not in the OTU table`
+                );
+              }
+
+              return {
+                name: entity?.name,
+                headers:
+                  entity?.data?.[0].length > COLUMN_LIMIT
+                    ? entity?.data?.[0].slice(0, COLUMN_LIMIT)
+                    : entity?.data?.[0],
+                rows:
+                  entity?.data?.[0].length > COLUMN_LIMIT
+                    ? entity?.data
+                        ?.slice(0, ROW_LIMIT)
+                        .map((r) => r.slice(0, COLUMN_LIMIT))
+                    : entity?.data?.slice(0, ROW_LIMIT),
+                isInConsistent: false,
+                numColumns: entity?.data?.[0].length,
+                columnLimit: COLUMN_LIMIT,
+                errors,
+              };
+            });
+
+          resolve({ headers, sheets });
         }
-        let headers = {
-          sampleHeaders: samples?.data?.[0],
-          taxonHeaders: taxa?.data?.[0],
-        };
-
-        let sampleId = headers.sampleHeaders.find(
-          (e) => !!e && ["id", "sampleid"].includes(e.toLowerCase())
-        );
-
-        const sampleIdIndex = headers.sampleHeaders.indexOf(sampleId);
-
-        // Create a Set if sample IDs:
-        const sampleIds = samples?.data
-          .slice(1)
-          .filter((s) => !!s[sampleIdIndex])
-          .map((s) => s[sampleIdIndex].trim());
-
-        const sampleSet = new Set(sampleIds);
-
-        // const sampleSet = new Set(headers.sampleHeaders)
-        const sampleIdsNotInOtuTableHeaders = sampleIds.reduce(
-          (acc, curr) => (!otuColumnSet.has(curr) ? acc + 1 : acc),
-          0
-        );
-        const otuTableHeadersNotInSampleIds = otuTableColumns.reduce(
-          (acc, curr) => (!sampleSet.has(curr) ? acc + 1 : acc),
-          0
-        );
-
-        const COLUMN_LIMIT = 100;
-        let sheets = [otuTable, taxa, samples, defaultValues]
-          .filter((e) => !!e)
-          .map((entity) => {
-            const ROW_LIMIT =
-              entity === defaultValues ? entity?.data?.length : 100;
-            const errors = [];
-
-            if (entity === otuTable && otuTableHeadersNotInSampleIds > 0) {
-              errors.push(
-                `${otuTableHeadersNotInSampleIds} of ${otuTableColumns.length} columns in the OTU table does not have a corresponding row in the sample file`
-              );
-            }
-            if (entity === samples && sampleIdsNotInOtuTableHeaders > 0) {
-              errors.push(
-                `${sampleIdsNotInOtuTableHeaders} of ${sampleIds.length} samples are not in the OTU table`
-              );
-            }
-
-            return {
-              name: entity?.name,
-              headers:
-                entity?.data?.[0].length > COLUMN_LIMIT
-                  ? entity?.data?.[0].slice(0, COLUMN_LIMIT)
-                  : entity?.data?.[0],
-              rows:
-                entity?.data?.[0].length > COLUMN_LIMIT
-                  ? entity?.data
-                      ?.slice(0, ROW_LIMIT)
-                      .map((r) => r.slice(0, COLUMN_LIMIT))
-                  : entity?.data?.slice(0, ROW_LIMIT),
-              isInConsistent: false,
-              numColumns: entity?.data?.[0].length,
-              columnLimit: COLUMN_LIMIT,
-              errors,
-            };
-          });
-
-        resolve({ headers, sheets });
-      }
-      } catch (error) {
-        reject(error);
-      }
+        } catch (error) {
+          reject(error);
+        }
+      });
     } catch (error) {
       reject(error);
     }
