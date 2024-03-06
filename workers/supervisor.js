@@ -8,6 +8,7 @@ import runningJobs from './runningJobs.js';
 import { uploadedFilesAndTypes, getFileSize, unzip } from '../validation/files.js'
 import { determineFileNames} from '../validation/tsvformat.js'
 import {  readTsvHeaders } from '../util/filesAndDirectories.js'
+import _ from 'lodash'
 import db from '../server/db/index.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,9 @@ const prepareForProcessing = async (id, version, job) => {
         runningJobs.set(id, job);
 
         let files = await uploadedFilesAndTypes(id, version)
+        const fileMap = _.keyBy(files.files, "type")
+
+      //  console.log(JSON.stringify(files, null, 2))
         console.log("Determined files")
         if (files.format === 'ZIP') {
             console.log("Its zipped")
@@ -43,12 +47,12 @@ const prepareForProcessing = async (id, version, job) => {
         if (files.format.startsWith('TSV')) {
             console.log("Its some TSV format") // is this check needed here??
             const filePaths = await determineFileNames(id, version);
-            
             if (filePaths?.samples) {
-                job.sampleHeaders = await readTsvHeaders(filePaths?.samples)
+                job.sampleHeaders = await readTsvHeaders(filePaths?.samples, fileMap?.samples?.properties?.delimiter)
             }
+
             if (filePaths?.taxa) {
-                job.taxonHeaders = await readTsvHeaders(filePaths?.taxa)
+                job.taxonHeaders = await readTsvHeaders(filePaths?.taxa, fileMap?.taxa?.properties?.delimiter)
             }
         }
         job.steps[0] = { ...job.steps[0], status: 'finished' }
