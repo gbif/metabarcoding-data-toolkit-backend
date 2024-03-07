@@ -76,7 +76,7 @@ export const getEml = ({id, license, title, description, contact, creator, metho
       xml:lang="en">
         <dataset>
             ${doi ? `<alternateIdentifier>https://doi.org/${escapeHtml(doi)}</alternateIdentifier>` : ""}
-            <title>${title}</title>
+            <title>${escapeHtml(title)}</title>
             ${creator && creator?.length > 0 ? creator.map(c => getAgent(c, 'creator')).join("") : ""}
             <pubDate>
           ${new Date().toISOString().split("T")[0]}
