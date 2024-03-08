@@ -25,7 +25,7 @@ const q = queue(async (options) => {
         const mapping = await readMapping(id, version);
         if (!mapping) {
             // should we just warn that no mapping was created? or should it throw?
-            job.mapping = { samples: {}, taxa: {} };
+            job.mapping = { samples: {}, taxa: {}, measurements: {} };
         } else {
             job.mapping = mapping;
         }

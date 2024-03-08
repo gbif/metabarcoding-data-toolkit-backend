@@ -20,10 +20,25 @@ const getMethodSteps = (methodSteps) => {
     } else {
       return methodSteps.map(s => `<methodStep>
       <description>
-          <para>${escapeHtml(s)}</para>
+      <para>${escapeHtml(s)}</para>
       </description>
   </methodStep>`).join("")
     }
+}
+
+const getStudyExtent = (extent) => {
+
+    return extent ? `<studyExtent>
+    <description>
+        <para>${escapeHtml(extent)}</para>
+    </description>
+</studyExtent>` : null
+}
+
+const getSamplingDescription = (description) => {
+    return description ? `<samplingDescription>
+    <para>${escapeHtml(description)}</para>
+</samplingDescription>` : null;
 }
 
 const getKeywords = (keywords) => {
@@ -62,11 +77,13 @@ const getAgent = (agent, type) => {
     } 
 }
 
-export const getEml = ({id, license, title, description, contact, creator, methodSteps, doi, url, bibliographicReferences, keywords}) => {
+export const getEml = ({id, license, title, description, contact, creator, methodSteps, doi, url, bibliographicReferences, keywords, studyExtent, samplingDescription }) => {
     if(!licenseEnum[license]){
         throw "invalid or missing license"
     }
-    const methods = getMethodSteps(methodSteps);
+    const steps = getMethodSteps(methodSteps);
+    const sampling = [getStudyExtent(studyExtent), getSamplingDescription(samplingDescription)].filter(e => !!e).join("\n");
+
     return `
     <eml:eml
         xmlns:eml="eml://ecoinformatics.org/eml-2.1.1"
@@ -98,8 +115,9 @@ export const getEml = ({id, license, title, description, contact, creator, metho
                 <maintenanceUpdateFrequency>unkown</maintenanceUpdateFrequency>
             </maintenance>
             ${getAgent(contact, 'contact')}
-           ${methods ? `<methods>
-            ${methods}
+           ${(steps || sampling) ? `<methods>
+            ${steps ? steps : ""}
+            ${sampling ? "<sampling>" + sampling + "</sampling>": ""}
         </methods>` : ""}
         </dataset>
         <additionalMetadata>
