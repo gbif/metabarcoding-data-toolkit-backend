@@ -160,7 +160,7 @@ export const getMapFromMatrix = (matrix, mapping) => {
     })
     .map(mapRecord);
 
-  return new Map(arr.filter((d) => !!d.id).map((d) => [d.id?.toString().trim(), d]));
+  return new Map(arr.filter((d) => !!d.id).map((d) => [typeof d.id === "string" ? d.id.trim() : d.id, d]));
 };
 
 // converts an otu table with sample and taxon metada files to BIOM format
@@ -433,6 +433,7 @@ export const readXlsxHeaders = async (id, fileName, version) => {
             await writeMapping(id, version, {
               samples: {},
               taxa: {},
+              measurements: {},
               defaultValues: defaultValues?.data
                 ?.slice(1)
                 .reduce((acc, curr) => {

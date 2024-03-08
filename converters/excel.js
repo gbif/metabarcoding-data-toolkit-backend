@@ -422,6 +422,7 @@ export const readXlsxHeaders = async (id, fileName, version) => {
           await writeMapping(id, version, {
             samples: {},
             taxa: {},
+            measurements: {},
             defaultValues: defaultValues?.data
               ?.slice(1)
               .reduce((acc, curr) => {
