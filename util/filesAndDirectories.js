@@ -379,6 +379,9 @@ export const readDataStorage = async () => {
 
         // user_name STRING, dataset_id STRING, title STRING, created DATE, sample_count INTEGER DEFAULT 0, taxon_count INTEGER DEFAULT 0, occurrence_count INTEGER DEFAULT 0
         const storedDataset = await getDataset(dir, currentVersion);
+        if(!storedDataset?.id){
+          console.log("NO DATASET ID "+dir)
+        }
         try {
           datasets.push({
             user_name: storedDataset?.createdBy || "",

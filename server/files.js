@@ -15,8 +15,12 @@ const deleteUploadedFile = async  (req, res) => {
             if(!version){
                 version = await getCurrentDatasetVersion(req.params.id)
             } 
+            console.log("delete file")
             await deleteOriginalFile(req.params.id, version, req.params.filename)
+            console.log("validate")
             await validate(req.params.id)
+            console.log("done")
+
             const hasBiom = await fileExists(req.params.id, version, 'data.biom.json')
             if(hasBiom){
                 await wipeGeneratedFilesAndResetProccessing(req.params.id, version)

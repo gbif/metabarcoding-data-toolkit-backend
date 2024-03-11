@@ -4,6 +4,7 @@ import {determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsC
 import {getArrayIntersection} from '../validation/misc.js'
 import {processWorkBookFromFile, readXlsxHeaders} from "../converters/excel.js"
 import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport, readMapping} from '../util/filesAndDirectories.js'
+import {validateXlSX} from "../workers/supervisor.js"
 import _ from "lodash"
 //import { getCurrentDatasetVersion, writeProcessingReport, getProcessingReport, getMetadata, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
 
@@ -100,7 +101,7 @@ export const validate = async (id, user) => {
       return report;
 
     } else if(files.format.startsWith('XLSX')) {
-      console.log("XLSX coming in")
+    /*   console.log("XLSX coming in")
       let xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || f?.name?.endsWith('.xlsx'))
       let headers_ = {};
       let sheets_ = {};
@@ -136,8 +137,13 @@ export const validate = async (id, user) => {
         xlsx.sheets = sheets_;
       }
      const report = {...processionReport, ...headers_, unzip: false, files:{...files, id: id}};
-     await writeProcessingReport(id, version, report)
-     return report
+     await writeProcessingReport(id, version, report) */
+     const validation = await validateXlSX(id, version, user?.userName)
+     processionReport = await getProcessingReport(id, version)
+     if(!!metadata){
+      processionReport.metadata = metadata
+    }
+     return processionReport
     } else if(files.format === 'ZIP') {
       await unzip(req.params.id, files.files[0].name)
       const report = {...processionReport, unzip: true, files:{...files, id: id}}

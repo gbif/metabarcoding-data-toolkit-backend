@@ -180,7 +180,17 @@ const initialize = async (datasets) => {
         const stmt = await con.prepare(createUserDatasetStmt)
 
         for(const d of datasets){
-            await stmt.run(d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.deleted)
+            
+            try {
+               // console.log( d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.deleted)
+
+                await stmt.run(d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.deleted)
+
+            } catch (error) {
+                console.log(`Error creating dataset in DB: `)
+                console.log(`dataset_id: ${d.dataset_id} user_name: ${d.user_name} title: ${d.title}`)
+                
+            }
         }
         await stmt.finalize()
        // const initStmt = `INSERT INTO UserDatasets VALUES ${datasets.map(d => ("("+[d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key].join(", ") +")") ).join(", ")}`

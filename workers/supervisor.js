@@ -222,3 +222,25 @@ export const createDwc = (id, version, job) => {
 
     })
 }
+
+export const validateXlSX = (id, version, userName) => {
+
+    return new Promise(async (resolve, reject) => {
+        const work = fork(__dirname + '/xlsxvalidationworker.js', [id, version, userName]);
+
+
+        work.on('message', (message) => {
+            
+            if(message?.type === 'finishedJobSuccesssFully'){
+                           
+                resolve()
+            }
+            if(message?.type === 'finishedJobWithError'){
+                reject(message?.payload)
+            }
+
+        })
+
+
+    })
+}
