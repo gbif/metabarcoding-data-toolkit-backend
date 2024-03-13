@@ -1,6 +1,6 @@
 import {encode} from 'html-entities';
 
-export default (occCore, dnaExt, hasEmof) => {
+export default (occCore, dnaExt, hasEmof, ignoreHeaderLines = 0) => {
 const coreTerms = occCore.filter(term => !term.default).map((term, idx) => `<field index="${idx+1}" term="${term.qualName}"/>`).join(`
 `);
 const coreDefaultValueTerms = occCore.filter(term => !!term.default).map((term, idx) => `<field default="${encode(term.default, {mode: 'nonAsciiPrintable', level: 'xml'})}" term="${term.qualName}"/>`).join(`
@@ -10,7 +10,7 @@ const dnaTerms = dnaExt.filter(term => !term.default).map((term, idx) => `<field
 const dnaDefaultValueTerms = dnaExt.filter(term => !!term.default).map((term, idx) => `<field default="${encode(term.default, {mode: 'nonAsciiPrintable', level: 'xml'})}" term="${term.qualName}"/>`).join(`
 `);
 
-const emof = hasEmof ? `<extension encoding="UTF-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy='' ignoreHeaderLines="0" rowType="http://rs.iobis.org/obis/terms/ExtendedMeasurementOrFact">
+const emof = hasEmof ? `<extension encoding="UTF-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy='' ignoreHeaderLines="${ignoreHeaderLines}" rowType="http://rs.iobis.org/obis/terms/ExtendedMeasurementOrFact">
 <files>
   <location>emof.txt</location>
 </files>
@@ -24,7 +24,7 @@ const emof = hasEmof ? `<extension encoding="UTF-8" fieldsTerminatedBy="\\t" lin
 
 return `<archive
 xmlns="http://rs.tdwg.org/dwc/text/" metadata="eml.xml">
-<core encoding="utf-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy="" ignoreHeaderLines="0" rowType="http://rs.tdwg.org/dwc/terms/Occurrence">
+<core encoding="utf-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy="" ignoreHeaderLines="${ignoreHeaderLines}" rowType="http://rs.tdwg.org/dwc/terms/Occurrence">
     <files>
         <location>occurrence.txt</location>
     </files>
@@ -34,7 +34,7 @@ xmlns="http://rs.tdwg.org/dwc/text/" metadata="eml.xml">
     ${coreDefaultValueTerms}
 </core>
 
-<extension encoding="UTF-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy='' ignoreHeaderLines="0" rowType="http://rs.gbif.org/terms/1.0/DNADerivedData">
+<extension encoding="UTF-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy='' ignoreHeaderLines="${ignoreHeaderLines}" rowType="http://rs.gbif.org/terms/1.0/DNADerivedData">
 <files>
   <location>dna.txt</location>
 </files>

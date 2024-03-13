@@ -157,7 +157,7 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
                       samples: mapping?.samples || {},
                       taxa: mapping?.taxa || {},
                       measurements: mapping?.measurements || {},
-                      defaultValues
+                      defaultValues: {...defaultValues, ...(mapping?.defaultValues || {})}
                     })  
 
             }

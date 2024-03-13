@@ -58,7 +58,7 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = fal
      processFn(0, 0, 'Reading taxon file', {sampleCount: samples.size});
     const taxa = await streamReader.readMetaDataAsMap(taxaFile,  processFn, termMapping.taxa)
     processFn(0, taxa.size, 'Reading OTU table', {taxonCount: taxa.size}); */
-   
+
     console.log(`Taxa: ${taxa.size} samples: ${samples.size}`) 
     const columnIdTerm = getColumnIdTerm(samplesAsColumns, termMapping)
     console.log("Column ID term: "+columnIdTerm)

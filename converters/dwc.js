@@ -9,7 +9,7 @@ import streamReader from '../util/streamReader.js';
 const DEFAULT_UNIT = "DNA sequence reads";
 const BASIS_OF_RECORD = "MATERIAL_SAMPLE";
 
-const writeMetaXml = async (hasEmof, occCore, dnaExt, path ) =>  await fs.promises.writeFile(`${path}/archive/meta.xml`, util.metaXml(occCore, dnaExt, hasEmof))
+const writeMetaXml = async (hasEmof, occCore, dnaExt, path, ignoreHeaderLines ) =>  await fs.promises.writeFile(`${path}/archive/meta.xml`, util.metaXml(occCore, dnaExt, hasEmof, ignoreHeaderLines))
 
 const getDefaultTermsForMetaXml = (biomData, dnaTerms, occTerms) => {
   let occDefaultTerms = []
@@ -60,7 +60,7 @@ const writeEmofForRow = (emofStream, termMapping, sample, occurrenceId) => {
   }
 }
 
-export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}, defaultValues: {}, measurements: {}}, path, processFn = (progress, total, message, summary) => {}) => {
+export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}, defaultValues: {}, measurements: {}}, path, processFn = (progress, total, message, summary) => {}, ignoreHeaderLines = 1) => {
   const hasEmof = Object.keys((termMapping?.measurements || {})).length > 0;
   return new Promise(async (resolve, reject) => {
     try{
@@ -85,28 +85,39 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
       const sampleHeaderSet = new Set(sampleHeaders)
       const relevantOccTerms  = [...sampleHeaders.filter(key => occTerms.has(key) && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
           ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && occTerms.has(key)  && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
-          ...defaults.occDefaultTerms
+         /*  ...defaults.occDefaultTerms */
         ];
       const relevantDnaTerms = [...sampleHeaders.filter(key => dnaTerms.has(key) && !defaults.keySet.has(key)).map(key => dnaTerms.get(key)),
           ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && dnaTerms.has(key) && !defaults.keySet.has(key)).map(key => dnaTerms.get(key)),
-          ...defaults.dnaDefaultTerms
+          /* ...defaults.dnaDefaultTerms */
         ];
-       // console.log("Sample headers: " +sampleHeaders)
+
 
      console.log("Taxon headers: " +taxonHeaders)
       //  console.log("Relevant DNA terms: "+ relevantDnaTerms.map(k => k.name))
-        console.log("Relevant OCC terms: "+ relevantOccTerms.map(k => k.name))
-      await writeMetaXml(hasEmof, [...relevantOccTerms, occTerms.get('sampleSizeValue'), occTerms.get('sampleSizeUnit'), occTerms.get('organismQuantity'), occTerms.get('organismQuantityType'), occTerms.get('basisOfRecord'), occTerms.get('eventID')],relevantDnaTerms, path)
+      const occCoreTerms = [...relevantOccTerms, occTerms.get('sampleSizeValue'), occTerms.get('sampleSizeUnit'), occTerms.get('organismQuantity'), occTerms.get('organismQuantityType'), occTerms.get('basisOfRecord'), occTerms.get('eventID') ]
+      console.log("OCC terms: "+ occCoreTerms.map(k => k.name))
+
+      await writeMetaXml(hasEmof, [...occCoreTerms, ...defaults.occDefaultTerms], [...relevantDnaTerms, ...defaults.dnaDefaultTerms], path, ignoreHeaderLines)
        
       const occStream = fs.createWriteStream(`${path}/archive/occurrence.txt`, {
           flags: "a",
         });
+        if(ignoreHeaderLines === 1){
+          occStream.write(`occurrenceID\t${occCoreTerms.map(k => k.name).join("\t")}\n`)
+        }
       const dnaStream = fs.createWriteStream(`${path}/archive/dna.txt`, {
           flags: "a",
         });
+      if(ignoreHeaderLines === 1){
+          dnaStream.write(`occurrenceID\t${relevantDnaTerms.map(k => k.name).join("\t")}\n`)
+        }
       const emofStream = hasEmof ? fs.createWriteStream(`${path}/archive/emof.txt`, {
           flags: "a",
         }) : null;
+        if(hasEmof && ignoreHeaderLines === 1){
+          emofStream.write(`occurrenceID\t${["measurementType", "measurementValue", "measurementUnit", "measurementAccuracy", "measurementMethod"].join("\t")}\n`)
+        }
       let occStreamClosed = false;
       let dnaStreamClosed = false; 
       let emofStreamClosed = hasEmof ? false : true;

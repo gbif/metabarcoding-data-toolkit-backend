@@ -321,7 +321,7 @@ const resetFilesAndProcessingStepsInReport = async (id, version) => {
 export const wipeGeneratedFilesAndResetProccessing = async (id, version) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const files = ['data.biom.json', 'data.biom.h5', 'archive.zip', 'archive/dna.txt', 'archive/occurrence.txt', 'archive/meta.xml'];
+      const files = ['data.biom.json', 'data.biom.h5', 'archive.zip', 'archive/dna.txt', 'archive/occurrence.txt','archive/emof.txt', 'archive/meta.xml'];
       for (let f of files) {
         const exists = await fileExists(id, version, f)
         if(exists){
