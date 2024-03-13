@@ -16,8 +16,7 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     try {
         console.log("Processing dataset "+id + " version "+version)
     const mapping = await readMapping(id, version);
-    console.log("Mapping default values:")
-    console.log(mapping?.defaultValues)
+   
     const files = await uploadedFilesAndTypes(id, version)
     const fileMap = _.keyBy(files.files, "type")
 
