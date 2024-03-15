@@ -41,12 +41,12 @@ const getSamplingDescription = (description) => {
 </samplingDescription>` : null;
 }
 
-const getKeywords = (keywords) => {
+const getKeywords = (keywords, keywordThesaurus) => {
     if(!keywords || keywords?.length === 0){
         return ""
     } else {
       let kWords = keywords.map(s => `<keyword>${escapeHtml(s)}</keyword>`).join("")
-      return `<keywordSet>${kWords}<keywordThesaurus>${escapeHtml("N/A")}</keywordThesaurus>
+      return `<keywordSet>${kWords}<keywordThesaurus>${escapeHtml(keywordThesaurus || "N/A")}</keywordThesaurus>
       </keywordSet>`
     }
 }
@@ -77,7 +77,13 @@ const getAgent = (agent, type) => {
     } 
 }
 
-export const getEml = ({id, license, title, description, contact, creator, methodSteps, doi, url, bibliographicReferences, keywords, studyExtent, samplingDescription }) => {
+const getUrl = url => !!url ? `<distribution scope="document">
+<online>
+    <url function="information">${escapeHtml(url)}</url>
+</online>
+</distribution>` : ""
+
+export const getEml = ({id, license, title, description, contact, creator, methodSteps, doi, url, bibliographicReferences, keywords, keywordThesaurus, studyExtent, samplingDescription }) => {
     if(!licenseEnum[license]){
         throw "invalid or missing license"
     }
@@ -103,7 +109,7 @@ export const getEml = ({id, license, title, description, contact, creator, metho
             ${description ? `<para>${escapeHtml(description)}</para>` : "" }
             <para>[This dataset was processed using the GBIF eDNA converter tool.]</para>
         </abstract>
-            ${getKeywords(keywords)}
+            ${getKeywords(keywords, keywordThesaurus)}
             <intellectualRights>
                 <para>This work is licensed under a 
                     <ulink url="${licenseEnum[license].url}">
@@ -111,6 +117,7 @@ export const getEml = ({id, license, title, description, contact, creator, metho
                     </ulink>.
                 </para>
             </intellectualRights>
+            ${getUrl(url)}
             <maintenance>
                 <maintenanceUpdateFrequency>unkown</maintenanceUpdateFrequency>
             </maintenance>
