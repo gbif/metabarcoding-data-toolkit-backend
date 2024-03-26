@@ -16,9 +16,9 @@ const randomizer = () => {
 };
 
 export const blast = async ({ DNA_sequence, id}, marker , verbose = false) => {
-     if(randomizer()) {
+    /*  if(randomizer()) {
         throw new Error("test error")
-    } 
+    }  */
     try {
         let response = await axios({
             method: 'POST',
