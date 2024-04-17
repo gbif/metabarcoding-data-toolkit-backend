@@ -5,11 +5,12 @@ import axios from 'axios'
 import pLimit from 'p-limit';
 import supportedMarkers from '../enum/supportedMarkers.js'
 import taxonomyFileHeaders from './taxonFileHeaders.js'
-const BLAST_CONCURRENCY = 8;
-
+const BLAST_CONCURRENCY = 4;
+const GBIF_TAXON_MATCH_CONCURRENCY = 25;
 const RANKS = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
 const gbifBaseUrl = config.gbifBaseUrlProd
 
+const taxonMatchLimit = pLimit(GBIF_TAXON_MATCH_CONCURRENCY);
 
 const randomizer = () => {
     return Math.random() <   0.8//0.01;
@@ -47,9 +48,66 @@ export const blast = async ({ DNA_sequence, id}, marker , verbose = false) => {
     } catch (err){
         throw err
     }
-    
-    
-   
+     
+}
+
+export const blastBatch = async ({ DNA_sequence, ids}, marker , verbose = false) => {
+    /*  if(randomizer()) {
+        throw new Error("test error")
+    }  */
+
+    try {
+        let response = await axios({
+            method: 'POST',
+            url: `${config.blastService}/blast/batch${verbose ? '?verbose=true' : ''}`,
+            data: {
+                marker,
+                sequence: DNA_sequence
+            },
+            json: true
+        });
+        let result = Array(response.data.length)
+        try {
+            const promises = response.data.map(async (res, idx) => {
+                if (res.matchType) {
+                    try {
+                        result[idx]= await taxonMatchLimit(decorateWithGBIFspecies, {...res, id: ids[idx]});
+                       
+                    } catch (err) {
+                        console.log(err)
+                        
+                    }
+                    
+                } else {
+                    console.log("No matchtype")
+                }
+            });
+           await Promise.all(promises);
+           return result;
+        } catch (error) {
+            console.log(error);
+            throw error;
+        }
+       /*  for(const res of response.data){
+            if (res.matchType) {
+                try {
+                    result[idx]= await decorateWithGBIFspecies({...res, id: ids[idx]});
+                   
+                } catch (err) {
+                    console.log(err)
+                    
+                }
+                
+            } else {
+                console.log("No matchtype")
+            }
+            idx++;
+        } */
+        
+    } catch (err){
+        throw err
+    }
+     
 }
 
 const  decorateWithGBIFspecies = async (e) => {
@@ -134,7 +192,7 @@ const assignTaxonomyToEntry = (blastResult, taxaMap) => {
 }
 
 
-const writeRow = (stream, blastResult, seq) => {
+const writeRow = (stream, blastResult) => {
 
     let taxonomy = {};
     if(blastResult?.nubMatch?.classification){
@@ -148,8 +206,12 @@ const writeRow = (stream, blastResult, seq) => {
 
     const classification = RANKS.map(r => taxonomy?.[r]?.name || '').join('\t')
 
-    stream.write(`${blastResult?.id}\t${blastResult?.matchType}\t${!isNaN(blastResult?.bitScore) ? blastResult?.bitScore: ''}\t${!isNaN(blastResult?.expectValue) ? blastResult?.expectValue: ''}\t${!isNaN(blastResult?.qcovs) ? blastResult?.qcovs : '' }\t${classification}\t${blastResult?.name || ''}\t${seq}\n`);
+    stream.write(`${blastResult?.id}\t${blastResult?.matchType}\t${!isNaN(blastResult?.bitScore) ? blastResult?.bitScore: ''}\t${!isNaN(blastResult?.expectValue) ? blastResult?.expectValue: ''}\t${!isNaN(blastResult?.qcovs) ? blastResult?.qcovs : '' }\t${classification}\t${blastResult?.name || ''}\t${blastResult?.querySequence}\n`);
 }
+const chunkArray = (arr, size) =>
+  Array.from({ length: Math.ceil(arr.length / size) }, (v, i) =>
+    arr.slice(i * size, i * size + size)
+  );
 
 const blastAll = async (taxa, marker, processFn = (progress, total, message, summary) => {}, path, taxonomyStream, erroredItems = new Map(), retries = 5, matchCount = 0, total_) => {
     const blastlimit = pLimit(BLAST_CONCURRENCY);
@@ -159,14 +221,59 @@ const blastAll = async (taxa, marker, processFn = (progress, total, message, sum
    // let matchCount = 0;
     let total =  total_ ? total_ : taxa.size;
     
+    const chunks = chunkArray([...taxa.values()], 25)
 
-    let res = await Promise.all(([...taxa.values()]/* .slice(0,10) */).map(async (s) => {
+    let res = await Promise.all(chunks.map(async (s) => {
+        try {
+            const res = await blastlimit(blastBatch, {DNA_sequence: s.map(e => e.DNA_sequence), ids: s.map(e => e.id)}, marker)
+
+                res.forEach(elm => {
+                    assignTaxonomyToEntry(elm, taxa)
+                matchCount ++;
+                writeRow(taxonomyStream, elm)
+                if(matchCount % 100 === 0){
+                    processFn(matchCount, total)
+                    console.log(`Blasted ${matchCount} of ${total} sequences`)
+                }
+                if(erroredItems.has(elm.id)){
+                    erroredItems.delete(elm.id)
+                }
+                })
+                
+                return res
+        } catch (error) {
+            s.forEach(elm => erroredItems.set(elm.id, elm))
+            
+           // erroredItems.push(s)
+        }
+        }))
+        // TODO handle retries
+
+         if ( erroredItems.size > 0 && retries > 0 ) {
+            console.log(`${erroredItems.size} failed blasts, ${retries} left`)
+            retries --;
+           await blastAll(erroredItems, marker, processFn, path, taxonomyStream, erroredItems, retries, matchCount, total);
+        } 
+        return {errors : erroredItems.size > 0 ? [`Failed to match ${erroredItems.size} of ${taxa.size} sequences`] : []}
+
+}
+
+/* const blastAll = async (taxa, marker, processFn = (progress, total, message, summary) => {}, path, taxonomyStream, erroredItems = new Map(), retries = 5, matchCount = 0, total_) => {
+    const blastlimit = pLimit(BLAST_CONCURRENCY);
+
+   // let erroredItems = new Map();
+   // let retries = 5;
+   // let matchCount = 0;
+    let total =  total_ ? total_ : taxa.size;
+    
+
+    let res = await Promise.all(([...taxa.values()]).map(async (s) => {
         try {
             const res = await blastlimit(blast, s, marker)
 
                 assignTaxonomyToEntry(res, taxa)
                 matchCount ++;
-                writeRow(taxonomyStream, res, s?.DNA_sequence)
+                writeRow(taxonomyStream, res)
                 if(matchCount % 100 === 0){
                     processFn(matchCount, total)
                     console.log(`Blasted ${matchCount} of ${total} sequences`)
@@ -189,7 +296,7 @@ const blastAll = async (taxa, marker, processFn = (progress, total, message, sum
         } 
         return {errors : erroredItems.size > 0 ? [`Failed to match ${erroredItems.size} of ${taxa.size} sequences`] : []}
 
-}
+} */
 
 
 // Taxa should be a Map, keyed by taxon (ASV) id

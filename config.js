@@ -33,7 +33,7 @@ const config = {
         gbifBaseUrl: "https://api.gbif-uat.org/v1/",
         gbifBaseUrlProd: "https://api.gbif.org/v1/",
         gbifRegistryBaseUrl: 'https://registry-api.gbif-uat.org/',
-        blastService: "http://blast.gbif-dev.org",
+        blastService: "http://localhost:9100", //"http://blast.gbif-dev.org",
         installationKey: "fb5e4c2a-579c-434b-a446-3a665dd732ad",
         publishingOrganizationKey: "fbca90e3-8aed-48b1-84e3-369afbd000ce",
         gbifUsername: gbifCredentials?.username,

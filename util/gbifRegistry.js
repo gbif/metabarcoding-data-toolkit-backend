@@ -67,6 +67,22 @@ const registerStudy = async (ednaDatasetID, username, password) => {
   }); 
 };
 
+export const deleteDatasetInGbifUAT = async (gbifUatKey, username, password) => {
+   console.log(`delete  ${config.gbifBaseUrl}dataset/${gbifUatKey}`)
+  return axios({
+     method: 'delete',
+    url: `${config.gbifBaseUrl}dataset/${gbifUatKey}`,
+/*     headers: {
+        Authorization: auth
+    }, */
+   auth: {
+        username,
+        password
+      }
+  }); 
+};
+
+
 const crawlDataset = (uuid, username, password) => {
   return axios({
     method: 'post',
@@ -104,6 +120,8 @@ export const registerDatasetInGBIF = async (ednaDatasetID, version, username, pa
   }
    
 }
+
+
 /* 
   
    return isRegisteredInGBIF(ednaDatasetID).then(registered => {

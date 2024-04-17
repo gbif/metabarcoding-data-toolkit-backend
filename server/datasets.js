@@ -1,8 +1,10 @@
 
 import auth from './Auth/auth.js'
 import db from './db/index.js'
+import config from '../config.js';
 import { getDataset } from '../util/dataset.js';
 import {getCurrentDatasetVersion, getProcessingReport, writeProcessingReport} from '../util/filesAndDirectories.js'
+import {deleteDatasetInGbifUAT} from "../util/gbifRegistry.js"
 
 
 export default  (app) => {
@@ -45,6 +47,16 @@ export default  (app) => {
                 const report = await getProcessingReport(req.params.id, version)
 
                 if(report && report?.createdBy === req?.user?.userName){
+                    if(report?.publishing?.gbifDatasetKey){
+                        try {
+                            console.log("delete at UAT")
+                            await deleteDatasetInGbifUAT(report?.publishing?.gbifDatasetKey, config.gbifUsername, config.gbifPassword)
+                            console.log("Successfully deleted at UAT")
+                        } catch (error) {
+                            console.log(`Could not delete dataset ${report?.publishing?.gbifDatasetKey} in the GBIF-UAT Registry`)
+                            console.log(error)
+                        }
+                    }
                     await writeProcessingReport(req.params.id, version, {...report, deletedAt: new Date().toISOString()})
                     await db.deleteUserDataset(req?.user?.userName, req.params.id)
                     res.sendStatus(200)
