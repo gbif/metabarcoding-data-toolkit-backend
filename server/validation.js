@@ -29,6 +29,8 @@ export const validate = async (id, user) => {
      // console.log(filePaths)
      const fileMap = _.keyBy(files.files, "type")
 
+     console.log(Object.keys(fileMap))
+
      let validationErrors = []
      let samplesAsColumns, errors, invalid;
       try {
@@ -82,6 +84,12 @@ export const validate = async (id, user) => {
         validationReport.taxonHeaders = await readTsvHeaders(fileMap?.taxa?.path, fileMap?.taxa?.properties?.delimiter)
       
       }
+
+      if(fileMap?.defaultValues?.properties?.rows?.length > 1){
+        validationReport.defaultValueTerms =  fileMap?.defaultValues?.properties?.rows.slice(1).map(i => i[0]).filter(i => !!i)
+       // console.log(validationReport.defaultValueTerms)
+      }
+
       if(validationReport.sampleHeaders && validationReport.taxonHeaders ){
         const sampeTaxonHeaderIntersection = getArrayIntersection(validationReport?.sampleHeaders, validationReport?.taxonHeaders);
          if(sampeTaxonHeaderIntersection.length > 0) {
@@ -96,6 +104,35 @@ export const validate = async (id, user) => {
         
          }
       }
+
+      if(validationReport.sampleHeaders && validationReport.defaultValueTerms ){
+        const studySampleIntersection = getArrayIntersection(validationReport?.sampleHeaders, validationReport.defaultValueTerms);
+         if(studySampleIntersection.length > 0) {
+          const plural = studySampleIntersection.length > 1;
+          
+          const studyFile = files.files.find(f => f?.type === 'defaultValues')
+          if(studyFile){
+            studyFile.errors = studyFile.errors || [];
+            studyFile.errors.push({file: fileMap.defaultValues.name, message: `The term${plural ? 's':''} ${studySampleIntersection.join(', ')} ${plural ? 'are' : 'is'} present in both the sample and study file. Only the value from the study file will be added to the DWC archive.`})
+          }
+        
+         }
+      }
+
+      if(validationReport.defaultValueTerms && validationReport.taxonHeaders ){
+        const studyTaxonIntersection = getArrayIntersection(validationReport?.defaultValueTerms, validationReport?.taxonHeaders);
+         if(studyTaxonIntersection.length > 0) {
+          const plural = studyTaxonIntersection.length > 1;
+          
+          const studyFile = files.files.find(f => f?.type === 'defaultValues')
+          if(studyFile){
+            studyFile.errors = studyFile.errors || [];
+            studyFile.errors.push({file: fileMap.defaultValues.name, message: `The term${plural ? 's':''} ${studyTaxonIntersection.join(', ')} ${plural ? 'are' : 'is'} present in both the taxon and study file. Only the value from the study file will be added to the DWC archive.`})
+          }        
+        
+         }
+      }
+      
       const report = {...processionReport, unzip: false, ...validationReport}
       await writeProcessingReport(id,version, report)
       return report;

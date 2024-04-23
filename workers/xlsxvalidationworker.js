@@ -1,6 +1,8 @@
 import { addReadCounts } from '../converters/biom.js';
 import {readXlsxHeaders, getMapFromMatrix, readWorkBookFromFile, toBiom } from "../converters/excel.js"
 import { uploadedFilesAndTypes, getMimeFromPath, getFileSize, unzip } from '../validation/files.js'
+import filenames from '../validation/filenames.js'
+
 import {getArrayIntersection} from '../validation/misc.js'
 import { readFastaAsMap } from '../util/streamReader.js';
 import _ from 'lodash'
@@ -34,14 +36,36 @@ const processDataset = async (id, version, userName) => {
            const xlsxErrors = sheets.reduce((acc, curr) => [...acc, ...(curr?.errors || []).map(e => ({message: e}))],[])
            xlsx.errors = xlsxErrors;
            
+           let defaultValueTerms;
+           console.log(sheets)
+           const defaultValueSheet = sheets.find(s => filenames.defaultvalues.includes(s?.name?.toLowerCase()));
+
+           if(defaultValueSheet?.rows?.length > 1){
+            defaultValueTerms =  defaultValueSheet?.rows.slice(1).map(i => i[0]).filter(i => !!i)
+            console.log(defaultValueTerms)
+          }
     
-           const sampeTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders, headers?.taxonHeaders);
+           const sampleTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders, headers?.taxonHeaders);       
     
-           if(sampeTaxonHeaderIntersection.filter(e => !!e).length > 0) {
-            const plural = sampeTaxonHeaderIntersection.length > 1;
-            xlsx.errors.push({file: xlsx.name, message: `The column${plural ? 's':''} ${sampeTaxonHeaderIntersection.join(', ')} ${plural ? 'are' : 'is'} present in both the sample and taxon sheet. Only the value from the sample sheet will be added to the DWC archive.`})
+           if(sampleTaxonHeaderIntersection.filter(e => !!e).length > 0) {
+            const plural = sampleTaxonHeaderIntersection.length > 1;
+            xlsx.errors.push({file: xlsx.name, message: `The column${plural ? 's':''} ${sampleTaxonHeaderIntersection.join(', ')} ${plural ? 'are' : 'is'} present in both the sample and taxon sheet. Only the value from the sample sheet will be added to the DWC archive.`})
            }
+
+           const studySampleIntersection = getArrayIntersection(headers?.sampleHeaders, defaultValueTerms);       
     
+           if(studySampleIntersection.filter(e => !!e).length > 0) {
+            const plural = studySampleIntersection.length > 1;
+            xlsx.errors.push({file: xlsx.name, message: `The term${plural ? 's':''} ${studySampleIntersection.join(', ')} ${plural ? 'are' : 'is'} present in both the sample and study sheet. Only the value from the study sheet will be added to the DWC archive.`})
+           }
+
+           const studyTaxonIntersection = getArrayIntersection(headers?.taxonHeaders, defaultValueTerms);       
+    
+           if(studyTaxonIntersection.filter(e => !!e).length > 0) {
+            const plural = studyTaxonIntersection.length > 1;
+            xlsx.errors.push({file: xlsx.name, message: `The term${plural ? 's':''} ${studyTaxonIntersection.join(', ')} ${plural ? 'are' : 'is'} present in both the taxon and study sheet. Only the value from the study sheet will be added to the DWC archive.`})
+           }
+           
            if(sheets_ && xlsx){
             xlsx.sheets = sheets_;
           }
