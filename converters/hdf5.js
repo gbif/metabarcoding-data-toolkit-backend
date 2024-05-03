@@ -1,6 +1,7 @@
 import { Biom } from 'biojs-io-biom';
 import fs from 'fs'
 import _ from 'lodash'
+import { mean, std } from 'mathjs'
 let h5wasm;
 const generatedByString = "GBIF eDNA Tool";
 const MAX_FIXED_STRING_LENGTH = 1024
@@ -583,4 +584,165 @@ export const getTaxonomyForAllSamples = async  (hdf5file) => {
     return result; // [...result, ...Array.from(parentMap).map(t => ({id: t[0] || "", parent: t[1].parentId, name: t[1].name, rank: t[1].rank}))];
 }
 
+export const getGeograpicScope =  (f) => {
+
+    try {
+        
+       const latitudes = f.get(`sample/metadata/decimalLatitude`).to_array();
+       const longitudes = f.get(`sample/metadata/decimalLongitude`).to_array();
+       return {
+        northBoundingCoordinate: Math.max(...latitudes),
+        southBoundingCoordinate: Math.min(...latitudes),
+        westBoundingCoordinate: Math.min(...longitudes),
+        eastBoundingCoordinate: Math.max(...longitudes)
+       }
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+   
+}
+
+export const getTemporalScope =   (f) => {
+
+    try {
+       
+        const dates = f.get(`sample/metadata/eventDate`).to_array();
+       return {
+        from: dates.reduce((min, c) => c < min ? c : min),
+        to: dates.reduce((max, c) => c > max ? c : max)
+       }
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+   
+}
+
+export const getTaxonomicScope =   (f) => {
+
+    try {
+       
+        const taxonomicScope = {};
+        f.get("observation/metadata").keys().filter(key => ['kingdom', 'phylum', 'class', 'order', 'family'].includes(key)).forEach(key => {
+            const rank = f.get(`observation/metadata/${key}`).to_array()
+            taxonomicScope[key] = [...new Set(rank)]
+        });
+       return taxonomicScope
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+   
+}
+
+export const getTotalReads =   (f) => {
+
+    try {
+       
+        const data = f.get("observation/matrix/data").to_array();
+       return { totalReads: data.reduce((a, b) => a + b, 0)}
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+   
+}
+
+export const getOtuCountPrSample =   (f) => {
+
+    try {
+       
+        const indptr = f.get("sample/matrix/indptr").to_array();
+        const data = indptr.map((val, idx) => idx === 0 ? val : val - indptr[idx-1]).slice(1)
+       return { mean: mean(...data), stdev: std(...data)}
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+   
+}
+
+
+export const getSampleCountPrOtu =   (f) => {
+
+    try {
+       
+        const indices = f.get("sample/matrix/indices").to_array();
+        const data = indices.reduce((acc, curr) => {
+            if(!acc[curr]){
+                acc[curr] = 1
+            } else {
+                acc[curr] ++
+            }
+            return acc
+        },{})
+        const sampleCountPrOtu = Object.keys(data).map(key => ({key, val: data[key]})).sort((a,b)=> b.val- a.val).slice(0, 10)
+        f.get("observation/metadata").keys().filter(key => ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'DNA_sequence'].includes(key)).forEach(key => {
+            const rank = f.get(`observation/metadata/${key}`).to_array()
+            sampleCountPrOtu.forEach(e => e[key] = rank[Number(e.key)])
+
+        });
+       return sampleCountPrOtu
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+   
+}
+
+export const getReadSumPrSample = (f) => {
+
+    try {
+      
+        const data = f.get(`sample/metadata/readCount`).to_array();
+
+       return { mean: mean(...data), stdev: std(...data)}
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+   
+}
+
+export const getDNAsequenceLength = (f) => {
+
+    try {
+      
+        const data = f.get(`observation/metadata/DNA_sequence`).to_array().map(s => s.length);
+
+       return { mean: mean(...data), stdev: std(...data)}
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+   
+}
+
+export const getMetrics = async hdf5file => {
+    try {
+        if(!h5wasm){
+            await init()
+        }
+        await h5wasm?.ready;
+        let f = new h5wasm.File(hdf5file, "r");
+        const metrics =  {
+            geograpicScope: getGeograpicScope(f),
+            temporalScope: getTemporalScope(f),
+            taxonomicScope: getTaxonomicScope(f),
+            totalReads: getTotalReads(f),
+            otuCountPrSample: getOtuCountPrSample(f),
+            readSumPrSample: getReadSumPrSample(f),
+            sequenceLength: getDNAsequenceLength(f),
+            sampleCountPrOtu: getSampleCountPrOtu(f)
+
+        }
+
+       f.close()
+       return metrics
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+}
 

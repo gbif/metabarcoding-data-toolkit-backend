@@ -16,6 +16,7 @@
         "h5wasm": "^0.7.1",
         "html-entities": "^2.4.0",
         "lodash": "^4.17.21",
+        "mathjs": "^12.4.2",
         "multer": "^1.4.5-lts.1",
         "p-limit": "^4.0.0",
         "stream-transform": "^1.0.8",

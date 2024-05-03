@@ -37,12 +37,10 @@ const processDataset = async (id, version, userName) => {
            xlsx.errors = xlsxErrors;
            
            let defaultValueTerms;
-           console.log(sheets)
            const defaultValueSheet = sheets.find(s => filenames.defaultvalues.includes(s?.name?.toLowerCase()));
 
            if(defaultValueSheet?.rows?.length > 1){
             defaultValueTerms =  defaultValueSheet?.rows.slice(1).map(i => i[0]).filter(i => !!i)
-            console.log(defaultValueTerms)
           }
     
            const sampleTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders, headers?.taxonHeaders);       
