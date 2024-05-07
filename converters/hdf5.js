@@ -2,6 +2,7 @@ import { Biom } from 'biojs-io-biom';
 import fs from 'fs'
 import _ from 'lodash'
 import { mean, std } from 'mathjs'
+import {getTaxonomyArray} from '../util/index.js'
 let h5wasm;
 const generatedByString = "GBIF eDNA Tool";
 const MAX_FIXED_STRING_LENGTH = 1024
@@ -24,14 +25,14 @@ const addGroupMetadataFromJson = (f, biom) => {
             if(parsed?.defaultValues?.observation){
                 const json = JSON.stringify(parsed?.defaultValues?.observation);
                // f.get("observation/group-metadata").create_dataset('default_values', json, null, `S${json.length}`) 
-                f.get("observation/group-metadata").create_dataset({name: 'default_values', data: json, dtype: `S${json.length}`})
+                f.get("observation/group-metadata").create_dataset({name: 'default_values', data: [json], dtype: `S${json.length}`})
                 f.get("observation/group-metadata/default_values").create_attribute('data_type', "json", null, 'S4')
                   //.create_attribute('defaultValues', JSON.stringify(parsed?.defaultValues?.observation), null, 'S')
             }
             if(parsed?.defaultValues?.sample){
                 const json = JSON.stringify(parsed?.defaultValues?.sample)
                // f.get("sample/group-metadata").create_dataset('default_values',  json, null, `S${json.length}`) 
-                f.get("sample/group-metadata").create_dataset({name: 'default_values', data: json, dtype: `S${json.length}`}) 
+                f.get("sample/group-metadata").create_dataset({name: 'default_values', data: [json], dtype: `S${json.length}`}) 
                 f.get("sample/group-metadata/default_values").create_attribute('data_type', "json", null, 'S4')
                // f.get("sample/group-metadata").create_attribute('defaultValues', JSON.stringify(parsed?.defaultValues?.sample), null, 'S')
             }
@@ -168,11 +169,12 @@ export const writeHDF5 = async (biom, hdf5file) => {
 
         f.get("/").create_attribute('id', biom.id || "No Table ID", null, 'S')
         f.get("/").create_attribute('type', biom.type || "OTU table", null, 'S')
-        f.get("/").create_attribute('format-url', biom["format-url"] || "https://biom-format.org/documentation/format_versions/biom-2.1.html", null, 'S')
+        f.get("/").create_attribute('format', "biom-", null, 'S')
+        f.get("/").create_attribute('format-url', "http://biom-format.org", null, 'S')
         f.get("/").create_attribute('format-version', [2, 1], [2], 'i')
         f.get("/").create_attribute('generated-by', generatedByString, null, 'S')
-        f.get("/").create_attribute('creation-date', new Date().toISOString(), null, 'S')
-        f.get("/").create_attribute('shape', biom.shape || [biom.rows.length, biom.columns.length], [2], 'i')
+        f.get("/").create_attribute('creation-date', new Date().toISOString().split("Z")[0], null, 'S')
+        f.get("/").create_attribute('shape', [biom.rows.length, biom.columns.length], [2], 'i')
         f.get("/").create_attribute('nnz', biom.nnz || biom.data.length, null, 'i')
 
         f.create_group('observation'); // The HDF5 group that contains observation specific information and an observation oriented view of the data
@@ -229,7 +231,7 @@ export const writeHDF5 = async (biom, hdf5file) => {
         })
 
         
-            Object.keys(biom.rows[0].metadata).forEach(key => {
+            Object.keys(biom.rows[0].metadata).filter(k => !['taxonomy'].includes(k)).forEach(key => {
                 let data;
                 
             try {
@@ -244,6 +246,15 @@ export const writeHDF5 = async (biom, hdf5file) => {
                 errors.push(error)
             }
             })
+
+            try {
+                const taxonomy =  biom.rows.map(getTaxonomyArray);
+                f.get('observation/metadata').create_dataset({name: "taxonomy", data: taxonomy.flat(), dtype: 'S', shape: [taxonomy.length, taxonomy[0].length]})
+
+            } catch (error) {
+                console.log("Error adding taxonomy to hdf5")
+                console.log(error)
+            }
      
 
         f.close()

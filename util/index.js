@@ -14,7 +14,7 @@ const transformRow = row => Object.keys(row).reduce((acc, cur) => {
   return acc;
 }, {})    // .map(k => k === "DNA_sequence" ? (row?.[k] || "").toUpperCase() : row[k])
 
-export const getMetaDataRow = row => {
+export const getMetaDataRow = (row, addTaxonomy = false) => {
   if(!row?.id){
      console.log(row)
   }
@@ -23,10 +23,22 @@ export const getMetaDataRow = row => {
       if(typeof metadata?.["DNA_sequence"] === "string" ) {
           metadata.taxonID = `ASV:${md5( metadata?.["DNA_sequence"])}` 
       }
+      if(addTaxonomy){
+        metadata.taxonomy = getTaxonomyArray({metadata})
+      }
       return {id: row.id, metadata}
   } catch (error) {
      console.log(error)
   }    
+}
+
+export const getTaxonomyArray = r => {
+  console
+  // It seems that most applications uses the k__Fungi p__Basidiomycota format for the taxonopmy. Detect if it is given like that, or format it this way
+  // TODO What to do about species level? ScientificName may not always be species. Look for binomials? 
+  return ['kingdom', 'phylum', 'class', 'order', 'family', 'genus',].map(rank => (r.metadata[rank] || "").startsWith(`${rank.charAt(0)}__`) ? r.metadata[rank] : `${rank.charAt(0)}__${(r.metadata[rank] || "")}`)
+  
+
 }
 
 export default {
@@ -34,5 +46,6 @@ export default {
     dwcTerms,
     objectSwap,
     md5,
-    getMetaDataRow
+    getMetaDataRow,
+    getTaxonomyArray
 }

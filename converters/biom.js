@@ -3,7 +3,7 @@ import fs from 'fs';
 import {Biom} from 'biojs-io-biom';
 import _ from 'lodash'
 import {getGroupMetaDataAsJsonString} from '../validation/termMapper.js'
-import {getMetaDataRow} from '../util/index.js'
+import {getMetaDataRow, getTaxonomyArray} from '../util/index.js'
 /* const getMetaDataRow = row => {
     if(!row?.id){
        console.log(row)
@@ -91,18 +91,21 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = fal
     const sampleIdsWithNoRecordInOtuTable = samplesAsColumns ? consistencyCheck.dimensionXidsWithNoRecordInOtuTable : consistencyCheck.dimensionYidsWithNoRecordInOtuTable;
     const taxonIdsWithNoRecordInOtuTable = samplesAsColumns ? consistencyCheck.dimensionYidsWithNoRecordInOtuTable : consistencyCheck.dimensionXidsWithNoRecordInOtuTable
     
-    const cols = columns.map(c => getMetaDataRow(dimensionXdataMap.get(c))) ;
-     const rws = rows.map(r => getMetaDataRow(dimensionYdataMap.get(r))) ;
+    const cols = columns.map(c => getMetaDataRow(dimensionXdataMap.get(c), !samplesAsColumns)) ;
+     const rws = rows.map(r => getMetaDataRow(dimensionYdataMap.get(r), samplesAsColumns)) ;
     try {
       const b = await new Promise((resolve, reject) => {
           try {
               console.log("Create Biom")
               const biom = new Biom({
                   id: id || null,
+                  type: 'OTU table',
                   comment: getGroupMetaDataAsJsonString(termMapping),   // Biom v1 does not support group metadata where we store field default values. Therefore this is given as a JSON string in the comment field 
                   rows: rws,// rows.map(r => getMetaDataRow(samplesAsColumns ? taxa.get(r) : samples.get(r) )), 
                   columns: cols, // columns.map(c => getMetaDataRow(samplesAsColumns ? samples.get(c)  : taxa.get(c))),
                   matrix_type: 'sparse',
+                  matrix_element_type: "int",
+                  date: new Date().toISOString().split("Z")[0],
                   shape: [rws.length, cols.length], // samplesAsColumns ? [taxa.size, samples.size] : [samples.size, taxa.size],
                   data: otuTable
                 })
@@ -191,6 +194,7 @@ const writeBigArraysInChunksToStream = (stream, arr, chunkSize, processFn = (pro
 }
 
 export const writeBiom = async (biom, path, processFn = (progress, total, message, summary) => {}) => {
+    console.log(`Biom keys: ${Object.keys(biom)}`)
     const startJson = "{\n", endJson = "\n}";
     return new Promise((resolve, reject)=>{
         try {
@@ -206,6 +210,7 @@ export const writeBiom = async (biom, path, processFn = (progress, total, messag
               keys.filter(k => !['_rows','_columns','_data'].includes(k)).forEach(k => {
                 biomStream.write(`"${k.slice(1)}": ${JSON.stringify(biom[k])},\n`)
               })
+              biomStream.write(`"shape": ${JSON.stringify(biom.shape)},\n`)
               biomStream.write(`"columns":`);
               writeBigArraysInChunksToStream(biomStream, biom._columns, 100, (progress) => processFn(progress, biom._columns.length, 'Writing columns'))
               biomStream.write(`,"rows":`);
