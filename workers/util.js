@@ -1,5 +1,6 @@
 import { writeBiom, toBiom, addReadCounts } from '../converters/biom.js';
-import { writeHDF5 } from '../converters/hdf5.js'
+import { writeHDF5, getMetrics } from '../converters/hdf5.js'
+import {writeMetricsToFile} from '../util/filesAndDirectories.js'
 import config from '../config.js'
 
 export const updateStatusOnCurrentStep = (progress, total, message, summary) => {
@@ -148,4 +149,12 @@ export const writeBiomFormats = async (biom, id, version) => {
   //  job.processingErrors = { hdf5: errors || [] }
     stepFinished('writeBiom2')
    
+}
+
+export const writeMetrics = async (id, version) => {
+    console.log('Generating metrics')
+    beginStep('generateMetrics')
+    const metrics =  await getMetrics(`${config.dataStorage}${id}/${version}/data.biom.h5`);
+    await writeMetricsToFile(id, version, metrics)
+    stepFinished('generateMetrics')
 }

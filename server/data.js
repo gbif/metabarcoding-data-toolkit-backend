@@ -1,7 +1,7 @@
 import util from "../util/index.js";
 import license from "../enum/license.js";
-import {getSamplesForGeoJson, getSamples, getSparseMatrix, getSampleTaxonomy, /* getSampleCompositions, */ getTaxonomyForAllSamples, getMetrics} from "../converters/hdf5.js"
-import {writeEmlJson, writeEmlXml, getCurrentDatasetVersion} from '../util/filesAndDirectories.js'
+import {getSamplesForGeoJson, getSamples, getSparseMatrix, getSampleTaxonomy, getSampleIndicesForOtu,  /* getSampleCompositions, */ getTaxonomyForAllSamples, getMetrics} from "../converters/hdf5.js"
+import { fileAtPathExists, getCurrentDatasetVersion, readMetrics, writeMetricsToFile} from '../util/filesAndDirectories.js'
 import config from '../config.js'
 
 export default  (app) => {
@@ -142,10 +142,23 @@ export default  (app) => {
                   if(!version){
                       version = await getCurrentDatasetVersion(req.params.id)
                   } 
-                const data =  await getMetrics(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`)
-            
+                let metrics = await readMetrics(req.params.id, version)
+                if(!metrics){
+                    const h5BiomFileExists = await fileAtPathExists(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`)
+
+                    if(!h5BiomFileExists){
+                        res.sendStatus(404)
+                        return;
+                    } else {
+                        metrics =  await getMetrics(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`)
+                        await writeMetricsToFile(req.params.id, version, metrics)
+                         
+                    }
+                    
+                }
+                res.send(metrics)
                  // console.log(eml)data
-                  res.send(data) 
+                 
               } catch (error) {
                   console.log(error)
                   res.sendStatus(500)
@@ -154,11 +167,7 @@ export default  (app) => {
         
     })
 
-    
-
-    
-
-/*     app.get("/dataset/:id/data/ordination", async (req, res) => {
+    app.get("/dataset/:id/data/observation/:index", async (req, res) => {
 
         if (!req.params.id ) {
             res.sendStatus(400);
@@ -168,8 +177,9 @@ export default  (app) => {
                   if(!version){
                       version = await getCurrentDatasetVersion(req.params.id)
                   } 
-                const data =  await getSampleCompositions(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`)
-            
+                const data =  await getSampleIndicesForOtu(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`, req.params.index)
+                
+
                  // console.log(eml)data
                   res.send(data) 
               } catch (error) {
@@ -178,8 +188,5 @@ export default  (app) => {
               }
           }   
         
-    }) */
-
-
-
+    })
 }

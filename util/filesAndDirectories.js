@@ -83,6 +83,10 @@ export const writeMapping = async (id, version, mapping) => {
   await fs.promises.writeFile(`${config.dataStorage}${id}/${version}/mapping.json`, JSON.stringify(mapping, null, 2));
 }
 
+export const writeMetricsToFile = async (id, version, metrics) => {
+  await fs.promises.writeFile(`${config.dataStorage}${id}/${version}/metrics.json`, JSON.stringify(metrics, null, 2));
+}
+
 export const readMapping = async (id, version) => {
   try {
     let files = await fs.promises.readdir(`${config.dataStorage}${id}/${version}`)     
@@ -94,6 +98,22 @@ export const readMapping = async (id, version) => {
      }
 } catch (error) {
     console.log(error)
+   return null;
+}
+  
+}
+
+export const readMetrics = async (id, version) => {
+  try {
+    let files = await fs.promises.readdir(`${config.dataStorage}${id}/${version}`)     
+     if(!!files.find(f => f === 'mapping.json')){
+        let data = await fs.promises.readFile(`${config.dataStorage}${id}/${version}/metrics.json`, 'utf8') //writeFile(`${config.dataStorage}${id}/${version}/processing.json`, JSON.stringify(json, null, 2));
+        return JSON.parse(data)
+     } else {
+        return null
+     }
+} catch (error) {
+   // console.log(error)
    return null;
 }
   
@@ -174,19 +194,7 @@ export const zipDwcArchive = (id, version) => {
     });
   };
 
-/*   export const zipDwcArchive = async (id, version) => {
-    return new Promise((resolve, reject) => {
-      const zip = spawn('zip', ['-r', `${config.dataStorage}${id}/${version}/archive.zip`, `*`], {
-        cwd: `${config.dataStorage}${id}/${version}/archive`,
-      })
-      zip.on('exit', () => {
-        resolve()
-      })
-      zip.on('error', (e) => {
-        reject(e)
-      })
-    })
-  }; */
+
 
   export const rsyncToPublicAccess = (id, version) => {
     return new Promise((resolve, reject) => {
@@ -288,6 +296,7 @@ export const fileAtPathExists = async (file) => {
   return new Promise((resolve, reject) => {
   fs.access(file, (error) => {
     if (error) {
+      console.log(error)
       resolve(false)
     }
     resolve(true)
@@ -321,7 +330,7 @@ const resetFilesAndProcessingStepsInReport = async (id, version) => {
 export const wipeGeneratedFilesAndResetProccessing = async (id, version) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const files = ['data.biom.json', 'data.biom.h5','taxonomy.tsv', 'archive.zip', 'archive/dna.txt', 'archive/occurrence.txt','archive/emof.txt', 'archive/meta.xml'];
+      const files = ['data.biom.json', 'data.biom.h5','taxonomy.tsv', 'metrics.json', 'archive.zip', 'archive/dna.txt', 'archive/occurrence.txt','archive/emof.txt', 'archive/meta.xml'];
       for (let f of files) {
         const exists = await fileExists(id, version, f)
         if(exists){

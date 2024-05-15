@@ -4,7 +4,7 @@ import { uploadedFilesAndTypes, getMimeFromPath, getFileSize, unzip } from '../v
 import { readFastaAsMap } from '../util/streamReader.js';
 import _ from 'lodash'
 import { mergeFastaMapIntoTaxonMap, readMapping } from '../util/filesAndDirectories.js'
-import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, consistencyCheckReport} from "./util.js"
+import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, consistencyCheckReport, writeMetrics} from "./util.js"
 import { assignTaxonomy } from '../classifier/index.js';
 import config from '../config.js';
 
@@ -56,6 +56,7 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     await addReadCounts(biom, updateStatusOnCurrentStep)
     stepFinished('addReadCounts')
     await writeBiomFormats(biom, id, version)
+    await writeMetrics(id, version)
     finishedJobSuccesssFully('success')
     } catch (error) {
         console.log(error)

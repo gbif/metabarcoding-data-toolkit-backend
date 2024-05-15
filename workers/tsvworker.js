@@ -4,7 +4,7 @@ import _ from 'lodash'
 import { mergeFastaMapIntoTaxonMap, readMapping, readTsvHeaders } from '../util/filesAndDirectories.js'
 import { otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders } from '../validation/tsvformat.js'
 import {uploadedFilesAndTypes} from '../validation/files.js'
-import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, missingSampleRecords, consistencyCheckReport} from "./util.js"
+import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, missingSampleRecords, consistencyCheckReport, writeMetrics} from "./util.js"
 import { md5 } from '../util/index.js';
 import { readFastaAsMap } from '../util/streamReader.js';
 import { assignTaxonomy } from '../classifier/index.js';
@@ -83,6 +83,8 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     await addReadCounts(biom, updateStatusOnCurrentStep)
     stepFinished('addReadCounts')
     await writeBiomFormats(biom, id, version)
+    await writeMetrics(id, version)
+
     finishedJobSuccesssFully('success')
     } catch (error) {
         console.log(error)

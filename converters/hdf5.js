@@ -652,7 +652,7 @@ export const getTotalReads =   (f) => {
     try {
        
         const data = f.get("observation/matrix/data").to_array();
-       return { totalReads: data.reduce((a, b) => a + b, 0)}
+       return  data.reduce((a, b) => a + b, 0)
     } catch (error) {
         console.log(error)
         throw error
@@ -674,27 +674,56 @@ export const getOtuCountPrSample =   (f) => {
    
 }
 
+export const getSampleIndicesForOtu = async (hdf5file, OTUidx) => {
+    try {
+        if(!h5wasm){
+            await init()
+        }
+        await h5wasm?.ready;
+        let f = new h5wasm.File(hdf5file, "r");
+        const indices = f.get("observation/matrix/indices").to_array();
+        const indptr = f.get("observation/matrix/indptr").to_array();
+        f.close()
+        return indices.slice(indptr[Number(OTUidx)], indptr[Number(OTUidx) +1])
+        
+       
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+
+}
 
 export const getSampleCountPrOtu =   (f) => {
 
     try {
        
         const indices = f.get("sample/matrix/indices").to_array();
-        const data = indices.reduce((acc, curr) => {
+          const data = indices.reduce((acc, curr) => {
             if(!acc[curr]){
                 acc[curr] = 1
             } else {
                 acc[curr] ++
             }
             return acc
-        },{})
-        const sampleCountPrOtu = Object.keys(data).map(key => ({key, val: data[key]})).sort((a,b)=> b.val- a.val).slice(0, 10)
-        f.get("observation/metadata").keys().filter(key => ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'DNA_sequence'].includes(key)).forEach(key => {
+        },{})  
+
+         
+
+        const mapped = Object.keys(data).map(key => ({key, val: data[key] })).sort((a,b)=> b.val- a.val)
+        const mostFrequent = mapped.slice(0, 10)
+        const lastNonSingletonIndex = mapped.findLastIndex(e => e.val > 1);
+        const singletonsTotal = mapped.length - 1 - lastNonSingletonIndex;
+        const leastFrequent = mapped.slice(Math.max(lastNonSingletonIndex - 10, 0), lastNonSingletonIndex)
+       // const singletons = mapped.slice(Math.max(mapped.findLastIndex(e => e.val === 1) - 5, 0))
+        f.get("observation/metadata").keys().filter(key => ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'scientificName', 'DNA_sequence', 'id'].includes(key)).forEach(key => {
             const rank = f.get(`observation/metadata/${key}`).to_array()
-            sampleCountPrOtu.forEach(e => e[key] = rank[Number(e.key)])
+            mostFrequent.forEach(e => e[key] = rank[Number(e.key)]) 
+            leastFrequent.forEach(e => e[key] = rank[Number(e.key)])
+        //    singletons.forEach(e => e[key] = rank[Number(e.key)])
 
         });
-       return sampleCountPrOtu
+       return {mostFrequent, leastFrequent, singletonsTotal}
     } catch (error) {
         console.log(error)
         throw error
@@ -747,6 +776,9 @@ export const getMetrics = async hdf5file => {
             sequenceLength: getDNAsequenceLength(f),
             sampleCountPrOtu: getSampleCountPrOtu(f)
 
+        }
+        if(metrics?.sampleCountPrOtu?.singletonsTotal){
+            metrics.singletonsTotal = metrics?.sampleCountPrOtu?.singletonsTotal
         }
 
        f.close()

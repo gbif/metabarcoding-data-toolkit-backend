@@ -47,6 +47,12 @@ const STEPS = {
         "status": "pending",
         "message": "Writing BIOM 2.1",
         "messagePending": "Write BIOM 2.1"
+    },
+    "generateMetrics": {
+        "name": "generateMetrics",
+        "status": "pending",
+        "message": "Generating metrics",
+        "messagePending": "Generate metrics"
     }
 }
 

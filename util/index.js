@@ -33,10 +33,18 @@ export const getMetaDataRow = (row, addTaxonomy = false) => {
 }
 
 export const getTaxonomyArray = r => {
-  console
+  
   // It seems that most applications uses the k__Fungi p__Basidiomycota format for the taxonopmy. Detect if it is given like that, or format it this way
   // TODO What to do about species level? ScientificName may not always be species. Look for binomials? 
-  return ['kingdom', 'phylum', 'class', 'order', 'family', 'genus',].map(rank => (r.metadata[rank] || "").startsWith(`${rank.charAt(0)}__`) ? r.metadata[rank] : `${rank.charAt(0)}__${(r.metadata[rank] || "")}`)
+  return ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'scientificName'].map(rank => {
+    if((r.metadata[rank] || "").startsWith(`${rank.charAt(0)}__`)){
+      return r.metadata[rank]
+    } else if(rank === 'scientificName' && (r.metadata[rank] || "").indexOf(' ') === -1 && (r.metadata[rank] || "").indexOf('.') === -1 && (r.metadata[rank] || "").indexOf(':')){
+      return `${rank.charAt(0)}__${(r.metadata[rank] || "")}_sp` 
+    } else {
+      return `${rank.charAt(0)}__${(r.metadata[rank] || "").replaceAll(' ', '_')}`
+    }
+  } )
   
 
 }
