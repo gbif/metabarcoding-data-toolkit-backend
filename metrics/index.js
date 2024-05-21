@@ -457,13 +457,13 @@ export const getMetrics = async (hdf5file, processFn = (progress, total, message
         let jaccard;
         let brayCurtis;
         try {
-           // jaccard = getDataForDissimilarityPlot(processFn, sparseMatrix, 'jaccard', sampleIds)
+            jaccard = getDataForDissimilarityPlot(processFn, sparseMatrix, 'jaccard', sampleIds)
         } catch (error) {
             console.log("Not able to generate Jaccard index")
             console.log(error)
         }
         try {
-         //   brayCurtis = getDataForDissimilarityPlot(processFn, sparseMatrix, 'bray-curtis', sampleIds, getReadCountPrSample(f))
+            brayCurtis = getDataForDissimilarityPlot(processFn, sparseMatrix, 'bray-curtis', sampleIds, getReadCountPrSample(f))
         } catch (error) {
             console.log("Not able to generate Bray-Curtis index")
             console.log(error)
