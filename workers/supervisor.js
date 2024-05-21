@@ -128,6 +128,7 @@ export const processDataset = (id, version, job) => {
             if(message?.type === 'updateStatusOnCurrentStep' && message?.payload){
                 let step = job.steps[job.steps.length - 1];
               //  console.log(job.steps)
+            
                 // step.message = message || step.message;
                 if ( message?.payload?.message) {
                     step.subTask = message?.payload?.message

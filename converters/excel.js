@@ -207,13 +207,14 @@ export const toBiom = async (
       // otuTableRowIds will be all ids in the OTU table
       const otuTableRowIds = new Set();
       // console.log(otuTable.data.length)
-
+      let count = 0;
       otuTable.data.slice(1).forEach((row, rowIndex) => {
         if (!!row[0] && taxaMap.has(row[0])) {
          
           let columnIdx = 0;
-          rows.push(row[0]);
-        
+        //  rows.push(row[0]);
+          let hasValidColumns = false;
+
           row.slice(1).forEach((val, index) => {
             if (
               !isNaN(Number(val)) &&
@@ -221,12 +222,20 @@ export const toBiom = async (
               sampleMap.has(columns[index])
             ) {
               // cannot rely on rowIndex if there are rows in the OTU table that has taxon ids not in the taxon file
-              sparseData.push([rows.length-1/* rowIndex */, columnIdx, Number(val)]);
+              sparseData.push([count /* rows.length-1 *//* rowIndex */, columnIdx, Number(val)]);
+              
+              // If we get at least one valid column, we can increment the row
+              hasValidColumns = true;
             }
             if (sampleMap.has(columns[index])) {
               columnIdx++;
             }
           });
+
+          if(hasValidColumns){
+            count ++;
+            rows.push(row[0]);
+          }
           
           if (rowIndex + (1 % 100) === 0) {
             processFn(

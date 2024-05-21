@@ -194,7 +194,6 @@ const writeBigArraysInChunksToStream = (stream, arr, chunkSize, processFn = (pro
 }
 
 export const writeBiom = async (biom, path, processFn = (progress, total, message, summary) => {}) => {
-    console.log(`Biom keys: ${Object.keys(biom)}`)
     const startJson = "{\n", endJson = "\n}";
     return new Promise((resolve, reject)=>{
         try {

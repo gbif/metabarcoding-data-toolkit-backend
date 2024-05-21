@@ -1,6 +1,4 @@
-import util from "../util/index.js";
-import license from "../enum/license.js";
-import {getSamplesForGeoJson, getSamples, getSparseMatrix, getSampleTaxonomy, getSampleIndicesForOtu,  /* getSampleCompositions, */ getTaxonomyForAllSamples, getMetrics} from "../converters/hdf5.js"
+import {getSamplesForGeoJson, getSamples, getSparseMatrix, getSampleTaxonomy, getSampleIndicesForOtu, getReadCountPrSample, getTaxonomyForAllSamples, getMetrics} from "../metrics/index.js"
 import { fileAtPathExists, getCurrentDatasetVersion, readMetrics, writeMetricsToFile} from '../util/filesAndDirectories.js'
 import config from '../config.js'
 
@@ -65,7 +63,7 @@ export default  (app) => {
           }   
         
     })
-
+/* 
     app.get("/dataset/:id/data/sparse-matrix", async (req, res) => {
 
         if (!req.params.id ) {
@@ -86,7 +84,7 @@ export default  (app) => {
               }
           }   
         
-    })
+    }) */
 
     app.get("/dataset/:id/data/sample/:index/taxonomy", async (req, res) => {
 
@@ -189,4 +187,29 @@ export default  (app) => {
           }   
         
     })
+
+/*     app.get("/dataset/:id/data/read-counts", async (req, res) => {
+
+        if (!req.params.id ) {
+            res.sendStatus(400);
+          } else {
+              try {
+                  let version = req?.query?.version;
+                  if(!version){
+                      version = await getCurrentDatasetVersion(req.params.id)
+                  } 
+                const data =  await getReadCountPrSample(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`)
+                
+
+                 // console.log(eml)data
+                  res.send(data) 
+              } catch (error) {
+                  console.log(error)
+                  res.sendStatus(500)
+              }
+          }   
+        
+    }) */
+
+    
 }

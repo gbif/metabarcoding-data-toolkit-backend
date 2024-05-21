@@ -111,23 +111,30 @@ export const readOtuTableToSparse = (path, progressFn = (progress, total, messag
               // Don´t rely on the record index - some columns might not be in the dimensionXdataMap, only raise the index if there is a valid column ID
               let columnIdx = 0;
               // console.log(record.slice(1))
+              let hasValidColumns = false;
               record.slice(1).forEach((element, index) => {
               //  console.log(`${columns[index]} in map ? ${columns[index]}`)
             //  console.log("idx " + columns[index] + " is in map? "+dimensionXdataMap.has(columns[index]))
+                
                 if(!isNaN(Number(element)) && Number(element) > 0 && dimensionXdataMap.has(columns[index])){
                   records.push([count, columnIdx, Number(element)])
-                  // console.log(`index ${index} columnIdx ${columnIdx}`)
-                  // console.log("push "+[count, columnIdx, Number(element)])
-                   
+
+                  // If we get at least one valid column, we can increment the row
+                  hasValidColumns = true;
+                       
                 }
                 if(dimensionXdataMap.has(columns[index])){
                   columnIdx ++;
                 }
               });
               // collect ordering of rows to sort metadata file
-              rows.push(record[0]);
+              if(hasValidColumns){
+                count ++;
+                rows.push(record[0]);
+              }
+              
               dimensionYSet.delete(record[0]); // Remove the id so dimensionYSet end up with only ids missung in the OTU table
-              count ++;
+              
               if(count % 10000 === 0){
                 console.log("Count "+count)
               }
