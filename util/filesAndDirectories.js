@@ -106,7 +106,7 @@ export const readMapping = async (id, version) => {
 export const readMetrics = async (id, version) => {
   try {
     let files = await fs.promises.readdir(`${config.dataStorage}${id}/${version}`)     
-     if(!!files.find(f => f === 'mapping.json')){
+     if(!!files.find(f => f === 'metrics.json')){
         let data = await fs.promises.readFile(`${config.dataStorage}${id}/${version}/metrics.json`, 'utf8') //writeFile(`${config.dataStorage}${id}/${version}/processing.json`, JSON.stringify(json, null, 2));
         return JSON.parse(data)
      } else {

@@ -243,7 +243,7 @@ export const getTaxonomyForAllSamples = async  (hdf5file) => {
     return result; // [...result, ...Array.from(parentMap).map(t => ({id: t[0] || "", parent: t[1].parentId, name: t[1].name, rank: t[1].rank}))];
 }
 
-export const getGeograpicScope =  (f) => {
+export const getGeographicScope =  (f) => {
 
     try {
         
@@ -470,7 +470,7 @@ export const getMetrics = async (hdf5file, processFn = (progress, total, message
         }
 
         const metrics =  {
-            geograpicScope: getGeograpicScope(f),
+            geographicScope: getGeographicScope(f),
             temporalScope: getTemporalScope(f),
             taxonomicScope: getTaxonomicScope(f),
             totalReads: getTotalReads(f),

@@ -1,6 +1,10 @@
 import licenseEnum from "../../enum/license.js"
 import {encode} from 'html-entities';
 
+const TAX_COVERAGE_LIMIT = 200;
+
+const TAX_COVERAGE_RANKS = ['kingdom', 'phylum', 'class', 'order', 'family']
+
 const escapeHtml = (unsafe) => {
     return encode(unsafe, {mode: 'nonAsciiPrintable', level: 'xml'})
 }
@@ -77,13 +81,80 @@ const getAgent = (agent, type) => {
     } 
 }
 
+const getGeographicCoverage = (geographicCoverage) => {
+
+    // TODO add <geographicDescription>The samples were collected at 19 stations distributed along the Baltic Sea, Kattegat and Skagerrak</geographicDescription>
+
+    return geographicCoverage ? `
+    <geographicCoverage>          
+           <boundingCoordinates>
+               <westBoundingCoordinate>${geographicCoverage?.westBoundingCoordinate}</westBoundingCoordinate>
+               <eastBoundingCoordinate>${geographicCoverage?.eastBoundingCoordinate}</eastBoundingCoordinate>
+               <northBoundingCoordinate>${geographicCoverage?.northBoundingCoordinate}</northBoundingCoordinate>
+               <southBoundingCoordinate>${geographicCoverage?.southBoundingCoordinate}</southBoundingCoordinate>
+           </boundingCoordinates>
+       </geographicCoverage>` : ""
+}
+
+const getTemporalCoverage = temporalCoverage => {
+
+    return temporalCoverage ? `
+    <temporalCoverage>
+        <rangeOfDates>
+            <beginDate>
+                <calendarDate>${temporalCoverage.from}</calendarDate>
+            </beginDate>
+            <endDate>
+            <calendarDate>${temporalCoverage.to}</calendarDate>
+            </endDate>
+        </rangeOfDates>
+    </temporalCoverage>` : ""
+}
+
+const getTaxonomicCoverage = taxonomicCoverage => {
+
+
+    const taxonomicClassifications = TAX_COVERAGE_RANKS.filter(rank => Object.keys(taxonomicCoverage || {}).includes(rank)).reduce((acc, curr) => {
+        acc[curr] = taxonomicCoverage[curr].map(e => `<taxonomicClassification>
+        <taxonRankName>${curr}</taxonRankName>
+    <taxonRankValue>${escapeHtml(e)}</taxonRankValue>
+</taxonomicClassification>`)
+        return acc
+    },{})
+
+    const hasData = TAX_COVERAGE_RANKS.filter(rank => Object.keys(taxonomicCoverage || {}).includes(rank)).reduce((acc, curr) => (acc || taxonomicCoverage[curr].length > 0 ), false)
+    // todo  <generalTaxonomicCoverage>Eukaryotic plankton</generalTaxonomicCoverage>
+
+    return hasData ?`<taxonomicCoverage>
+   ${TAX_COVERAGE_RANKS.filter(rank => Object.keys(taxonomicCoverage || {}).includes(rank)).reduce((acc, curr) => (acc.length + taxonomicClassifications[curr].length  < TAX_COVERAGE_LIMIT ? [...acc, ...taxonomicClassifications[curr]]: acc), []).join('\n')}
+  
+</taxonomicCoverage>`: ""
+}
+
+const getCoverage = ({geographicCoverage, temporalCoverage, taxonomicCoverage}) => {
+    const geographic = getGeographicCoverage(geographicCoverage)
+    const taxonomic = getTaxonomicCoverage(taxonomicCoverage)
+    const temporal = getTemporalCoverage(temporalCoverage)
+    if(geographic || taxonomic || temporal){
+       return  `
+       <coverage>
+        ${geographic}
+        ${temporal}
+        ${taxonomic}
+        </coverage>
+       `
+    } else {
+        return ""
+    }
+}
+
 const getUrl = url => !!url ? `<distribution scope="document">
 <online>
     <url function="information">${escapeHtml(url)}</url>
 </online>
 </distribution>` : ""
 
-export const getEml = ({id, license, title, description, contact, creator, methodSteps, doi, url, bibliographicReferences, keywords, keywordThesaurus, studyExtent, samplingDescription }) => {
+export const getEml = ({id, license, title, description, contact, creator, methodSteps, doi, url, bibliographicReferences, keywords, keywordThesaurus, studyExtent, samplingDescription, geographicCoverage, temporalCoverage, taxonomicCoverage }) => {
     if(!licenseEnum[license]){
         throw "invalid or missing license"
     }
@@ -126,6 +197,7 @@ export const getEml = ({id, license, title, description, contact, creator, metho
             ${steps ? steps : ""}
             ${sampling ? "<sampling>" + sampling + "</sampling>": ""}
         </methods>` : ""}
+        ${getCoverage({geographicCoverage, temporalCoverage, taxonomicCoverage})}
         </dataset>
         <additionalMetadata>
             <metadata>

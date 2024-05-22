@@ -3,7 +3,7 @@ import auth from './Auth/auth.js'
 import db from './db/index.js'
 import config from '../config.js';
 import { getDataset } from '../util/dataset.js';
-import {getCurrentDatasetVersion, getProcessingReport, writeProcessingReport} from '../util/filesAndDirectories.js'
+import {getCurrentDatasetVersion, getProcessingReport, writeProcessingReport, readMetrics} from '../util/filesAndDirectories.js'
 import {deleteDatasetInGbifUAT} from "../util/gbifRegistry.js"
 
 
@@ -20,6 +20,13 @@ export default  (app) => {
                     version = await getCurrentDatasetVersion(req.params.id);
                 } 
                 const report = await getProcessingReport(req.params.id, version);
+                let metrics;
+                try {
+                    metrics = await readMetrics((req.params.id, version))
+                    report.metrics = metrics
+                } catch (error) {
+                    console.log(`No metrics for dataset ${req.params.id}`)
+                }
                 if(report){
                     res.json(report)
                 } else {
