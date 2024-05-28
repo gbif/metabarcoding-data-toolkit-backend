@@ -497,6 +497,9 @@ export const getMetrics = async (hdf5file, processFn = (progress, total, message
         const sparseMatrix = getSparseMatrix(f);
         let jaccard;
         let brayCurtis;
+        let temporalScope;
+        let geographicScope;
+        let taxonomicScope;
         try {
             jaccard = getDataForDissimilarityPlot(processFn, sparseMatrix, 'jaccard', sampleIds)
         } catch (error) {
@@ -510,10 +513,32 @@ export const getMetrics = async (hdf5file, processFn = (progress, total, message
             console.log(error)
         }
 
+        try {
+            temporalScope = getTemporalScope(f);
+        } catch (error) {
+            console.log("Not able to generate temporalScope")
+            console.log(error)
+        }
+
+        try {
+            geographicScope = getGeographicScope(f)
+        } catch (error) {
+            console.log("Not able to generate geographicScope")
+            console.log(error)
+        }
+
+        try {
+            taxonomicScope = getTaxonomicScope(f)
+
+        } catch (error) {
+            console.log("Not able to generate taxonomicScope")
+            console.log(error)
+        }
+
+
+
         const metrics =  {
-            geographicScope: getGeographicScope(f),
-            temporalScope: getTemporalScope(f),
-            taxonomicScope: getTaxonomicScope(f),
+           
             totalReads: getTotalReads(f),
             otuCountPrSample: getOtuCountPrSample(f),
             readSumPrSample: getReadSumPrSample(f),
@@ -529,6 +554,16 @@ export const getMetrics = async (hdf5file, processFn = (progress, total, message
         if(brayCurtis){
             metrics.brayCurtis = brayCurtis
         }
+        if(geographicScope){
+            metrics.geographicScope = geographicScope
+        }
+        if(temporalScope){
+            metrics.temporalScope = temporalScope
+        }
+        if(taxonomicScope){
+            metrics.taxonomicScope = taxonomicScope
+        }
+        
 
        f.close()
        return metrics

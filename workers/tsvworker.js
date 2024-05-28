@@ -39,6 +39,9 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     if(fasta){
         const fastaMap = await readFastaAsMap(`${config.dataStorage}${id}/${version}/original/${fasta.name}`);
         // adds sequences from fasta to taxonomy file
+        if(!taxa){
+            taxa = new Map();
+        };
         mergeFastaMapIntoTaxonMap(fastaMap, taxa)
     } else if(sequencesAsHeaders){
        // console.log("#### IT HAS SEQ HEADERS")
@@ -52,10 +55,10 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
         )
       //  console.log(`fastaMap size ${fastaMap.size}`)
         if(!taxa){
-            taxa = fastaMap;
-        } else {
+            taxa = new Map();
+        };
             mergeFastaMapIntoTaxonMap(fastaMap, taxa)
-        }    
+           
     }
     updateStatusOnCurrentStep(taxa.size, taxa.size, 'Reading taxon file', {taxonCount: taxa.size});
 

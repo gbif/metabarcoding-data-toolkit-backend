@@ -369,11 +369,19 @@ export const wipeGeneratedDwcFiles = async (id, version) => {
 }
 
 export const mergeFastaMapIntoTaxonMap = (fastaMap, taxonMap) => {
-
-  taxonMap.forEach((value, key) => {
-    taxonMap.set(key, {...value, DNA_sequence: fastaMap.get(key) || ""})
-  })
- return taxonMap;
+  // if the taxonMap size is 0, no taxon file was provided. If there is a fastaMap, we will populate the empte taxonMap with the fastaMap data
+  if(taxonMap.size > 0){
+    taxonMap.forEach((value, key) => {
+      taxonMap.set(key, {...value, DNA_sequence: fastaMap.get(key) || ""})
+    })
+   return taxonMap;
+  } else if(taxonMap.size === 0 && fastaMap.size > 0){
+    fastaMap.forEach((value, key) => {
+      taxonMap.set(key, {id: key, DNA_sequence: value})
+    })
+    return taxonMap;
+  }
+  
 }
 
 export const readDataStorage = async () => {
