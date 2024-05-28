@@ -344,6 +344,47 @@ export const getSampleIndicesForOtu = async (hdf5file, OTUidx) => {
 
 }
 
+export const getSampleMetadataColumn = async (hdf5file, column) => {
+    try {
+        if(!h5wasm){
+            await init()
+        }
+        await h5wasm?.ready;
+        let f = new h5wasm.File(hdf5file, "r");
+        const data = f.get(`sample/metadata/${column}`).to_array();
+        f.close()
+       
+        return data
+        
+       
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+
+}
+
+export const getSampleMetadataTypes = async (hdf5file, column) => {
+    try {
+        if(!h5wasm){
+            await init()
+        }
+        await h5wasm?.ready;
+        let f = new h5wasm.File(hdf5file, "r");
+        const keys = f.get(`sample/metadata`).keys();
+        const result = keys.map(key => ({key, type: f.get(`sample/metadata/${key}`).dtype}))
+        f.close()
+       
+        return result
+        
+       
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+
+}
+
 export const getSampleCountPrOtu =   (f) => {
 
     try {

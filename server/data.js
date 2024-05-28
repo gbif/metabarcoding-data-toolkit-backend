@@ -1,4 +1,4 @@
-import {getSamplesForGeoJson, getSamples, getSparseMatrix, getSampleTaxonomy, getSampleIndicesForOtu, getReadCountPrSample, getTaxonomyForAllSamples, getMetrics} from "../metrics/index.js"
+import {getSamplesForGeoJson, getSamples, getSampleMetadataTypes, getSampleTaxonomy, getSampleIndicesForOtu, getSampleMetadataColumn, getTaxonomyForAllSamples, getMetrics} from "../metrics/index.js"
 import { fileAtPathExists, getCurrentDatasetVersion, readMetrics, writeMetricsToFile} from '../util/filesAndDirectories.js'
 import config from '../config.js'
 
@@ -63,8 +63,8 @@ export default  (app) => {
           }   
         
     })
-/* 
-    app.get("/dataset/:id/data/sparse-matrix", async (req, res) => {
+
+    app.get("/dataset/:id/data/sample/metadata/:column", async (req, res) => {
 
         if (!req.params.id ) {
             res.sendStatus(400);
@@ -74,7 +74,7 @@ export default  (app) => {
                   if(!version){
                       version = await getCurrentDatasetVersion(req.params.id)
                   } 
-                const data =  await getSparseMatrix(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`)
+                const data =  await getSampleMetadataColumn(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`, req.params.column)
             
                  // console.log(eml)data
                   res.send(data) 
@@ -84,7 +84,9 @@ export default  (app) => {
               }
           }   
         
-    }) */
+    })
+
+
 
     app.get("/dataset/:id/data/sample/:index/taxonomy", async (req, res) => {
 
@@ -187,6 +189,31 @@ export default  (app) => {
           }   
         
     })
+
+    app.get("/dataset/:id/data/sample/datatypes", async (req, res) => {
+
+        if (!req.params.id ) {
+            res.sendStatus(400);
+          } else {
+              try {
+                  let version = req?.query?.version;
+                  if(!version){
+                      version = await getCurrentDatasetVersion(req.params.id)
+                  } 
+                const data =  await getSampleMetadataTypes(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`)
+                
+
+                 // console.log(eml)data
+                  res.send(data) 
+              } catch (error) {
+                  console.log(error)
+                  res.sendStatus(500)
+              }
+          }   
+        
+    })
+
+    
 
 /*     app.get("/dataset/:id/data/read-counts", async (req, res) => {
 
