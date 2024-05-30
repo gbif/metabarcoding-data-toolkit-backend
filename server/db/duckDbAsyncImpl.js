@@ -10,7 +10,7 @@ let con; // db.connect();
 
 
 
-const createUserDatasetStmt = 'INSERT INTO UserDatasets VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+const createUserDatasetStmt = 'INSERT INTO UserDatasets VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 const deleteUserDatasetStmt = 'UPDATE UserDatasets SET deleted = ? WHERE dataset_id=? AND user_name=?';
 
 const updateCountsOnDatasetStmt = 'UPDATE UserDatasets SET sample_count=?, taxon_count=? WHERE dataset_id=? AND user_name=?';
@@ -27,14 +27,14 @@ const getNonDeletedDatasetsStmt = 'SELECT * FROM UserDatasets WHERE deleted IS N
 const getDeletedDatasetsStmt = 'SELECT * FROM UserDatasets WHERE deleted IS NOT NULL ORDER BY created DESC';
 
 
-const createUserDataset = async (userName, datasetId, title ="") => {
+const createUserDataset = async ({userName, datasetId, title, gbifUatKey, gbifProdKey,  nodeKey, publishingOrgKey}) => {
     const now = new Date();
     const sqlDate = now.toISOString().split('T')[0]
 
     try {
         const stmt = await con.prepare(createUserDatasetStmt)
-
-         await stmt.run(userName, datasetId, title, sqlDate, 0, 0, 0, "", null);
+        // d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.gbif_prod_key, d.deleted, d.node_key, d.publishing_org_key
+         await stmt.run(userName, datasetId, title, sqlDate, 0, 0, 0, gbifUatKey || null, gbifProdKey || null, null, nodeKey || null, publishingOrgKey || null);
          await stmt.finalize()
 
     } catch (error) {
@@ -175,7 +175,7 @@ const initialize = async (datasets) => {
         const  con_ = await db_.connect();
         con = con_;
         db = db_;
-        await con.run('CREATE TABLE UserDatasets (user_name STRING, dataset_id STRING, title STRING, created DATE, sample_count INTEGER DEFAULT 0, taxon_count INTEGER DEFAULT 0, occurrence_count INTEGER DEFAULT 0, gbif_uat_key STRING, deleted DATE)');
+        await con.run('CREATE TABLE UserDatasets (user_name STRING, dataset_id STRING, title STRING, created DATE, sample_count INTEGER DEFAULT 0, taxon_count INTEGER DEFAULT 0, occurrence_count INTEGER DEFAULT 0, gbif_uat_key STRING, gbif_prod_key STRING, deleted DATE, node_key STRING, publishing_org_key STRING)');
         await con.run('CREATE UNIQUE INDEX ud_idx ON UserDatasets (user_name, dataset_id)');
         const stmt = await con.prepare(createUserDatasetStmt)
 
@@ -184,7 +184,7 @@ const initialize = async (datasets) => {
             try {
                // console.log( d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.deleted)
 
-                await stmt.run(d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.deleted)
+                await stmt.run(d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.gbif_prod_key, d.deleted, d.node_key, d.publishing_org_key)
 
             } catch (error) {
                 console.log(`Error creating dataset in DB: `)

@@ -31,7 +31,7 @@ export default  (app) => {
     try {
       if(req?.user){
         const datasetTitle = req.body?.datasetTitle || ""
-        await db.createUserDataset(req?.user?.userName, req.id, datasetTitle)
+        await db.createUserDataset({userName: req?.user?.userName, datasetId: req.id, title: datasetTitle})
         console.log(`Dataset ${req.id} created by ${req?.user?.userName}. Title: ${datasetTitle}`)
         if(datasetTitle){
           await writeEmlJson(req.id, req?.query?.version ?? "1", {title: datasetTitle})

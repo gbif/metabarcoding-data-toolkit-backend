@@ -408,8 +408,11 @@ export const readDataStorage = async () => {
             sample_count: storedDataset?.summary?.sampleCount || 0,
             taxon_count: storedDataset?.summary?.taxonCount || 0,
             occurrence_count: storedDataset?.dwc?.summary?.occurrenceCount || 0,
-            gbif_uat_key: storedDataset?.publishing?.gbifDatasetKey || "",
-            deleted: storedDataset?.deletedAt ? storedDataset?.deletedAt.split('T')[0] : null
+            gbif_uat_key: storedDataset?.publishing?.gbifDatasetKey /* deprecated - use env specific keys from now on */ || storedDataset?.publishing?.gbifUatDatasetKey || "",
+            gbif_prod_key: storedDataset?.publishing?.gbifDatasetKey /* deprecated - use env specific keys from now on */ || storedDataset?.publishing?.gbifProdDatasetKey || "",
+            deleted: storedDataset?.deletedAt ? storedDataset?.deletedAt.split('T')[0] : null,
+            node_key: storedDataset?.nodeKey || "",
+            publishing_org_key: storedDataset?.publishingOrgKey || "",
           })
         } catch (error) {
           console.log("ERRR ID "+ storedDataset?.id)
