@@ -1,5 +1,8 @@
 import { biomToDwc } from '../converters/dwc.js';
-//import config from '../config.js'
+import { getYargs } from '../util/index.js';
+
+import config from '../config.js'
+
 import _ from 'lodash'
 import {  readBiom, zipDwcArchive, readMapping } from '../util/filesAndDirectories.js'
 import {updateStatusOnCurrentStep, beginStep, stepFinished,  finishedJobSuccesssFully, finishedJobWithError } from "./util.js"
@@ -7,7 +10,7 @@ import {updateStatusOnCurrentStep, beginStep, stepFinished,  finishedJobSuccesss
 
 
 
-const createDwc = async (id, version, dataStorage) => {
+const createDwc = async (id, version) => {
     try {
        
         beginStep('readBiom')
@@ -20,7 +23,7 @@ const createDwc = async (id, version, dataStorage) => {
         beginStep('writeDwc')
         console.log("Begin write dwc from worker")
         const mapping = await readMapping(id, version)
-        await biomToDwc(biom,  mapping, `${dataStorage}${id}/${version}`, updateStatusOnCurrentStep)
+        await biomToDwc(biom,  mapping, `${config.dataStorage}${id}/${version}`, updateStatusOnCurrentStep)
         
         stepFinished('writeDwc')
         
@@ -42,9 +45,14 @@ const createDwc = async (id, version, dataStorage) => {
 
 
 
-const id = process.argv[2]
-const version = process.argv[3]
-const dataStorage = process.argv[4]
+try {
+    const yargs = getYargs()
+    const {id, version } = yargs;
+    
+    createDwc(id, version)
 
-createDwc(id, version, dataStorage)
+    } catch (error) {
+        console.log(error)
+    }
+
 

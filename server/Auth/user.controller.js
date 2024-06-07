@@ -22,6 +22,18 @@ export default  (app) => {
             res.sendStatus(404)
         }
     })
+
+    app.get('/user/organizations', auth.appendUser(), async (req, res) => {
+
+        try {
+            const userName = req?.user?.userName;
+            const organizations = await auth.getOrganisationsForUser(userName)
+            res.json(organizations)
+        } catch (error) {
+            console.log(error)
+            res.sendStatus(500)
+        }
+    })
     
 }
 

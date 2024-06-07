@@ -2,7 +2,7 @@ import { addReadCounts } from '../converters/biom.js';
 import {readXlsxHeaders, getMapFromMatrix, readWorkBookFromFile, toBiom } from "../converters/excel.js"
 import { uploadedFilesAndTypes, getMimeFromPath, getFileSize, unzip } from '../validation/files.js'
 import filenames from '../validation/filenames.js'
-
+import { getYargs } from '../util/index.js';
 import {getArrayIntersection} from '../validation/misc.js'
 import { readFastaAsMap } from '../util/streamReader.js';
 import _ from 'lodash'
@@ -96,9 +96,15 @@ const processDataset = async (id, version, userName) => {
 
 
 
-const id = process.argv[2]
-const version = process.argv[3]
-const userName = process.argv[4]
-processDataset(id, version, userName)
+try {
+  const yargs = getYargs()
+  const {id, version, username} = yargs;
+  
+   processDataset(id, version, username)
+  } catch (error) {
+      console.log(error)
+  }
+
+
 
 

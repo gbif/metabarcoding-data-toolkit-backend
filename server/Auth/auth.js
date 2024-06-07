@@ -1,7 +1,7 @@
 'use strict';
 import compose from 'composable-middleware';
 import User from './user.model.js';
-
+import {readAdminFile, writeAdminFile} from '../../util/filesAndDirectories.js'
 
 
 const appendUser = () => {
@@ -61,7 +61,44 @@ const userCanModifyDataset = () => {
         });
 }
 
+export const userCanPublishWithOrganisation = async (userName, organisationKey) => {
+    try {
+        const admin = await readAdminFile();
+        return admin?.organizations?.[organisationKey]?.includes(userName)
+    } catch (error) {
+        console.log(error)
+        throw error;
+    }
+}
+
+export const userIsAdmin = async (userName) => {
+    try {
+        const admin = await readAdminFile();
+        return admin?.admin?.includes(userName)
+    } catch (error) {
+        console.log(error)
+        throw error;
+    }
+}
+
+export const getOrganisationsForUser = async (userName) => {
+    try {
+        const admin = await readAdminFile();
+        if(admin?.admin?.includes(userName)){
+            return Object.keys(admin?.organizations || {}).map(key => ({key, name: admin?.organizations?.[key]?.name}))
+        } else {
+            return Object.keys(admin?.organizations || {}).filter(key => admin?.organizations?.[key]?.users?.includes(userName) ).map(key => ({key, name: admin?.organizations?.[key]?.name}))
+        }
+    } catch (error) {
+        console.log(error)
+        throw error;
+    }
+}
+
 export default {
     appendUser,
-    userCanModifyDataset
+    userCanModifyDataset,
+    userCanPublishWithOrganisation,
+    userIsAdmin,
+    getOrganisationsForUser
 }

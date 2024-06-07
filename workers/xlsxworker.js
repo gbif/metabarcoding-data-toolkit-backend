@@ -1,3 +1,4 @@
+import { getYargs } from '../util/index.js';
 import { addReadCounts } from '../converters/biom.js';
 import { getMapFromMatrix, readWorkBookFromFile, toBiom } from "../converters/excel.js"
 import { uploadedFilesAndTypes, getMimeFromPath, getFileSize, unzip } from '../validation/files.js'
@@ -6,6 +7,8 @@ import _ from 'lodash'
 import { mergeFastaMapIntoTaxonMap, readMapping } from '../util/filesAndDirectories.js'
 import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, consistencyCheckReport, writeMetrics} from "./util.js"
 import { assignTaxonomy } from '../classifier/index.js';
+import { getYargs } from '../util/index.js';
+
 import config from '../config.js';
 
 
@@ -66,12 +69,15 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
 }
 
 
+try {
+const yargs = getYargs()
+const {id, version, assigntaxonomy} = yargs;
+
+processDataset(id, version, assigntaxonomy)
+} catch (error) {
+    console.log(error)
+}
 
 
-const id = process.argv[2]
-const version = process.argv[3]
-const systemShouldAssignTaxonomy = process.argv?.[4] || false;
-
-processDataset(id, version, systemShouldAssignTaxonomy)
 
 

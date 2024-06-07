@@ -80,11 +80,15 @@ export const processDataset = (id, version, job) => {
         await prepareForProcessing(id, version, job)
         // Get the appropriate worker for the job
         const worker = getWorker(job)
+        console.log("Worker "+worker)
         console.log("FORK "+__dirname + '/' + worker)
-        const args = job?.assignTaxonomy ? [id, version, job?.assignTaxonomy] : [id, version];
+        console.log(process.argv)
+        const args = job?.assignTaxonomy ? [...process.argv,'--id', id, '--version', version, '--assigntaxonomy',  job?.assignTaxonomy] : [...process.argv, '--id', id, '--version', version];
+       console.log(args)
         const work = fork(__dirname + '/' + worker, args);
+        console.log("Worker got started")
         work.on('message', (message) => {
-    
+            console.log('message '+ message)
             if(message?.type === 'beginStep' && !!message?.payload){
                 console.log("BEGIN STEP "+message?.payload)
                 
@@ -162,6 +166,7 @@ export const processDataset = (id, version, job) => {
         })
     
         work.on('error', (err) => {
+            console.log("Worker error:")
             console.log(err)
             reject(err)
         })
@@ -172,7 +177,7 @@ export const processDataset = (id, version, job) => {
 export const createDwc = (id, version, job) => {
 
     return new Promise(async (resolve, reject) => {
-        const work = fork(__dirname + '/dwcworker.js', [id, version, config.dataStorage]);
+        const work = fork(__dirname + '/dwcworker.js', [...process.argv, '--id', id, '--version', version]);
 
 
         work.on('message', (message) => {
@@ -227,7 +232,7 @@ export const createDwc = (id, version, job) => {
 export const validateXlSX = (id, version, userName) => {
 
     return new Promise(async (resolve, reject) => {
-        const work = fork(__dirname + '/xlsxvalidationworker.js', [id, version, userName]);
+        const work = fork(__dirname + '/xlsxvalidationworker.js', [...process.argv, '--id', id, '--version', version, '--username', userName]);
 
 
         work.on('message', (message) => {

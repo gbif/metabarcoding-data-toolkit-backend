@@ -49,11 +49,20 @@ export const getTaxonomyArray = r => {
 
 }
 
+export const getYargs = () =>  process.argv.reduce((acc, curr, idx) => {
+    if(curr?.startsWith('--')){
+      acc[curr.substring(2)] = process.argv[idx+1]
+    }
+    return acc
+   }, {})
+
+
 export default {
     metaXml,
     dwcTerms,
     objectSwap,
     md5,
     getMetaDataRow,
-    getTaxonomyArray
+    getTaxonomyArray,
+    getYargs
 }

@@ -1,4 +1,6 @@
 import { toBiom, addReadCounts, metaDataFileToMap } from '../converters/biom.js';
+
+import { getYargs } from '../util/index.js';
 // import config from '../config.js'
 import _ from 'lodash'
 import { mergeFastaMapIntoTaxonMap, readMapping, readTsvHeaders } from '../util/filesAndDirectories.js'
@@ -11,13 +13,15 @@ import { assignTaxonomy } from '../classifier/index.js';
 import config from '../config.js';
 
 
-
 const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     try {
         console.log("Processing dataset "+id + " version "+version)
-    const mapping = await readMapping(id, version);
+        console.log("config.dataStorage "+config.dataStorage)
+    const mapping = await readMapping(id, version, config.dataStorage);
    
-    const files = await uploadedFilesAndTypes(id, version)
+    const files = await uploadedFilesAndTypes(id, version, config.dataStorage)
+    console.log("files")
+    console.log(files)
     const fileMap = _.keyBy(files.files, "type")
 
     const fasta = files.files.find(f => f.name.endsWith('.fasta') || f.name.endsWith('.fa'))
@@ -97,11 +101,13 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
 }
 
 
+try {
+const yargs = getYargs()
+const {id, version, assigntaxonomy} = yargs;
 
+ processDataset(id, version, assigntaxonomy)
+} catch (error) {
+    console.log(error)
+}
 
-
-const id = process.argv[2]
-const version = process.argv[3]
-const systemShouldAssignTaxonomy = process.argv?.[4] || false;
-processDataset(id, version, systemShouldAssignTaxonomy)
 

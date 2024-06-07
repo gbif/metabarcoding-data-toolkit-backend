@@ -2,11 +2,11 @@ import config from '../../config.js'
 import db from '../db/index.js'
 import axios from 'axios'
 
-const url = config.env === "prod" ? config.gbifBaseUrlProd : config.gbifBaseUrl
+//const url = config.env === "prod" ? config.gbifBaseUrlProd : config.gbifBaseUrl
 
 async function login(auth) {
     let loginRequest = {
-        url: `${url}user/login`,
+        url: `${config.gbifRegistryBaseUrl[config.env]}user/login`,
         method: 'get',
         headers: {
             authorization: auth
@@ -26,7 +26,7 @@ async function getFromToken(auth) {
     
     let options = {
         method: 'post',
-        url: `${config.gbifRegistryBaseUrl}user/whoami`,
+        url: `${config.gbifRegistryBaseUrl[config.env]}user/whoami`,
         headers: {
             authorization: auth
         }

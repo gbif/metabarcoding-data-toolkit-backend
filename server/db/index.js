@@ -17,6 +17,8 @@ export const updateTitleOnDataset = dbImplementation.updateTitleOnDataset;
 
 export const updateUatKeyOnDataset = dbImplementation.updateUatKeyOnDataset;
 
+export const updateProdKeyOnDataset = dbImplementation.updateProdKeyOnDataset;
+
 export const getDatasetById = dbImplementation.getDatasetById
 
 export const updateOccurrenceCountOnDataset = dbImplementation.updateOccurrenceCountOnDataset
@@ -33,5 +35,6 @@ export default {
     updateOccurrenceCountOnDataset,
     updateTitleOnDataset,
     updateUatKeyOnDataset,
+    updateProdKeyOnDataset,
     initialize
 }

@@ -384,6 +384,20 @@ export const mergeFastaMapIntoTaxonMap = (fastaMap, taxonMap) => {
   
 }
 
+export const readAdminFile = async () => {
+  try {
+    let data = await fs.promises.readFile(config.adminFilePath, 'utf8') //writeFile(`${config.dataStorage}${id}/${version}/processing.json`, JSON.stringify(json, null, 2));
+        return JSON.parse(data)
+} catch (error) {
+   // console.log(error)
+   return null;
+  }
+}
+
+export const writeAdminFile = async adminData => {
+  await fs.promises.writeFile(config.adminFilePath, JSON.stringify(adminData, null, 2));
+}
+
 export const readDataStorage = async () => {
   try{
     const datasets = []

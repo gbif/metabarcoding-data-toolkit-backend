@@ -1,5 +1,5 @@
 import { getProcessingReport, writeProcessingReport, getMetadata, getCurrentDatasetVersion, wipeGeneratedDwcFiles, rsyncToPublicAccess, dwcArchiveExists} from '../util/filesAndDirectories.js'
-import {registerDatasetInGBIF} from '../util/gbifRegistry.js'
+import {registerDatasetInGBIF, registerDatasetInGBIFusingGBRDS} from '../util/gbifRegistry.js'
 import { biomToDwc } from '../converters/dwc.js';
 import {getMimeFromPath, getFileSize} from '../validation/files.js'
 import config from '../config.js'
@@ -147,9 +147,9 @@ const processDwc = async function (req, res) {
     }
   };
 
-  const publishDwc = async function (req, res) {
+  const publishDwc = async function (req, res, env) {
 
-    console.log("publishDwc")
+    console.log(`Publish Dwc to ${env}`)
     if (!req.params.id) {
       res.sendStatus(400);
     } else {
@@ -159,25 +159,38 @@ const processDwc = async function (req, res) {
                 version = await getCurrentDatasetVersion(req.params.id)
             } 
             const hasDwcArchive = await  dwcArchiveExists(req.params.id, version)
-            
-            
+            const metadata = await getMetadata(req.params.id, version)   
             let report = await getProcessingReport(req.params.id, version);
-            report.publishing = {steps : []}
-            console.log("Copying Archive to public access URI")
-            report.publishing.steps.push({ status: 'processing', message: 'Copying archive to public URI', time: Date.now() })
+            report.publishing = report?.publishing || {} // {steps : []}
+         
             if(config?.env === 'local'){
                 // When doing local development, the data needs to be moved to a public url
                 await rsyncToPublicAccess(req.params.id, version)
             }
             
-            report.publishing.steps.push({ status: 'processing', message: 'Registering dataset in GBIF', time: Date.now() })
-
-            const gbifDatasetKey = await registerDatasetInGBIF(req.params.id, version, config.gbifUsername, config.gbifPassword)
-            report.publishing.gbifDatasetKey = gbifDatasetKey;
-            console.log("Dataset registered in GBIF, crawl triggered")
-            report.publishing.steps.push({ status: 'finished', message: 'Registering dataset in GBIF complete', time: Date.now() })
+            if(env === "uat"){
+                // On UAT we use the default user and authorize with Basic auth
+                // const gbifUatDatasetKey = await registerDatasetInGBIF(req.params.id, version, config.uatAuth, 'uat')
+                const gbifUatDatasetKey = await registerDatasetInGBIFusingGBRDS({
+                    ednaDatasetID: req.params.id,
+                    version,
+                    env,
+                    auth: config?.uatAuth,
+                    metadata,
+                    processingReport: report,
+                    publishingOrganizationKey: config?.uatPublishingOrganizationKey,
+                    userName: req?.user?.userName
+                })
+                report.publishing.gbifUatDatasetKey = gbifUatDatasetKey;
+            } else if(env === "prod"){
+                // On PROD we use the logged in users registry token. So the user must have access to publish datasets under the chosen organisation 
+                const gbifProdDatasetKey = await registerDatasetInGBIF(req.params.id, version, req?.headers?.authorization, 'prod', req?.query?.publishingOrganizationKey)
+                report.publishing.gbifProdDatasetKey = gbifProdDatasetKey;
+            }
+            
+            console.log(`Dataset registered in GBIF ${env}, crawl triggered`)
             await writeProcessingReport(req.params.id, version, report)
-            const metadata = await getMetadata(req.params.id, version)
+            
                 if(report){
                     if(!!metadata){
                         report.metadata = metadata
@@ -205,7 +218,8 @@ const processDwc = async function (req, res) {
 export default  (app) => {
     app.post("/dataset/:id/dwc", auth.userCanModifyDataset(), processDwc);
 
-    app.post("/dataset/:id/register-in-gbif", auth.userCanModifyDataset(), publishDwc);
+    app.post("/dataset/:id/register-in-gbif-uat", auth.userCanModifyDataset(), (req, res) => publishDwc(req, res, 'uat' ));
+    app.post("/dataset/:id/register-in-gbif-prod", auth.userCanModifyDataset(), (req, res) => publishDwc(req, res, 'prod' ));
 
     app.get("/dataset/:id/dwc/:version?", async (req, res) => {
         if (!req.params.id) {
