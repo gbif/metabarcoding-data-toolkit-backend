@@ -13,7 +13,7 @@ import dwc from './dwc.js'
 import terms from './terms.js';
 import enums from './enum.js';
 import datasets from './datasets.js';
-
+import gbifRegistry from './gbifRegistry.js';
 import mapping from './mapping.js';
 import files from './files.js';
 import data from './data.js';
@@ -77,7 +77,8 @@ files(app)
 data(app)
 // Add routes for datasets
 datasets(app)
-
+// Add routes for GBIF registry
+gbifRegistry(app)
 
 app.listen(config.EXPRESS_PORT, function() {
     // console.log("Config "+config.INPUT_PATH )
