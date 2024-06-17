@@ -25,8 +25,12 @@ let gbifCredentials = {
     uatPublishingOrganizationKey: null,
     dataDirectory: "",
     uatAuth: null,
-    adminFilePath: null
+    organizationFilePath: null,
+    prodPublishingEnabled: false
 }
+
+let port = 9000
+
 
 try {
     console.log("Reading credentials from "+process.argv)
@@ -35,8 +39,12 @@ try {
     { encoding: 'utf8', flag: 'r' });
      gbifCredentials = JSON.parse(creds) 
      gbifCredentials.uatAuth = `Basic ${base64.encode(gbifCredentials.uatPublishingOrganizationKey + ":" + gbifCredentials.uatOrganizationToken)}`
-     gbifCredentials.adminFilePath = yargs.adminfile
-     console.log(`Admin file located at ${gbifCredentials.adminFilePath} - this must be writable`)
+     gbifCredentials.organizationFilePath = yargs.organizationfile;
+     if(!!yargs?.port){
+        port = yargs?.port
+     }
+/*      gbifCredentials.prodPublishingEnabled = yargs.prodPublishingEnabled
+ */     console.log(`Organization configuration file located at ${gbifCredentials.organizationFilePath} - this must be writable`)
 
 } catch (error) {
     console.log("No GBIF user credentials given")
@@ -51,7 +59,13 @@ const env = process.env.NODE_ENV || 'local';
 
 const config = {
     local: {
+        expressPort: port,
         env: 'local',
+        prodPublishingEnabled: gbifCredentials?.prodPublishingEnabled,
+        nodeKey: gbifCredentials?.nodeKey,
+        termsLink: gbifCredentials?.termsLink,
+        installationAdmins: gbifCredentials?.installationAdmins,
+        installationContactEmail: gbifCredentials?.installationContactEmail,
         dataStorage :  __dirname + "../ednaToolData/data/" + gbifCredentials?.dataDirectory,
         ebiOntologyService: 'https://www.ebi.ac.uk/ols/api/search',
         dwcPublicAccessUrl: 'http://labs.gbif.org/~tsjeppesen/edna/',
@@ -68,10 +82,16 @@ const config = {
             prod: 'https://gbrds.gbif-uat.org/',
             uat: 'https://gbrds.gbif-uat.org/'
         },
-        adminFilePath: gbifCredentials.adminFilePath
+        organizationFilePath: gbifCredentials.organizationFilePath
     },
     uat: {
+        expressPort: port,
         env: 'uat',
+        prodPublishingEnabled: gbifCredentials?.prodPublishingEnabled,
+        nodeKey: gbifCredentials.nodeKey,
+        termsLink: gbifCredentials?.termsLink,
+        installationAdmins: gbifCredentials?.installationAdmins,
+        installationContactEmail: gbifCredentials?.installationContactEmail,
         dataStorage : "/mnt/auto/misc/hosted-datasets.gbif-uat.org/edna/" + gbifCredentials?.dataDirectory,
         ebiOntologyService: "https://www.ebi.ac.uk/ols/api/search",
         dwcPublicAccessUrl: "https://hosted-datasets.gbif-uat.org/edna/"  + gbifCredentials?.dataDirectory,  // 'http://labs.gbif.org/~tsjeppesen/edna/',
@@ -88,7 +108,7 @@ const config = {
             prod: 'https://gbrds.gbif-uat.org/',
             uat: 'https://gbrds.gbif-uat.org/'
         },
-        adminFilePath: gbifCredentials.adminFilePath
+        organizationFilePath: gbifCredentials.organizationFilePath
 
        /*  installationKey: "aec88852-acfa-4b12-af59-b4b50d6f07b2",
         publishingOrganizationKey: "f7ecf12b-221d-4eea-806d-fb4b37face25",
@@ -96,7 +116,13 @@ const config = {
         gbifPassword: gbifCredentials?.password */
     },
     prod: {
+        expressPort: port,
         env: 'prod',
+        prodPublishingEnabled: gbifCredentials?.prodPublishingEnabled,
+        nodeKey: gbifCredentials.nodeKey,
+        termsLink: gbifCredentials?.termsLink,
+        installationAdmins: gbifCredentials?.installationAdmins,
+        installationContactEmail: gbifCredentials?.installationContactEmail,
         dataStorage : "/mnt/auto/misc/hosted-datasets.gbif.org/edna/"  + gbifCredentials?.dataDirectory,
         ebiOntologyService: "https://www.ebi.ac.uk/ols/api/search",
         dwcPublicAccessUrl: "https://hosted-datasets.gbif.org/edna/"  + gbifCredentials?.dataDirectory,  // 'http://labs.gbif.org/~tsjeppesen/edna/',
@@ -113,7 +139,7 @@ const config = {
             prod: 'https://gbrds.gbif.org/',
             uat: 'https://gbrds.gbif-uat.org/'
         },
-        adminFilePath: gbifCredentials.adminFilePath
+        organizationFilePath: gbifCredentials.organizationFilePath
         /* installationKey: "aec88852-acfa-4b12-af59-b4b50d6f07b2",
         publishingOrganizationKey: "f7ecf12b-221d-4eea-806d-fb4b37face25",
         gbifUsername: gbifCredentials?.username,

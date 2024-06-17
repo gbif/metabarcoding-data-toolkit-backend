@@ -14,7 +14,8 @@ async function login(auth) {
     };
     try {
         let response = await axios(loginRequest);
-        return response?.data;
+        const user = response?.data
+        return {...user, isAdmin: config.installationAdmins.includes(user?.userName)};
     } catch (error) {
         console.log(error)
         throw error
@@ -45,7 +46,7 @@ async function getFromToken(auth) {
                 console.log(error)
             }
            // console.log(datasets)
-            return {...user,datasets: datasets, token: response?.headers?.token || ''};
+            return {...user,datasets: datasets, token: response?.headers?.token || '', isAdmin: config.installationAdmins.includes(user.userName)};
         } else {
             throw "No user from that token, expired?"
         }

@@ -34,6 +34,36 @@ export default  (app) => {
             res.sendStatus(500)
         }
     })
+
+    app.get('/admin/organizations', auth.appendUser(), async (req, res) => {
+        if(!req.user.isAdmin){
+            res.sendStatus(403)
+        } else {
+            try {
+                const organizations = await auth.getOrganisations()
+                res.json(organizations)
+            } catch (error) {
+                console.log(error)
+                res.sendStatus(500)
+            }
+        }
+        
+    })
+
+    app.post('/admin/organizations', auth.appendUser(), async (req, res) => {
+        if(!req.user.isAdmin){
+            res.sendStatus(403)
+        } else {
+            try {
+                 await auth.writeOrganisations(req.body)
+                res.sendStatus(201)
+            } catch (error) {
+                console.log(error)
+                res.sendStatus(500)
+            }
+        }
+        
+    })
     
 }
 

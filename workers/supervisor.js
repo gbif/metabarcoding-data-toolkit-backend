@@ -88,7 +88,6 @@ export const processDataset = (id, version, job) => {
         const work = fork(__dirname + '/' + worker, args);
         console.log("Worker got started")
         work.on('message', (message) => {
-            console.log('message '+ message)
             if(message?.type === 'beginStep' && !!message?.payload){
                 console.log("BEGIN STEP "+message?.payload)
                 

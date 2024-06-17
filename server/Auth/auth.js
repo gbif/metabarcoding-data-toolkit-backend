@@ -1,8 +1,8 @@
 'use strict';
 import compose from 'composable-middleware';
 import User from './user.model.js';
-import {readAdminFile, writeAdminFile} from '../../util/filesAndDirectories.js'
-
+import {readOrganizationFile, writeOrganizationFile} from '../../util/filesAndDirectories.js'
+import config from '../../config.js';
 
 const appendUser = () => {
     return compose()
@@ -11,7 +11,7 @@ const appendUser = () => {
             User.getFromToken(req?.headers?.authorization)
             .then((user) => {
                 if (user) {
-                    req.user = user;
+                    req.user = {...user, isAdmin: config.installationAdmins.includes(user.userName)};
                     res.setHeader('token', user?.token);
                 } else {
                    // removeTokenCookie(res);
@@ -63,7 +63,7 @@ const userCanModifyDataset = () => {
 
 export const userCanPublishWithOrganisation = async (userName, organisationKey) => {
     try {
-        const admin = await readAdminFile();
+        const admin = await readOrganizationFile();
         return admin?.organizations?.[organisationKey]?.includes(userName)
     } catch (error) {
         console.log(error)
@@ -71,20 +71,12 @@ export const userCanPublishWithOrganisation = async (userName, organisationKey) 
     }
 }
 
-export const userIsAdmin = async (userName) => {
-    try {
-        const admin = await readAdminFile();
-        return admin?.admin?.includes(userName)
-    } catch (error) {
-        console.log(error)
-        throw error;
-    }
-}
+
 
 export const getOrganisationsForUser = async (userName) => {
     try {
-        const admin = await readAdminFile();
-        if(admin?.admin?.includes(userName)){
+        const admin = await readOrganizationFile();
+        if(config?.installationAdmins?.includes(userName)){
             return Object.keys(admin?.organizations || {}).map(key => ({key, name: admin?.organizations?.[key]?.name}))
         } else {
             return Object.keys(admin?.organizations || {}).filter(key => admin?.organizations?.[key]?.users?.includes(userName) ).map(key => ({key, name: admin?.organizations?.[key]?.name}))
@@ -95,10 +87,32 @@ export const getOrganisationsForUser = async (userName) => {
     }
 }
 
+export const getOrganisations = async () => {
+    
+        try {
+            const admin = await readOrganizationFile();
+            return admin
+        } catch (error) {
+            console.log(error)
+
+        }
+}
+
+export const writeOrganisations = async (data) => {
+    
+    try {
+         await writeOrganizationFile(data);
+    } catch (error) {
+        console.log(error)
+
+    }
+}
+
 export default {
     appendUser,
     userCanModifyDataset,
     userCanPublishWithOrganisation,
-    userIsAdmin,
-    getOrganisationsForUser
+    getOrganisationsForUser,
+    getOrganisations,
+    writeOrganisations
 }

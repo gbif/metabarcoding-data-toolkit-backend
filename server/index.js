@@ -20,15 +20,14 @@ import data from './data.js';
 import cors from 'cors'
 import authController from './Auth/auth.controller.js'
 import userController from './Auth/user.controller.js'
-import { getCurrentDatasetVersion, writeProcessingReport, initDatabase } from '../util/filesAndDirectories.js'
+import {  initDatabase } from '../util/filesAndDirectories.js'
+import config from '../config.js';
 /* import SegfaultHandler from 'segfault-handler';
 SegfaultHandler.registerHandler('crash.log'); */
 
 
 initDatabase()
-const config = {
-    EXPRESS_PORT: 9000
-}
+
 
 app.use(cors({exposedHeaders: ['token']}))
 app.use(addRequestId());
@@ -80,7 +79,7 @@ datasets(app)
 // Add routes for GBIF registry
 gbifRegistry(app)
 
-app.listen(config.EXPRESS_PORT, function() {
+app.listen(config.expressPort, function() {
     // console.log("Config "+config.INPUT_PATH )
-     console.log('Express server listening on port ' + config.EXPRESS_PORT);
+     console.log('Express server listening on port ' + config.expressPort);
  });
