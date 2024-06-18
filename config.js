@@ -26,7 +26,9 @@ let gbifCredentials = {
     dataDirectory: "",
     uatAuth: null,
     organizationFilePath: null,
-    prodPublishingEnabled: false
+    prodPublishingEnabled: false,
+    dataDirectory : null,
+ 	dwcPublicAccessUrl: null
 }
 
 let port = 9000
@@ -66,9 +68,9 @@ const config = {
         termsLink: gbifCredentials?.termsLink,
         installationAdmins: gbifCredentials?.installationAdmins,
         installationContactEmail: gbifCredentials?.installationContactEmail,
-        dataStorage :  __dirname + "../ednaToolData/data/" + gbifCredentials?.dataDirectory,
+        dataStorage :   gbifCredentials?.dataDirectory,
         ebiOntologyService: 'https://www.ebi.ac.uk/ols/api/search',
-        dwcPublicAccessUrl: 'http://labs.gbif.org/~tsjeppesen/edna/',
+        dwcPublicAccessUrl: gbifCredentials?.dwcPublicAccessUrl,
         rsyncDirectory: 'tsjeppesen@labs.gbif.org:~/public_html/edna',
         gbifBaseUrl,
         gbifRegistryBaseUrl,
@@ -92,9 +94,10 @@ const config = {
         termsLink: gbifCredentials?.termsLink,
         installationAdmins: gbifCredentials?.installationAdmins,
         installationContactEmail: gbifCredentials?.installationContactEmail,
-        dataStorage : "/mnt/auto/misc/hosted-datasets.gbif-uat.org/edna/" + gbifCredentials?.dataDirectory,
+        dataStorage :   gbifCredentials?.dataDirectory,
+        //dataStorage : "/mnt/auto/misc/hosted-datasets.gbif-uat.org/edna/" + gbifCredentials?.dataDirectory,
         ebiOntologyService: "https://www.ebi.ac.uk/ols/api/search",
-        dwcPublicAccessUrl: "https://hosted-datasets.gbif-uat.org/edna/"  + gbifCredentials?.dataDirectory,  // 'http://labs.gbif.org/~tsjeppesen/edna/',
+        dwcPublicAccessUrl: gbifCredentials?.dwcPublicAccessUrl,
         rsyncDirectory: '', // Only for dev env, will already be accessible via http on UAT
         gbifBaseUrl,
         gbifRegistryBaseUrl,
@@ -105,7 +108,7 @@ const config = {
         uatPassword: gbifCredentials?.uatPassword, */
         uatAuth: gbifCredentials.uatAuth,
         gbifGbrdsBaseUrl: {
-            prod: 'https://gbrds.gbif-uat.org/',
+            prod: 'https://gbrds.gbif-uat.org/', // if the env is UAT, we do not publish to prod
             uat: 'https://gbrds.gbif-uat.org/'
         },
         organizationFilePath: gbifCredentials.organizationFilePath
@@ -123,9 +126,10 @@ const config = {
         termsLink: gbifCredentials?.termsLink,
         installationAdmins: gbifCredentials?.installationAdmins,
         installationContactEmail: gbifCredentials?.installationContactEmail,
-        dataStorage : "/mnt/auto/misc/hosted-datasets.gbif.org/edna/"  + gbifCredentials?.dataDirectory,
+        dataStorage :   gbifCredentials?.dataDirectory,
+        // dataStorage : "/mnt/auto/misc/hosted-datasets.gbif.org/edna/"  + gbifCredentials?.dataDirectory,
         ebiOntologyService: "https://www.ebi.ac.uk/ols/api/search",
-        dwcPublicAccessUrl: "https://hosted-datasets.gbif.org/edna/"  + gbifCredentials?.dataDirectory,  // 'http://labs.gbif.org/~tsjeppesen/edna/',
+        dwcPublicAccessUrl: gbifCredentials?.dwcPublicAccessUrl,
         rsyncDirectory: '', // Only for dev env, will already be accessible via http on UAT
         gbifBaseUrl,
         gbifRegistryBaseUrl,
@@ -136,7 +140,7 @@ const config = {
         uatPassword: gbifCredentials?.uatPassword, */
         uatAuth: gbifCredentials.uatAuth,
         gbifGbrdsBaseUrl: {
-            prod: 'https://gbrds.gbif.org/',
+            prod: 'https://gbrds.gbif.org/', // This can publish to prod
             uat: 'https://gbrds.gbif-uat.org/'
         },
         organizationFilePath: gbifCredentials.organizationFilePath
