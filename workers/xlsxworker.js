@@ -7,7 +7,6 @@ import _ from 'lodash'
 import { mergeFastaMapIntoTaxonMap, readMapping } from '../util/filesAndDirectories.js'
 import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, consistencyCheckReport, writeMetrics} from "./util.js"
 import { assignTaxonomy } from '../classifier/index.js';
-import { getYargs } from '../util/index.js';
 
 import config from '../config.js';
 
