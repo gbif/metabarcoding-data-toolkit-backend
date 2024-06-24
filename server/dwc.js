@@ -8,6 +8,7 @@ import queue from 'async/queue.js';
 import DWCSTEPS from '../enum/dwcSteps.js'
 import runningJobs from '../workers/runningJobs.js';
 import {createDwc} from '../workers/supervisor.js'
+import base64 from 'base-64';
 
 //const runningJobs = new Map();
 
@@ -183,9 +184,26 @@ const processDwc = async function (req, res) {
                 })
                 report.publishing.gbifUatDatasetKey = gbifUatDatasetKey;
             } else if(env === "prod"){
-                // On PROD we use the logged in users registry token. So the user must have access to publish datasets under the chosen organisation 
-                const gbifProdDatasetKey = await registerDatasetInGBIF(req.params.id, version, req?.headers?.authorization, 'prod', req?.query?.publishingOrganizationKey)
+               // const gbifProdDatasetKey = await registerDatasetInGBIF(req.params.id, version, req?.headers?.authorization, 'prod', req?.query?.publishingOrganizationKey)
+               const orgs = await auth.getOrganisations()
+               const organization = orgs.organizations[req?.query?.organizationKey];
+               if(!organization){
+                throw `Organization with key: ${req?.query?.organizationKey} was not found in the config file`
+               } else {
+                const auth = `Basic ${base64.encode(req?.query?.organizationKey + ":" + organization?.token)}`
+                const gbifProdDatasetKey = await registerDatasetInGBIFusingGBRDS({
+                ednaDatasetID: req.params.id,
+                version,
+                env,
+                auth,
+                metadata,
+                processingReport: report,
+                publishingOrganizationKey: req?.query?.organizationKey,
+                userName: req?.user?.userName
+                })
                 report.publishing.gbifProdDatasetKey = gbifProdDatasetKey;
+               }
+               
             }
             
             console.log(`Dataset registered in GBIF ${env}, crawl triggered`)

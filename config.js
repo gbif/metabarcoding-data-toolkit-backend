@@ -27,6 +27,7 @@ let gbifCredentials = {
     uatAuth: null,
     organizationFilePath: null,
     prodPublishingEnabled: false,
+    prodInstallationKey: null,
     dataDirectory : null,
  	dwcPublicAccessUrl: null
 }
@@ -80,6 +81,7 @@ const config = {
      /*    uatUsername: gbifCredentials?.uatUsername,
         uatPassword: gbifCredentials?.uatPassword, */
         uatAuth: gbifCredentials.uatAuth ,
+        prodInstallationKey:  gbifCredentials?.prodInstallationKey,
         gbifGbrdsBaseUrl: {
             prod: 'https://gbrds.gbif-uat.org/',
             uat: 'https://gbrds.gbif-uat.org/'
@@ -107,6 +109,7 @@ const config = {
         /* uatUsername: gbifCredentials?.uatUsername,
         uatPassword: gbifCredentials?.uatPassword, */
         uatAuth: gbifCredentials.uatAuth,
+        prodInstallationKey:  gbifCredentials?.prodInstallationKey,
         gbifGbrdsBaseUrl: {
             prod: 'https://gbrds.gbif-uat.org/', // if the env is UAT, we do not publish to prod
             uat: 'https://gbrds.gbif-uat.org/'
@@ -139,6 +142,7 @@ const config = {
        /*  uatUsername: gbifCredentials?.uatUsername,
         uatPassword: gbifCredentials?.uatPassword, */
         uatAuth: gbifCredentials.uatAuth,
+        prodInstallationKey:  gbifCredentials?.prodInstallationKey,
         gbifGbrdsBaseUrl: {
             prod: 'https://gbrds.gbif.org/', // This can publish to prod
             uat: 'https://gbrds.gbif-uat.org/'
