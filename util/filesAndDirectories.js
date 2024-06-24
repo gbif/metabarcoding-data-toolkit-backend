@@ -423,7 +423,7 @@ export const readDataStorage = async () => {
             taxon_count: storedDataset?.summary?.taxonCount || 0,
             occurrence_count: storedDataset?.dwc?.summary?.occurrenceCount || 0,
             gbif_uat_key: storedDataset?.publishing?.gbifDatasetKey /* deprecated - use env specific keys from now on */ || storedDataset?.publishing?.gbifUatDatasetKey || "",
-            gbif_prod_key: storedDataset?.publishing?.gbifDatasetKey /* deprecated - use env specific keys from now on */ || storedDataset?.publishing?.gbifProdDatasetKey || "",
+            gbif_prod_key: storedDataset?.publishing?.gbifProdDatasetKey || "",
             deleted: storedDataset?.deletedAt ? storedDataset?.deletedAt.split('T')[0] : null,
             node_key: storedDataset?.nodeKey || "",
             publishing_org_key: storedDataset?.publishingOrgKey || "",

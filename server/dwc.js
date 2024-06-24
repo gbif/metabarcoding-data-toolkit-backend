@@ -185,7 +185,7 @@ const processDwc = async function (req, res) {
                 report.publishing.gbifUatDatasetKey = gbifUatDatasetKey;
             } else if(env === "prod"){
                // const gbifProdDatasetKey = await registerDatasetInGBIF(req.params.id, version, req?.headers?.authorization, 'prod', req?.query?.publishingOrganizationKey)
-               const orgs = await auth.getOrganisations()
+               const orgs = await auth.getOrganisationsForUser(req?.user?.userName)
                const organization = orgs.organizations[req?.query?.organizationKey];
                if(!organization){
                 throw `Organization with key: ${req?.query?.organizationKey} was not found in the config file`
