@@ -75,7 +75,7 @@ const config = {
         rsyncDirectory: 'tsjeppesen@labs.gbif.org:~/public_html/edna',
         gbifBaseUrl,
         gbifRegistryBaseUrl,
-        blastService: "http://localhost:9100", //"http://blast.gbif-dev.org",
+        blastService: "http://localhost:9001", //"http://blast.gbif-dev.org",
         uatInstallationKey: gbifCredentials?.uatInstallationKey, 
         uatPublishingOrganizationKey: gbifCredentials?.uatPublishingOrganizationKey,  
      /*    uatUsername: gbifCredentials?.uatUsername,

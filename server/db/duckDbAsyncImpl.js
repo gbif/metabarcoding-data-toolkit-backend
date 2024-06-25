@@ -19,6 +19,7 @@ const updateOccurrenceCountOnDatasetStmt = 'UPDATE UserDatasets SET occurrence_c
 const updateTitleOnDatasetStmt = 'UPDATE UserDatasets SET title=? WHERE dataset_id=? AND user_name=?';
 const updateUatKeyOnDatasetStmt = 'UPDATE UserDatasets SET gbif_uat_key=? WHERE dataset_id=? AND user_name=?';
 const updateProdKeyOnDatasetStmt = 'UPDATE UserDatasets SET gbif_prod_key=? WHERE dataset_id=? AND user_name=?';
+const updatePublishingOrgKeyOnDatasetStmt = 'UPDATE UserDatasets SET publishing_org_key=? WHERE dataset_id=? AND user_name=?';
 
 
 const getDatasetByIdStmt = 'SELECT * FROM UserDatasets WHERE dataset_id = ?';
@@ -138,6 +139,23 @@ const updateProdKeyOnDataset = async (userName, datasetId, gbifProdKey) => {
     }
 }
 
+const updatePublishingOrgKeyOnDataset = async (userName, datasetId, publishingOrganizationKey) => {
+
+    try {
+        const stmt = await con.prepare(updatePublishingOrgKeyOnDatasetStmt)
+
+         await stmt.run(publishingOrganizationKey, datasetId, userName)
+         await stmt.finalize()
+
+    } catch (error) {
+        console.log("Error - updatePublishingOrgKeyOnDataset:")
+        console.log(error)
+        throw error
+    }
+}
+
+
+
 const getDatasetById = async (dataset_id) => {
     try {
         const stmt = await con.prepare(getDatasetByIdStmt)
@@ -229,5 +247,6 @@ export default {
     updateTitleOnDataset,
     updateUatKeyOnDataset,
     updateProdKeyOnDataset,
+    updatePublishingOrgKeyOnDataset,
     initialize
 }

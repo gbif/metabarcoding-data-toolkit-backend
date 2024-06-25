@@ -243,14 +243,20 @@ export const registerDatasetInGBIFusingGBRDS = async ({ednaDatasetID, userName, 
             },
             endpoint: config.env === 'local' ? `${config.dwcPublicAccessUrl}${ednaDatasetID}.zip` : `${config.dwcPublicAccessUrl}${ednaDatasetID}/${version}/archive.zip`
             });
-
-            if(env === "uat"){
-              await db.updateUatKeyOnDataset(userName, ednaDatasetID, uuid )
-              console.log(`Registered new eDNA dataset ${ednaDatasetID} with uuid: ${uuid} env: ${env}`);
-            } else if(env === "prod") {
-              await db.updateProdKeyOnDataset(userName, ednaDatasetID, uuid )
-              console.log(`Registered new eDNA dataset ${ednaDatasetID} with uuid: ${uuid} env: ${env}`);
+            try {
+              if(env === "uat"){
+                await db.updateUatKeyOnDataset(userName, ednaDatasetID, uuid )
+                console.log(`Registered new eDNA dataset ${ednaDatasetID} with uuid: ${uuid} env: ${env}`);
+              } else if(env === "prod") {
+                await db.updateProdKeyOnDataset(userName, ednaDatasetID, uuid )
+                await db.updatePublishingOrgKeyOnDataset(userName, ednaDatasetID, publishingOrganizationKey)
+                console.log(`Registered new eDNA dataset ${ednaDatasetID} with uuid: ${uuid} env: ${env}`);
+              }
+            } catch (error) {
+              console.log("Error updating DB:")
+              console.log(error)
             }
+            
            
            
             return uuid

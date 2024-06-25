@@ -23,6 +23,8 @@ export const getDatasetById = dbImplementation.getDatasetById
 
 export const updateOccurrenceCountOnDataset = dbImplementation.updateOccurrenceCountOnDataset
 
+export const updatePublishingOrgKeyOnDataset = dbImplementation.updatePublishingOrgKeyOnDataset
+
 export const initialize = dbImplementation.initialize
 
 export default {
@@ -36,5 +38,6 @@ export default {
     updateTitleOnDataset,
     updateUatKeyOnDataset,
     updateProdKeyOnDataset,
+    updatePublishingOrgKeyOnDataset,
     initialize
 }

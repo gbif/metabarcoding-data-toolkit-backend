@@ -8,7 +8,7 @@ import taxonomyFileHeaders from './taxonFileHeaders.js'
 const BLAST_CONCURRENCY = 4;
 const GBIF_TAXON_MATCH_CONCURRENCY = 25;
 const RANKS = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
-const gbifBaseUrl = config.gbifBaseUrlProd
+const gbifBaseUrl = config.gbifBaseUrl.prod
 
 const taxonMatchLimit = pLimit(GBIF_TAXON_MATCH_CONCURRENCY);
 
