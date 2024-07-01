@@ -108,7 +108,7 @@ export const registerStudyGbrds = async ({ednaDatasetID, auth, env, organisation
    try {
     const xmlResponse = await axios({
       method: 'post',
-     url: `${config.gbifGbrdsBaseUrl[env]}registry/ipt/resource${!!datasetKey ? '/'+datasetKey : ''}`,
+     url: !!datasetKey ? `${config.gbifGbrdsBaseUrl[env]}registry/ipt/resource/${datasetKey}` : `${config.gbifGbrdsBaseUrl[env]}registry/ipt/resource`,
      headers: {
        authorization: auth,
        'content-type': 'application/x-www-form-urlencoded'
@@ -208,9 +208,9 @@ export const registerDatasetInGBIFusingGBRDS = async ({ednaDatasetID, userName, 
   try {
     let registeredKey;
     if (env === "prod"){
-      registeredKey = !!processingReport?.publishing?.gbifProdDatasetKey
+      registeredKey = processingReport?.publishing?.gbifProdDatasetKey
     } else if(env === "uat"){
-      registeredKey = !!processingReport?.publishing?.gbifUatDatasetKey
+      registeredKey = processingReport?.publishing?.gbifUatDatasetKey
     }
 
     if (!!registeredKey) {
@@ -223,6 +223,7 @@ export const registerDatasetInGBIFusingGBRDS = async ({ednaDatasetID, userName, 
           auth,
           env,
           datasetKey: registeredKey,
+          iptKey:  env === "prod" ? config.prodInstallationKey : config.uatInstallationKey,
           primaryContact: {
             primaryContactName: `${metadata?.contact?.givenName ? metadata?.contact?.givenName +" ": ""}${metadata?.contact?.surName}`,
             primaryContactEmail:  metadata?.contact?.electronicMailAddress

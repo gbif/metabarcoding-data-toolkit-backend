@@ -76,7 +76,7 @@ const getAgent = (agent, type) => {
     ${agent?.phone ? `<phone>${escapeHtml(agent?.phone)}</phone>` : ""}
     ${agent?.electronicMailAddress ? `<electronicMailAddress>${escapeHtml(agent?.electronicMailAddress)}</electronicMailAddress>` : ""}
     ${agent?.userId ? `<userId directory="http://orcid.org/">${escapeHtml(agent?.userId)}</userId>` : ""}
-    
+    ${agent?.role ? `<role>${escapeHtml(agent?.role)}</role>` : ""}
     </${type}>`
     } 
 }
@@ -154,10 +154,11 @@ const getUrl = url => !!url ? `<distribution scope="document">
 </online>
 </distribution>` : ""
 
-export const getEml = ({id, license, title, description, contact, creator, methodSteps, doi, url, bibliographicReferences, keywords, keywordThesaurus, studyExtent, samplingDescription, geographicCoverage, temporalCoverage, taxonomicCoverage }) => {
+export const getEml = ({id, license, title, description, contact, creator, metadataProvider, associatedParty, methodSteps, doi, url, bibliographicReferences, keywords, keywordThesaurus, studyExtent, samplingDescription, geographicCoverage, temporalCoverage, taxonomicCoverage }) => {
     if(!licenseEnum[license]){
         throw "invalid or missing license"
     }
+    
     const steps = getMethodSteps(methodSteps);
     const sampling = [getStudyExtent(studyExtent), getSamplingDescription(samplingDescription)].filter(e => !!e).join("\n");
 
@@ -172,14 +173,16 @@ export const getEml = ({id, license, title, description, contact, creator, metho
             ${doi ? `<alternateIdentifier>https://doi.org/${escapeHtml(doi)}</alternateIdentifier>` : ""}
             <title>${escapeHtml(title)}</title>
             ${creator && creator?.length > 0 ? creator.map(c => getAgent(c, 'creator')).join("") : ""}
+            ${metadataProvider && metadataProvider?.length > 0 ? metadataProvider.map(c => getAgent(c, 'metadataProvider')).join("") : ""}
+            ${associatedParty && associatedParty?.length > 0 ? associatedParty.map(c => getAgent(c, 'associatedParty')).join("") : ""}
             <pubDate>
           ${new Date().toISOString().split("T")[0]}
           </pubDate>
             <language>ENGLISH</language>
             <abstract>
             ${description ? `<para>${escapeHtml(description)}</para>` : "" }
-            <para>[This dataset was processed using the GBIF eDNA converter tool.]</para>
-        </abstract>
+                <para>[This dataset was processed using the GBIF eDNA converter tool.]</para>
+            </abstract>
             ${getKeywords(keywords, keywordThesaurus)}
             <intellectualRights>
                 <para>This work is licensed under a 
@@ -190,6 +193,9 @@ export const getEml = ({id, license, title, description, contact, creator, metho
             </intellectualRights>
             ${getUrl(url)}
             <maintenance>
+                    <description>
+                        <para></para>
+                    </description>
                 <maintenanceUpdateFrequency>unkown</maintenanceUpdateFrequency>
             </maintenance>
             ${getAgent(contact, 'contact')}
