@@ -154,7 +154,47 @@ const getUrl = url => !!url ? `<distribution scope="document">
 </online>
 </distribution>` : ""
 
-export const getEml = ({id, license, title, description, contact, creator, metadataProvider, associatedParty, methodSteps, doi, url, bibliographicReferences, keywords, keywordThesaurus, studyExtent, samplingDescription, geographicCoverage, temporalCoverage, taxonomicCoverage }) => {
+export const getProject = (project) => {
+
+    if(!project){
+        return ""
+    } else {
+        const {identifier, title, personnel, description, funding, studyAreaDescription, designDescription} = project;
+        const identifier_ = !!identifier ? `id="${escapeHtml(identifier)}"` : ""
+        const title_ = !!title ? `<title>${escapeHtml(title)}</title>` : "";
+        const personnel_ = !!personnel && personnel?.length > 0 ? personnel.map(c => getAgent(c, 'personnel')).join("") : "";
+        const description_ = !!description ? `<abstract>
+        <para>${escapeHtml(description)}</para>
+    </abstract>` : ""
+        const funding_ = !!funding ? `<funding>
+        <para>${escapeHtml(funding)}</para>
+    </funding>` : "";
+        const studyAreaDescription_ = !!studyAreaDescription ? `<studyAreaDescription>
+        <descriptor name="generic"
+                    citableClassificationSystem="false">
+            <descriptorValue>${escapeHtml(studyAreaDescription)}</descriptorValue>
+        </descriptor>
+    </studyAreaDescription>` : ""
+
+        const designDescription_ = !!designDescription ? `<designDescription>
+        <description>
+            <para>${escapeHtml(designDescription)}</para>
+        </description>
+    </designDescription>` : ""
+        return `<project ${identifier_}>
+        ${title_}
+            ${personnel_}
+            ${description_}
+            ${funding_}
+            ${studyAreaDescription_}
+            ${designDescription_}
+    </project>`
+    }
+
+  
+}
+
+export const getEml = ({id, license, title, description, contact, creator, metadataProvider, associatedParty, methodSteps, doi, url, bibliographicReferences, keywords, keywordThesaurus, studyExtent, samplingDescription, geographicCoverage, temporalCoverage, taxonomicCoverage, project }) => {
     if(!licenseEnum[license]){
         throw "invalid or missing license"
     }
@@ -199,6 +239,7 @@ export const getEml = ({id, license, title, description, contact, creator, metad
                 <maintenanceUpdateFrequency>unkown</maintenanceUpdateFrequency>
             </maintenance>
             ${getAgent(contact, 'contact')}
+            ${getProject(project)}
            ${(steps || sampling) ? `<methods>
             ${steps ? steps : ""}
             ${sampling ? "<sampling>" + sampling + "</sampling>": ""}
@@ -208,6 +249,7 @@ export const getEml = ({id, license, title, description, contact, creator, metad
         <additionalMetadata>
             <metadata>
                 <gbif>
+                    <dateStamp>${new Date().toISOString()}</dateStamp>
                     ${getBibliography(bibliographicReferences)}
                 </gbif>
             </metadata>
