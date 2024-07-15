@@ -9,6 +9,7 @@ import DWCSTEPS from '../enum/dwcSteps.js'
 import runningJobs from '../workers/runningJobs.js';
 import {createDwc} from '../workers/supervisor.js'
 import base64 from 'base-64';
+import axios from '../node_modules/axios/index.js';
 
 //const runningJobs = new Map();
 
@@ -185,23 +186,27 @@ const processDwc = async function (req, res) {
                 report.publishing.gbifUatDatasetKey = gbifUatDatasetKey;
             } else if(env === "prod"){
                // const gbifProdDatasetKey = await registerDatasetInGBIF(req.params.id, version, req?.headers?.authorization, 'prod', req?.query?.publishingOrganizationKey)
-               const orgs = await auth.getOrganisationsForUser(req?.user?.userName)
-               const organization = orgs.organizations[req?.query?.organizationKey];
+               const orgs = await auth.getOrganisations()  //.getOrganisationsForUser(req?.user?.userName)
+               const organization = orgs.organizations?.[req?.query?.organizationKey];
+               const userCanPublishWithOrg = organization?.users?.includes(req?.user?.userName)
                if(!organization){
                 throw `Organization with key: ${req?.query?.organizationKey} was not found in the config file`
+               } else if(!userCanPublishWithOrg && !req?.user?.isAdmin) {
+                throw `User ${req?.user?.userName} is not allowed to publish with Organization with key: ${req?.query?.organizationKey}`
                } else {
-                const auth = `Basic ${base64.encode(req?.query?.organizationKey + ":" + organization?.token)}`
+                const authheader = `Basic ${base64.encode(req?.query?.organizationKey + ":" + organization?.token)}`
                 const gbifProdDatasetKey = await registerDatasetInGBIFusingGBRDS({
                 ednaDatasetID: req.params.id,
                 version,
                 env,
-                auth,
+                auth: authheader,
                 metadata,
                 processingReport: report,
                 publishingOrganizationKey: req?.query?.organizationKey,
                 userName: req?.user?.userName
                 })
                 report.publishing.gbifProdDatasetKey = gbifProdDatasetKey;
+                report.publishing.publishingOrgKey = req?.query?.organizationKey
                }
                
             }
@@ -220,7 +225,7 @@ const processDwc = async function (req, res) {
         } catch (error) {
             if(error === "DwC archive does not exist"){
                 res.status(400);
-            }
+            } 
             console.log(error)
             res.sendStatus(500)
         }
@@ -233,11 +238,56 @@ const processDwc = async function (req, res) {
     return [...steps_, ...Object.keys(DWCSTEPS).filter(s => !steps_.map(a => a?.name).includes(s)).map(k => DWCSTEPS[k])]
 }
 
+export const addNetwork = async (req, res) => {
+    try {
+        let version = req?.query?.version;
+        if(!version){
+            version = await getCurrentDatasetVersion(req.params.id)
+        } 
+          
+        let report = await getProcessingReport(req.params.id, version);
+        const gbifProdDatasetKey = report?.publishing?.gbifProdDatasetKey;
+        const publishingOrgKey =  report.publishing.publishingOrgKey
+        if(!gbifProdDatasetKey){
+            throw "The dataset must be published before adding a Network"
+        }
+
+        const orgs = await auth.getOrganisations()  //.getOrganisationsForUser(req?.user?.userName)
+               const organization = orgs.organizations?.[publishingOrgKey];
+               const userCanPublishWithOrg = organization?.users?.includes(req?.user?.userName)
+               if(!organization){
+                throw `Organization with key: ${publishingOrgKey} was not found in the config file`
+               } else if(!userCanPublishWithOrg && !req?.user?.isAdmin) {
+                throw `User ${req?.user?.userName} is not allowed to publish with Organization with key: ${publishingOrgKey}`
+               }
+
+               const authheader = `Basic ${base64.encode(publishingOrgKey + ":" + organization?.token)}`
+
+        await axios(
+            {
+                method: 'post',
+                url: `${config.gbifGbrdsBaseUrl.prod}registry/resource/${gbifProdDatasetKey}/network/${req?.params?.netWorkKey}`,
+                headers: {
+                    authorization: authheader,
+                    'content-type': 'application/x-www-form-urlencoded'
+                }
+            }
+            ) 
+        report.publishing.netWorkKey = req?.params?.netWorkKey;
+        await writeProcessingReport(req.params.id, version, report)
+        res.sendStatus(201)
+
+    } catch (error) {
+        console.log(error)
+    }
+}
+
 export default  (app) => {
     app.post("/dataset/:id/dwc", auth.userCanModifyDataset(), processDwc);
 
     app.post("/dataset/:id/register-in-gbif-uat", auth.userCanModifyDataset(), (req, res) => publishDwc(req, res, 'uat' ));
     app.post("/dataset/:id/register-in-gbif-prod", auth.userCanModifyDataset(), (req, res) => publishDwc(req, res, 'prod' ));
+    app.post("/dataset/:id/network/:netWorkKey", auth.userCanModifyDataset(), addNetwork);
 
     app.get("/dataset/:id/dwc/:version?", async (req, res) => {
         if (!req.params.id) {

@@ -73,6 +73,8 @@ const getOrganizationToken = async (req, res) => {
     }
 }
 
+
+
 export default  (app) => {
     app.get("/organization/:key/password", getOrganizationToken);
     app.get("/organization/suggest", getOrganizations);

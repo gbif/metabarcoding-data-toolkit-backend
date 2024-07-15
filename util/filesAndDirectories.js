@@ -426,7 +426,7 @@ export const readDataStorage = async () => {
             gbif_prod_key: storedDataset?.publishing?.gbifProdDatasetKey || "",
             deleted: storedDataset?.deletedAt ? storedDataset?.deletedAt.split('T')[0] : null,
             node_key: storedDataset?.nodeKey || "",
-            publishing_org_key: storedDataset?.publishingOrgKey || "",
+            publishing_org_key: storedDataset?.publishing?.publishingOrgKey || "",
           })
         } catch (error) {
           console.log("ERRR ID "+ storedDataset?.id)

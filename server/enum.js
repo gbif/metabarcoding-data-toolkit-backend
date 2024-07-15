@@ -5,8 +5,30 @@ import supportedMarkers from "../enum/supportedMarkers.js";
 import agentRole from "../enum/agentRole.js"
 import config from "../config.js"
 import axios from "axios";
+
 export default  (app) => {
 
+    app.get("/enum/networks", async (req, res) => {
+
+        try {
+            
+            let options = {
+                method: 'get',
+                url: `${config.gbifGbrdsBaseUrl[config.env]}registry/network.json`,
+               
+            }
+            const response = await axios(options);
+    
+            res.send(response?.data)
+            
+        } catch (error) {
+            console.log(error)
+            res.sendStatus(error?.response?.status || 500)
+        }
+    }
+);
+
+    
     app.get("/enum/license", async (req, res) => {
 
         try {
