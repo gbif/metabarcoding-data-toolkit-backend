@@ -92,6 +92,17 @@ export default {
                 name: 'scientificName',
                 description: "This could be the species name (binomial) if the match identity is good. If the species is unknown, use the closest know higher taxon regardless of rank.",
                 isRequired: false
+            },
+            {
+                name: 'identificatioRemarks',
+                description: "",
+                isRequired: false
+            },
+            
+            {
+                name: 'verbatimIdentification',
+                description: "This field is often used for the taxon string in the format <kingdom>;<phylum>;<class>;<order>;<family>;<genus>;<species>",
+                isRequired: false
             }
       
         ],
