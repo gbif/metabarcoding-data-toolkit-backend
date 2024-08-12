@@ -22,12 +22,12 @@ const getItem = (e, frontendUrl) => {
 
 
 
-const getRssXml = ({link, atomLink, title, description, installationKey, items, frontendUrl}) => {
+const getRssXml = ({link, atomLink, title, description, installationKey, items}) => {
 
-    return `<rss xmlns:${EDNA_NAMESPACE}="${frontendUrl}" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    return `<rss xmlns:${EDNA_NAMESPACE}="${link}" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
     <title>${title}</title>
-    <link>${link}https://ipt.gbif.org</link>
+    <link>${link}</link>
     <atom:link href="${atomLink}" rel="self" type="application/rss+xml"/>
     <description>${description}</description>
     <language>en-us</language>
