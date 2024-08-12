@@ -199,7 +199,13 @@ export const createDwc = (id, version, job) => {
                     if(job?.summary?.occurrenceCount){
                         
                        db.updateOccurrenceCountOnDataset(job.createdBy, id, job?.summary?.occurrenceCount)
-                   }          
+                   }  
+                   try {
+                    db.updateDwcGeneratedOnDataset(job.createdBy, id, new Date().toISOString())    
+                   } catch (error) {
+                    console.log(error)
+                   } 
+                     
                 resolve()
             }
             if(message?.type === 'finishedJobWithError'){

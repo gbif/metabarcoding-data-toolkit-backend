@@ -4,6 +4,7 @@ import {validate} from './validation.js'
 import {getMimeFromPath} from '../validation/files.js'
 import auth from './Auth/auth.js';
 import config from '../config.js'
+import db from './db/index.js';
 
 import fs from "fs"
 const deleteUploadedFile = async  (req, res) => {
@@ -24,6 +25,7 @@ const deleteUploadedFile = async  (req, res) => {
             const hasBiom = await fileExists(req.params.id, version, 'data.biom.json')
             if(hasBiom){
                 await wipeGeneratedFilesAndResetProccessing(req.params.id, version)
+                await db.updateDwcGeneratedOnDataset(req?.user?.userName,req.params.id, null )
             }
             res.sendStatus(200) 
         } catch (error) {

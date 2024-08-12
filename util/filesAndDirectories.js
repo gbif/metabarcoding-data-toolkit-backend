@@ -8,7 +8,7 @@ import parse from 'csv-parse';
 import db from '../server/db/index.js'
 import json from 'big-json';
 import { error } from 'console';
-
+import _ from 'lodash'
 
 
 
@@ -398,6 +398,8 @@ export const writeOrganizationFile = async adminData => {
   await fs.promises.writeFile(config.organizationFilePath, JSON.stringify(adminData, null, 2));
 }
 
+const getDwcGeneratedFromStoredDataset = (dataset) => _.isArray(dataset?.dwc?.steps) ? new Date(dataset?.dwc?.steps[dataset?.dwc?.steps.length -1]?.time).toISOString() || null : null;
+
 export const readDataStorage = async () => {
   try{
     const datasets = []
@@ -427,9 +429,15 @@ export const readDataStorage = async () => {
             deleted: storedDataset?.deletedAt ? storedDataset?.deletedAt.split('T')[0] : null,
             node_key: storedDataset?.nodeKey || "",
             publishing_org_key: storedDataset?.publishing?.publishingOrgKey || "",
+            publishing_org_key: storedDataset?.publishing?.publishingOrgKey || "",
+            dataset_description: !!storedDataset?.metadata?.description ? storedDataset?.metadata?.description.substring(0, 300) : "",
+            dataset_author: storedDataset?.datasetAuthor || "",
+            dwc_generated: getDwcGeneratedFromStoredDataset(storedDataset),
+            current_version: currentVersion
           })
         } catch (error) {
-          console.log("ERRR ID "+ storedDataset?.id)
+          console.log(error)
+          console.log("ERR ID "+ storedDataset?.id)
           console.log(storedDataset?.deletedAt )
         }
        

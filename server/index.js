@@ -17,6 +17,7 @@ import gbifRegistry from './gbifRegistry.js';
 import mapping from './mapping.js';
 import files from './files.js';
 import data from './data.js';
+import rss from './rss.js'
 import cors from 'cors'
 import authController from './Auth/auth.controller.js'
 import userController from './Auth/user.controller.js'
@@ -78,6 +79,8 @@ data(app)
 datasets(app)
 // Add routes for GBIF registry
 gbifRegistry(app)
+// Add route for RSS feed
+rss(app)
 
 app.listen(config.expressPort, function() {
     // console.log("Config "+config.INPUT_PATH )

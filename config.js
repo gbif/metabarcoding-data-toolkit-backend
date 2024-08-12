@@ -87,7 +87,11 @@ const config = {
             uat: 'https://gbrds.gbif-uat.org/',
             local: 'https://gbrds.gbif-uat.org/'
         },
-        organizationFilePath: gbifCredentials.organizationFilePath
+        organizationFilePath: gbifCredentials.organizationFilePath,
+        title: gbifCredentials?.title,
+        description: gbifCredentials?.description,
+        frontendUrl: gbifCredentials?.frontendUrl,
+	    backendProxyUrl: gbifCredentials?.backendProxyUrl
     },
     uat: {
         expressPort: port,
@@ -115,7 +119,11 @@ const config = {
             prod: 'https://gbrds.gbif-uat.org/', // if the env is UAT, we do not publish to prod
             uat: 'https://gbrds.gbif-uat.org/'
         },
-        organizationFilePath: gbifCredentials.organizationFilePath
+        organizationFilePath: gbifCredentials.organizationFilePath,
+        title: gbifCredentials?.title,
+        description: gbifCredentials?.description,
+        frontendUrl: gbifCredentials?.frontendUrl,
+	    backendProxyUrl: gbifCredentials?.backendProxyUrl
 
        /*  installationKey: "aec88852-acfa-4b12-af59-b4b50d6f07b2",
         publishingOrganizationKey: "f7ecf12b-221d-4eea-806d-fb4b37face25",
@@ -148,7 +156,11 @@ const config = {
             prod: 'https://gbrds.gbif.org/', // This can publish to prod
             uat: 'https://gbrds.gbif-uat.org/'
         },
-        organizationFilePath: gbifCredentials.organizationFilePath
+        organizationFilePath: gbifCredentials.organizationFilePath,
+        title: gbifCredentials?.title,
+        description: gbifCredentials?.description,
+        frontendUrl: gbifCredentials?.frontendUrl,
+	    backendProxyUrl: gbifCredentials?.backendProxyUrl
         /* installationKey: "aec88852-acfa-4b12-af59-b4b50d6f07b2",
         publishingOrganizationKey: "f7ecf12b-221d-4eea-806d-fb4b37face25",
         gbifUsername: gbifCredentials?.username,

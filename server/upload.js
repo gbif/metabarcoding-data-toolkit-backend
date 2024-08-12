@@ -3,7 +3,8 @@ import fs from 'fs';
 import config from '../config.js'
 import auth from './Auth/auth.js';
 import db from './db/index.js'
-import {writeEmlJson,fileExists, wipeGeneratedFilesAndResetProccessing, getMetadata, writeEmlXml, getCurrentDatasetVersion} from '../util/filesAndDirectories.js'
+import {getAuthorString} from '../util/index.js'
+import {writeEmlJson,fileExists, wipeGeneratedFilesAndResetProccessing, getMetadata, getProcessingReport, writeProcessingReport, writeEmlXml, getCurrentDatasetVersion} from '../util/filesAndDirectories.js'
 
 const storage = multer.diskStorage({
   //Specify the destination directory where the file needs to be saved
@@ -29,12 +30,17 @@ const upload = multer({
 export default  (app) => {
   app.post('/dataset/upload', auth.appendUser(), upload.array('tables', 5), async function (req, res, next) {
     try {
+      const version = req?.query?.version ?? "1";
       if(req?.user){
         const datasetTitle = req.body?.datasetTitle || ""
-        await db.createUserDataset({userName: req?.user?.userName, datasetId: req.id, title: datasetTitle})
-        console.log(`Dataset ${req.id} created by ${req?.user?.userName}. Title: ${datasetTitle}`)
+        const author = getAuthorString(req.user)
+        await db.createUserDataset({userName: req?.user?.userName, datasetId: req.id, title: datasetTitle, author, version})
+        let  processionReport = {id: req.id, createdBy: req?.user?.userName, datasetAuthor: getAuthorString(req?.user)}
+        await writeProcessingReport(req.id, version, processionReport)
+      
+    console.log(`Dataset ${req.id} created by ${req?.user?.userName}. Title: ${datasetTitle}`)
         if(datasetTitle){
-          await writeEmlJson(req.id, req?.query?.version ?? "1", {title: datasetTitle})
+          await writeEmlJson(req.id, version, {title: datasetTitle})
         }
       } else {
         console.log("Upload attention: no user logged in" )
@@ -50,13 +56,16 @@ export default  (app) => {
 app.put('/dataset/:id/upload', auth.userCanModifyDataset(), upload.array('tables', 5), async function (req, res, next) {
   try {
     let version = req?.query?.version;
-    if(!version){
-        version = await getCurrentDatasetVersion(req.params.id)
-    }  
-    const hasBiom = await fileExists(req.params.id, version, 'data.biom.json')
-    if(hasBiom){
-        await wipeGeneratedFilesAndResetProccessing(req.params.id, version)
+    const currentVersion = await getCurrentDatasetVersion(req.params.id)
+   
+    const hasBiom = await fileExists(req.params.id, currentVersion, 'data.biom.json')
+    if(hasBiom && (!version || version === currentVersion)){
+        await wipeGeneratedFilesAndResetProccessing(req.params.id, currentVersion)
     }
+    if(!version){
+      version = currentVersion
+    }
+    
     const datasetTitle = req.body?.datasetTitle || ""
     console.log(`Dataset ${req.params.id} changed by ${req?.user?.userName}. Title: ${datasetTitle}`)
     if(datasetTitle){
@@ -66,7 +75,7 @@ app.put('/dataset/:id/upload', auth.userCanModifyDataset(), upload.array('tables
         try {
           await db.updateTitleOnDataset(req?.user?.userName, req.params.id, datasetTitle)
         } catch (error) {
-          console.log(`Could not update datazset title in DB for dataset: ${req.params.id}`)
+          console.log(`Could not update dataset title in DB for dataset: ${req.params.id}`)
           console.log(error)
         }
         

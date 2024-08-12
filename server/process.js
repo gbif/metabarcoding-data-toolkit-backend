@@ -44,7 +44,8 @@ const q = queue(async (options) => {
 
 
 const pushJob = async (id, assignTaxonomy, user) => {
-    let version
+    let version;
+
     let newJob = { id: id, createdBy: user?.userName, assignTaxonomy: assignTaxonomy, filesAvailable: [], steps: [{ status: 'queued', time: Date.now() }] }
     try {
         version = await getCurrentDatasetVersion(id);

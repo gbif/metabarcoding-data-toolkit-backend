@@ -10,13 +10,17 @@ let con; // db.connect();
 
 
 
-const createUserDatasetStmt = 'INSERT INTO UserDatasets VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+const createUserDatasetStmt = 'INSERT INTO UserDatasets VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 const deleteUserDatasetStmt = 'UPDATE UserDatasets SET deleted = ? WHERE dataset_id=? AND user_name=?';
 
 const updateCountsOnDatasetStmt = 'UPDATE UserDatasets SET sample_count=?, taxon_count=? WHERE dataset_id=? AND user_name=?';
 const updateOccurrenceCountOnDatasetStmt = 'UPDATE UserDatasets SET occurrence_count=? WHERE dataset_id=? AND user_name=?';
 
 const updateTitleOnDatasetStmt = 'UPDATE UserDatasets SET title=? WHERE dataset_id=? AND user_name=?';
+const updateDescriptionOnDatasetStmt = 'UPDATE UserDatasets SET dataset_description=? WHERE dataset_id=? AND user_name=?';
+const updateDwcGeneratedStmt = 'UPDATE UserDatasets SET dwc_generated=? WHERE dataset_id=? AND user_name=?';
+const updateVersionStmt = 'UPDATE UserDatasets SET version=? WHERE dataset_id=? AND user_name=?';
+
 const updateUatKeyOnDatasetStmt = 'UPDATE UserDatasets SET gbif_uat_key=? WHERE dataset_id=? AND user_name=?';
 const updateProdKeyOnDatasetStmt = 'UPDATE UserDatasets SET gbif_prod_key=? WHERE dataset_id=? AND user_name=?';
 const updatePublishingOrgKeyOnDatasetStmt = 'UPDATE UserDatasets SET publishing_org_key=? WHERE dataset_id=? AND user_name=?';
@@ -28,15 +32,18 @@ const getAllDatasetsStmt = 'SELECT * FROM UserDatasets ORDER BY created DESC';
 const getNonDeletedDatasetsStmt = 'SELECT * FROM UserDatasets WHERE deleted IS NULL ORDER BY created DESC';
 const getDeletedDatasetsStmt = 'SELECT * FROM UserDatasets WHERE deleted IS NOT NULL ORDER BY created DESC';
 
+const getDatasetsOrderedByDwcCreatedStmt = 'SELECT * FROM UserDatasets WHERE dwc_generated IS NOT NULL ORDER BY dwc_generated DESC LIMIT ?';
 
-const createUserDataset = async ({userName, datasetId, title, gbifUatKey, gbifProdKey,  nodeKey, publishingOrgKey}) => {
+
+
+const createUserDataset = async ({userName, datasetId, title, gbifUatKey, gbifProdKey,  nodeKey, publishingOrgKey, descriptiion, author, dwcGenerated, version}) => {
     const now = new Date();
     const sqlDate = now.toISOString().split('T')[0]
 
     try {
         const stmt = await con.prepare(createUserDatasetStmt)
         // d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.gbif_prod_key, d.deleted, d.node_key, d.publishing_org_key
-         await stmt.run(userName, datasetId, title, sqlDate, 0, 0, 0, gbifUatKey || null, gbifProdKey || null, null, nodeKey || null, publishingOrgKey || null);
+         await stmt.run(userName, datasetId, title, sqlDate, 0, 0, 0, gbifUatKey || null, gbifProdKey || null, null, nodeKey || null, publishingOrgKey || null, descriptiion || null, author || null, dwcGenerated || null, version || 1);
          await stmt.finalize()
 
     } catch (error) {
@@ -108,6 +115,52 @@ const updateTitleOnDataset = async (userName, datasetId, title) => {
         throw error
     }
 }
+
+const updateDescriptionOnDataset = async (userName, datasetId, description) => {
+
+    try {
+        const stmt = await con.prepare(updateDescriptionOnDatasetStmt)
+
+         await stmt.run(description, datasetId, userName)
+         await stmt.finalize()
+
+    } catch (error) {
+        console.log("Error - updateDescriptionOnDataset:")
+        console.log(error)
+        throw error
+    }
+}
+
+const updateDwcGeneratedOnDataset = async (userName, datasetId, timestamp) => {
+
+    try {
+        const stmt = await con.prepare(updateDwcGeneratedStmt)
+        updateDwcGeneratedStmt
+         await stmt.run(timestamp, datasetId, userName)
+         await stmt.finalize()
+
+    } catch (error) {
+        console.log("Error - updateDwcGeneratedOnDataset:")
+        console.log(error)
+        throw error
+    }
+}
+
+const updateVersionOnDataset = async (userName, datasetId, version) => {
+
+    try {
+        const stmt = await con.prepare(updateVersionOnDataset)
+
+         await stmt.run(version, datasetId, userName)
+         await stmt.finalize()
+
+    } catch (error) {
+        console.log("Error - updateVersionOnDataset:")
+        console.log(error)
+        throw error
+    }
+}
+
 
 const updateUatKeyOnDataset = async (userName, datasetId, gbifUatKey) => {
 
@@ -188,9 +241,9 @@ const getUserDatasets = async (userName) => {
     
 }
 
-const getAllDatasets = async (includeDelted = true) => {
+const getAllDatasets = async (includeDeleted = true) => {
     try {
-        const stmt = await con.prepare(includeDelted ? getAllDatasetsStmt : getNonDeletedDatasetsStmt)
+        const stmt = await con.prepare(includeDeleted ? getAllDatasetsStmt : getNonDeletedDatasetsStmt)
 
         const res = await stmt.all()
         await stmt.finalize()
@@ -202,6 +255,22 @@ const getAllDatasets = async (includeDelted = true) => {
     }
 }
 
+const getDatasetsOrderedByDwcCreated = async (limit) => {
+    try {
+        const stmt = await con.prepare(getDatasetsOrderedByDwcCreatedStmt)
+
+        const res = await stmt.all(limit)
+        await stmt.finalize()
+
+        return res;
+    } catch (error) {
+        console.log("Error - getDatasetsOrderedByDwcCreated:")
+        console.log(error)
+        throw error
+    }
+    
+}
+
 const initialize = async (datasets) => {
 
     try {
@@ -209,8 +278,9 @@ const initialize = async (datasets) => {
         const  con_ = await db_.connect();
         con = con_;
         db = db_;
-        await con.run('CREATE TABLE UserDatasets (user_name STRING, dataset_id STRING, title STRING, created DATE, sample_count INTEGER DEFAULT 0, taxon_count INTEGER DEFAULT 0, occurrence_count INTEGER DEFAULT 0, gbif_uat_key STRING, gbif_prod_key STRING, deleted DATE, node_key STRING, publishing_org_key STRING)');
+        await con.run('CREATE TABLE UserDatasets (user_name STRING, dataset_id STRING, title STRING, created DATE, sample_count INTEGER DEFAULT 0, taxon_count INTEGER DEFAULT 0, occurrence_count INTEGER DEFAULT 0, gbif_uat_key STRING, gbif_prod_key STRING, deleted DATE, node_key STRING, publishing_org_key STRING, dataset_description STRING, dataset_author STRING, dwc_generated TIMESTAMP, version INTEGER DEFAULT 1)');
         await con.run('CREATE UNIQUE INDEX ud_idx ON UserDatasets (user_name, dataset_id)');
+       // await con.run('CREATE INDEX upd_idx ON UserDatasets (dwc_generated)');
         const stmt = await con.prepare(createUserDatasetStmt)
 
         for(const d of datasets){
@@ -218,9 +288,10 @@ const initialize = async (datasets) => {
             try {
                // console.log( d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.deleted)
 
-                await stmt.run(d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.gbif_prod_key, d.deleted, d.node_key, d.publishing_org_key)
+                await stmt.run(d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.gbif_prod_key, d.deleted, d.node_key, d.publishing_org_key, d?.dataset_description || "", d?.author || "", d?.dwc_generated || null, d?.version || 1)
 
             } catch (error) {
+                console.log(error)
                 console.log(`Error creating dataset in DB: `)
                 console.log(`dataset_id: ${d.dataset_id} user_name: ${d.user_name} title: ${d.title}`)
                 
@@ -245,8 +316,12 @@ export default {
     updateCountsOnDataset,
     updateOccurrenceCountOnDataset,
     updateTitleOnDataset,
+    updateDescriptionOnDataset,
+    updateDwcGeneratedOnDataset,
+    updateVersionOnDataset,
     updateUatKeyOnDataset,
     updateProdKeyOnDataset,
     updatePublishingOrgKeyOnDataset,
+    getDatasetsOrderedByDwcCreated,
     initialize
 }

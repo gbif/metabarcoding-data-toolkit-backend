@@ -20,6 +20,10 @@ const processEml = async function (req, res) {
             const xml = getEml({...req.body, id : req.params.id})
             await writeEmlXml(req.params.id, version, xml)
             await db.updateTitleOnDataset(req?.user?.userName, req.params.id, req.body?.title)
+
+            if(!!req.body?.description){
+                await db.updateDescriptionOnDataset(req?.user?.userName, req.params.id, req.body?.description.substring(0, 300))
+            }
            // console.log(eml)
             res.send(req.body) 
         } catch (error) {

@@ -1,3 +1,4 @@
+import os from "os"
 
 export const objectSwap = obj => Object.fromEntries(Object.entries(obj).map(([k, v]) => [v, k]))
 import { createHash } from 'node:crypto'
@@ -47,6 +48,16 @@ export const getTaxonomyArray = r => {
   } )
   
 
+}
+
+export const getAuthorString = user => `${user?.email ? user?.email + " " : ""}(${user?.firstName ? user?.firstName +" ": ""}${user?.lastName || ""})`
+
+export const getApplicationIP = () => {
+
+  const networkInterfaces = os.networkInterfaces();
+   // console.log(networkInterfaces);
+
+ return Object.keys(networkInterfaces).map(k => networkInterfaces[k]).flat().filter(e => !e?.internal).find(e => e.family === "IPv4")?.address
 }
 
 export const getYargs = () =>  process.argv.reduce((acc, curr, idx) => {
