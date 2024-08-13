@@ -288,7 +288,7 @@ const initialize = async (datasets) => {
             try {
                // console.log( d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.deleted)
 
-                await stmt.run(d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.gbif_prod_key, d.deleted, d.node_key, d.publishing_org_key, d?.dataset_description || "", d?.author || "", d?.dwc_generated || null, d?.version || 1)
+                await stmt.run(d.user_name, d.dataset_id, d.title, d.created, d.sample_count, d.taxon_count, d.occurrence_count, d.gbif_uat_key, d.gbif_prod_key, d.deleted, d.node_key, d.publishing_org_key, d?.dataset_description || "", d?.dataset_author || "", d?.dwc_generated || null, d?.version || 1)
 
             } catch (error) {
                 console.log(error)
