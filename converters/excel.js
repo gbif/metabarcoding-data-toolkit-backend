@@ -447,18 +447,26 @@ export const readXlsxHeaders = async (id, fileName, version) => {
           sampleHeaders: samples?.data?.[0],
           taxonHeaders: taxa?.data?.[0],
         };
-
+        console.log(headers)
         let sampleId = headers.sampleHeaders.find(
           (e) => !!e && ["id", "sampleid"].includes(e.toLowerCase())
         );
-
+        console.log("samp id "+sampleId)
         const sampleIdIndex = headers.sampleHeaders.indexOf(sampleId);
 
+        console.log("sampleIdIndex "+sampleIdIndex)
         // Create a Set if sample IDs:
         const sampleIds = samples?.data
           .slice(1)
           .filter((s) => !!s[sampleIdIndex])
-          .map((s) => s[sampleIdIndex].trim());
+          .map((s) => {
+            try {
+              return s[sampleIdIndex].toString().trim()
+            } catch (error) {
+              console.log("error on ")
+              console.log(s[sampleIdIndex])
+            }
+          });
 
         const sampleSet = new Set(sampleIds);
 
