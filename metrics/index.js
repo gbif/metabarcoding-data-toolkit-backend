@@ -464,7 +464,21 @@ export const getDNAsequenceLength = (f) => {
       
         const data = f.get(`observation/metadata/DNA_sequence`).to_array().map(s => s.length);
 
-       return { mean: mean(...data), stdev: std(...data)}
+        let mean_;
+        let stdev_;
+        try {
+            mean_ = mean(data)
+        } catch (error) {
+            console.log("metrics mean")
+            console.log(error)
+        }
+        try {
+            stdev_ = std(data)
+        } catch (error) {
+            console.log("metrics stdev_")
+            console.log(error)
+        }
+       return { mean: mean_, stdev: stdev_}
     } catch (error) {
         console.log(error)
         throw error

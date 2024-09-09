@@ -42,6 +42,31 @@ const addGroupMetadataFromJson = (f, biom) => {
     }
 }
 
+const fillInDefaultValues = (f, biom) => {
+
+    try {
+        const comment = biom.comment
+        if(comment){
+            const parsed = JSON.parse(comment)
+        // eventDate - needs to be on every sample to calculate temporalScope
+        if((parsed?.defaultValues?.sample || {}).hasOwnProperty('eventDate') /* && !biom.columns[0].metadata?.eventDate */){
+            f.get('sample/metadata').create_dataset({name: 'eventDate', data: new Array(biom.columns.length).fill(parsed?.defaultValues?.sample?.eventDate), shape: [biom.columns.length], dtype: 'S'})
+        }
+        // decimalLatitude - needs to be on every sample to calculate geographicScope
+        if((parsed?.defaultValues?.sample || {}).hasOwnProperty('decimalLatitude')/*  && !biom.columns[0].metadata?.decimalLatitude */){
+            f.get('sample/metadata').create_dataset({name: 'decimalLatitude', data: new Array(biom.columns.length).fill(parsed?.defaultValues?.sample?.decimalLatitude), shape: [biom.columns.length], dtype: 'd'})
+        }
+        // decimalLongitude - needs to be on every sample to calculate geographicScope
+        if((parsed?.defaultValues?.sample || {}).hasOwnProperty('decimalLongitude') /* && !biom.columns[0].metadata?.decimalLongitude */){
+            f.get('sample/metadata').create_dataset({name: 'decimalLongitude', data: new Array(biom.columns.length).fill(parsed?.defaultValues?.sample?.decimalLongitude), shape: [biom.columns.length], dtype: 'd'})
+        }
+    }
+    } catch (error) {
+        console.log(error)
+    }
+   
+}
+
 const getIndptr = (sparseMatrix, idx, size) => {
     // idx 0 for rows, 1 for columns
     let index = sparseMatrix[0][idx];
@@ -254,6 +279,7 @@ export const writeHDF5 = async (biom, hdf5file) => {
             }
         })
 
+
         
             Object.keys(biom.rows[0].metadata).filter(k => !['taxonomy'].includes(k)).forEach(key => {
                 let data;
@@ -279,7 +305,8 @@ export const writeHDF5 = async (biom, hdf5file) => {
                 console.log("Error adding taxonomy to hdf5")
                 console.log(error)
             }
-     
+            
+            fillInDefaultValues(f, biom)
 
         f.close()
         return { errors: errors}
