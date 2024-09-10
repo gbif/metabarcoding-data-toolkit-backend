@@ -106,7 +106,8 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
     try {
         await unzipIfNeeded(id)
         const fileList = await fs.promises.readdir(`${config.dataStorage}${id}/${version}/original`)
-        let files = fileList.map(f => ({
+                    // have to filter out some odd files starting with .nfs
+        let files = fileList.filter(f => !f.startsWith('.nfs')).map(f => ({
             mimeType: getMimeFromPath(`${config.dataStorage}${id}/${version}/original/${f}`),
             name: f,
             size: getFileSize(`${config.dataStorage}${id}/${version}/original/${f}`)
