@@ -54,7 +54,8 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
         const fastaMap = new Map(
             headers.slice(1).map(seq => {
                 const hash = md5(seq);
-                return [hash,{id: hash, DNA_sequence: seq}]
+               // return [hash,{id: hash, DNA_sequence: seq}]
+               return [hash, seq]
             } )
         )
       //  console.log(`fastaMap size ${fastaMap.size}`)
