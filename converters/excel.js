@@ -95,8 +95,8 @@ const determineFileNames = (sheets, termMapping) => {
     });
 
     if (!otuTable) {
-      throw `Could not find the otuTable in the sheets: ${sheets
-        .map((s) => s.name)
+      throw `Could not find the OTU_table in the sheets: ${sheets
+        .map((s) => s.name).join(", ")
         .toString()}`;
     }
     if (!taxa) {
@@ -111,14 +111,14 @@ const determineFileNames = (sheets, termMapping) => {
         taxa = processed?.taxa;
       } catch (error) {
         // console.log(error)
-        throw `Could not find the taxa in the sheets: ${sheets
-          .map((s) => s.name)
+        throw `Could not find the Taxonomy in the sheets: ${sheets
+          .map((s) => s.name).join(", ")
           .toString()}`;
       }
     }
     if (!samples) {
-      throw `Could not find the samples in the sheets: ${sheets
-        .map((s) => s.name)
+      throw `Could not find the Samples in the sheets: ${sheets
+        .map((s) => s.name).join(", ")
         .toString()}`;
     }
 
@@ -129,7 +129,7 @@ const determineFileNames = (sheets, termMapping) => {
       defaultValues,
     };
   } catch (error) {
-    console.log(error);
+    //console.log(error);
     throw error;
   }
 };

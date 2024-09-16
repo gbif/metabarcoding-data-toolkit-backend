@@ -22,16 +22,15 @@ const processDataset = async (id, version, userName) => {
           }
     
         let  xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || f?.name?.endsWith('.xlsx'))
-        try {
-
-          
         let headers_ = {};
         let sheets_ = {};
-    
-           const {headers, sheets} = await readXlsxHeaders(id, xlsx?.name, version)
-    
-           headers_ = headers
-           sheets_ = sheets
+        try {
+
+          const {headers, sheets} = await readXlsxHeaders(id, xlsx?.name, version)
+          headers_ = headers 
+          sheets_ = sheets 
+          
+           
     
            const xlsxErrors = sheets.reduce((acc, curr) => [...acc, ...(curr?.errors || []).map(e => ({message: e}))],[])
            xlsx.errors = xlsxErrors;
@@ -78,14 +77,14 @@ const processDataset = async (id, version, userName) => {
           const report = {...processionReport, ...headers_, unzip: false, files:{...files, format: 'INVALID'}};
           await writeProcessingReport(id, version, report)
     
-          console.log(error)
-        finishedJobWithError(error?.message)
+          console.log(`Dataset ${id} : ${error?.message || error}`)
+        finishedJobWithError(error?.message || error)
           
         }
         
     } catch (error) {
-        console.log(error)
-        finishedJobWithError(error?.message)
+        console.log(`Dataset ${id} : ${error?.message || error}`)
+        finishedJobWithError(error?.message || error)
     }
 
   
