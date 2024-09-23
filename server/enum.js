@@ -3,6 +3,7 @@ import license from "../enum/license.js";
 import format from "../enum/format.js";
 import supportedMarkers from "../enum/supportedMarkers.js";
 import agentRole from "../enum/agentRole.js"
+import filenames from "../validation/filenames.js";
 import config from "../config.js"
 import axios from "axios";
 
@@ -66,6 +67,17 @@ export default  (app) => {
         try {
         
         res.json(agentRole)
+        } catch (error) {
+            res.sendStatus(500)
+        }     
+        
+    })
+
+    app.get("/enum/file-types", async (req, res) => {
+
+        try {
+        
+        res.json(Object.keys(filenames))
         } catch (error) {
             res.sendStatus(500)
         }     

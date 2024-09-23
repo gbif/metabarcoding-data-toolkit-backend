@@ -5,6 +5,7 @@ import filenames from './filenames.js'
 import parse from 'csv-parse';
 import streamReader from '../util/streamReader.js'
 import {readTsvHeaders} from '../util/filesAndDirectories.js'
+import {objectSwap} from '../util/index.js'
 import _ from "lodash"
 const dnaSequencePattern = /[ACGTURYSWKMBDHVNacgturyswkmbdhvn]/g
 const minimumLengthForASequence = 75;
@@ -12,33 +13,35 @@ const minimumLengthForASequence = 75;
 
 
 
-export const determineFileNames = async (id, version) => {
+export const determineFileNames = async (id, version, fileMapping = {}) => {
+
+    const entityToFilename = objectSwap(fileMapping)
 
     try {
         const fileList = await fs.promises.readdir(`${config.dataStorage}${id}/${version}/original`)
-        const otutable = fileList.find(f => {
+        const otutable = entityToFilename?.otuTable || fileList.find(f => {
             let splitted = f.split('.') // ignore file extension
             let rawFileName = splitted.slice(0,-1).join('.').replace(/[^0-9a-z]/gi, '').toLowerCase();
-            return filenames.otutable.indexOf(rawFileName) > -1;
+            return filenames.otuTable.indexOf(rawFileName) > -1;
         })
      //   console.log(`OTU table ${otutable}`)
-        const samples = fileList.find(f => {
+        const samples = entityToFilename?.samples || fileList.find(f => {
             let splitted = f.split('.')// ignore file extension
             let rawFileName = splitted.slice(0,-1).join('.').replace(/[^0-9a-z]/gi, '').toLowerCase();
             return filenames.samples.indexOf(rawFileName) > -1;
         })
 
      //   console.log(`samples ${samples}`)
-        let taxa =  fileList.find(f => {
+        let taxa = entityToFilename?.taxonomy || fileList.find(f => {
             let splitted = f.split('.')// ignore file extension
             let rawFileName = splitted.slice(0,-1).join('.').replace(/[^0-9a-z]/gi, '').toLowerCase();
-            return filenames.taxa.indexOf(rawFileName) > -1;
+            return filenames.taxonomy.indexOf(rawFileName) > -1;
         });
 
-        let defaultvalues =  fileList.find(f => {
+        let defaultvalues = entityToFilename?.defaultvalues || fileList.find(f => {
             let splitted = f.split('.')// ignore file extension
             let rawFileName = splitted.slice(0,-1).join('.').replace(/[^0-9a-z]/gi, '').toLowerCase();
-            return filenames.defaultvalues.indexOf(rawFileName) > -1;
+            return filenames.defaultValues.indexOf(rawFileName) > -1;
         });
 
     //    console.log(`taxa ${taxa}`)

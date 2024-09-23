@@ -101,23 +101,29 @@ export const getFileSize = file => {
    
 }
 
-export const uploadedFilesAndTypes = async (id, version = 1) => {
+export const uploadedFilesAndTypes = async (id, version = 1, fileMapping = {}) => {
  
     try {
         await unzipIfNeeded(id)
         const fileList = await fs.promises.readdir(`${config.dataStorage}${id}/${version}/original`)
                     // have to filter out some odd files starting with .nfs
-        let files = fileList.filter(f => !f.startsWith('.nfs')).map(f => ({
+        let files = fileList.filter(f => !f.startsWith('.nfs')).map(f => {
+           let res = {
             mimeType: getMimeFromPath(`${config.dataStorage}${id}/${version}/original/${f}`),
             name: f,
             size: getFileSize(`${config.dataStorage}${id}/${version}/original/${f}`)
-        }))
+        }
+        if(f?.endsWith('.fasta') || f?.endsWith('.fa')){
+            res.type = "fasta"
+        }
+        return res;
+    })
         //console.log(JSON.stringify(files))
 
         const format = determineFormat(files);
 
         if(format.startsWith("TSV")){
-            const filePaths = await determineFileNames(id, version);
+            const filePaths = await determineFileNames(id, version, fileMapping = {});
 
              files = files.map( f => {
                 for(const [key, value] of Object.entries(filePaths)){

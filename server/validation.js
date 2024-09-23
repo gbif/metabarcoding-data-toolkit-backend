@@ -12,17 +12,24 @@ export const validate = async (id, user) => {
   try {
                 
     let version = await getCurrentDatasetVersion(id)
-    let files = await uploadedFilesAndTypes(id, version)
-    let processionReport = await getProcessingReport(id, version)
+    let processingReport = await getProcessingReport(id, version)
     let metadata = await getMetadata(id, version)
    // const mapping = await readMapping(id, version);
 
-    if(!processionReport){
-      processionReport= {id: id, createdBy: user?.userName,  createdAt: new Date().toISOString()}
+    if(!processingReport){
+      processingReport= {id: id, createdBy: user?.userName,  createdAt: new Date().toISOString()}
     }
     if(!!metadata){
-      processionReport.metadata = metadata
+      processingReport.metadata = metadata
     }
+    const fileMapping = processingReport?.files?.mapping && !_.isEmpty(processingReport?.files?.mapping) ? processingReport?.files?.mapping : {};
+    let files = await uploadedFilesAndTypes(id, version, fileMapping)
+
+    /* console.log('processingReport?.files?.mapping')
+    console.log(processingReport?.files?.mapping)
+    if(processingReport?.files?.mapping && !_.isEmpty(processingReport?.files?.mapping)){
+      files.mapping = processingReport?.files?.mapping
+    } */
    // console.log(files)
     if(files.format.startsWith('TSV')){
       const filePaths = await determineFileNames(id, version);
@@ -56,6 +63,8 @@ export const validate = async (id, user) => {
         }
       }
 
+      const unknownTypeErrors = (files?.files || []).filter(f => !f?.type).map(f => ({file: f?.name, message: "Could not identify the data type. Is it OTU_table, Taxonomy or Samples?"}))
+      validationErrors = [...validationErrors, ...unknownTypeErrors]
       // Give the collected array of errors to the frontend
       files.invalidErrors = validationErrors;
       
@@ -133,7 +142,7 @@ export const validate = async (id, user) => {
          }
       }
       
-      const report = {...processionReport, unzip: false, ...validationReport}
+      const report = {...processingReport, unzip: false, ...validationReport}
       await writeProcessingReport(id,version, report)
       return report;
 
@@ -163,7 +172,7 @@ export const validate = async (id, user) => {
         if(typeof error === 'string'){
           xlsx.errors = [{file: xlsx.name, message: error}]
         }
-        const report = {...processionReport, ...headers_, unzip: false, files:{...files, format: 'INVALID', id: id}};
+        const report = {...processingReport, ...headers_, unzip: false, files:{...files, format: 'INVALID', id: id}};
         await writeProcessingReport(id, version, report)
 
         throw error
@@ -173,21 +182,21 @@ export const validate = async (id, user) => {
       if(sheets_ && xlsx){
         xlsx.sheets = sheets_;
       }
-     const report = {...processionReport, ...headers_, unzip: false, files:{...files, id: id}};
+     const report = {...processingReport, ...headers_, unzip: false, files:{...files, id: id}};
      await writeProcessingReport(id, version, report) */
      const validation = await validateXlSX(id, version, user?.userName)
-     processionReport = await getProcessingReport(id, version)
+     processingReport = await getProcessingReport(id, version)
      if(!!metadata){
-      processionReport.metadata = metadata
+      processingReport.metadata = metadata
     }
-     return processionReport
+     return processingReport
     } else if(files.format === 'ZIP') {
       await unzip(req.params.id, files.files[0].name)
-      const report = {...processionReport, unzip: true, files:{...files, id: id}}
+      const report = {...processingReport, unzip: true, files:{...files, id: id}}
       await writeProcessingReport(id,version, report)
       return report
     } else {
-      const report = {...processionReport, unzip: false, files:{...files, id: id}}
+      const report = {...processingReport, unzip: false, files:{...files, id: id}}
       await writeProcessingReport(id,version, report)
       return report
     } 
