@@ -1,4 +1,4 @@
-# eDNA tool backend
+# Metabarcoding Data Toolkit Backend
 
 ## Requirements
 Node v18 or higher
@@ -6,8 +6,8 @@ Node v18 or higher
 ## Deployment
 
 ````
-git clone git@github.com:gbif/edna-tool-backend.git
-cd edna-tool-backend
+git clone git@github.com:gbif/metabarcoding-data-toolkit-backend.git
+cd metabarcoding-data-toolkit-backend
 npm install
 node server/index.js --credentials path/to/credentials.json
 ````
