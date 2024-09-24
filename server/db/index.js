@@ -31,6 +31,8 @@ export const updateDwcGeneratedOnDataset = dbImplementation.updateDwcGeneratedOn
 
 export const getDatasetsOrderedByDwcCreated = dbImplementation.getDatasetsOrderedByDwcCreated
 
+export const getDatasetsOrderedByDwcCreatedNoPaging = dbImplementation.getDatasetsOrderedByDwcCreatedNoPaging
+
 export const updateVersionOnDataset = dbImplementation.updateVersionOnDataset
 
 export const initialize = dbImplementation.initialize
@@ -51,5 +53,6 @@ export default {
     updateProdKeyOnDataset,
     updatePublishingOrgKeyOnDataset,
     getDatasetsOrderedByDwcCreated,
+    getDatasetsOrderedByDwcCreatedNoPaging,
     initialize
 }

@@ -38,13 +38,16 @@ const getInstallationSettings = async (req, res) => {
         const termsLink = config.termsLink
         const nodeKey = config.nodeKey
         const gbifRegistryBaseUrl = config.gbifRegistryBaseUrl[config.env]
-
+        const title = config?.title;
+        const description =  config?.description;
         const settings = {
             installationContactEmail,
             prodPublishingEnabled,
             termsLink,
             nodeKey,
-            gbifRegistryBaseUrl
+            gbifRegistryBaseUrl,
+            title,
+            description
         };
         res.send(settings) 
     } catch (error) {

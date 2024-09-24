@@ -32,7 +32,8 @@ const getAllDatasetsStmt = 'SELECT * FROM UserDatasets ORDER BY created DESC';
 const getNonDeletedDatasetsStmt = 'SELECT * FROM UserDatasets WHERE deleted IS NULL ORDER BY created DESC';
 const getDeletedDatasetsStmt = 'SELECT * FROM UserDatasets WHERE deleted IS NOT NULL ORDER BY created DESC';
 
-const getDatasetsOrderedByDwcCreatedStmt = 'SELECT * FROM UserDatasets WHERE dwc_generated IS NOT NULL ORDER BY dwc_generated DESC LIMIT ?';
+const getDatasetsOrderedByDwcCreatedStmt = 'SELECT * FROM UserDatasets WHERE dwc_generated IS NOT NULL AND deleted IS NULL ORDER BY dwc_generated DESC LIMIT ? OFFSET ?';
+const getDatasetsOrderedByDwcCreatedNoPagingStmt = 'SELECT * FROM UserDatasets WHERE dwc_generated IS NOT NULL AND deleted IS NULL ORDER BY dwc_generated DESC';
 
 
 
@@ -255,16 +256,30 @@ const getAllDatasets = async (includeDeleted = true) => {
     }
 }
 
-const getDatasetsOrderedByDwcCreated = async (limit) => {
+const getDatasetsOrderedByDwcCreated = async (limit, offset = 0) => {
     try {
         const stmt = await con.prepare(getDatasetsOrderedByDwcCreatedStmt)
-
-        const res = await stmt.all(limit)
+        const res = await stmt.all(limit, offset)
         await stmt.finalize()
 
         return res;
     } catch (error) {
         console.log("Error - getDatasetsOrderedByDwcCreated:")
+        console.log(error)
+        throw error
+    }
+    
+}
+
+const getDatasetsOrderedByDwcCreatedNoPaging = async () => {
+    try {
+        const stmt = await con.prepare(getDatasetsOrderedByDwcCreatedNoPagingStmt)
+        const res = await stmt.all()
+        await stmt.finalize()
+
+        return res;
+    } catch (error) {
+        console.log("Error - getDatasetsOrderedByDwcCreatedNoPaging:")
         console.log(error)
         throw error
     }
@@ -323,5 +338,6 @@ export default {
     updateProdKeyOnDataset,
     updatePublishingOrgKeyOnDataset,
     getDatasetsOrderedByDwcCreated,
+    getDatasetsOrderedByDwcCreatedNoPaging,
     initialize
 }

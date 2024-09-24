@@ -1,7 +1,7 @@
 import db from "../../server/db/index.js"
 import config from "../../config.js"
 import {getApplicationIP} from "../index.js"
-const EDNA_NAMESPACE = "edna";
+const EDNA_NAMESPACE = "mdt";
 // http://localhost:9000/dataset/436ddffe-d29a-43ff-a065-0f1bf7748284/file/data.biom.h5
 const getItem = (e, frontendUrl) => {
 

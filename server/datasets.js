@@ -94,6 +94,19 @@ export default  (app) => {
             res.sendStatus(404)
         }
     })
+
+    app.get('/datasets/published',  async function(req, res) {
+        try {
+            /* const limit = isNaN(Number(req?.query?.limit)) ? 20 : Number(req?.query?.limit)
+            const offset = isNaN(Number(req?.query?.offset)) ? 20 :  Number(req?.query?.offset) */
+            const datasets = await db.getDatasetsOrderedByDwcCreatedNoPaging()       
+            
+            res.json(datasets)
+        } catch (error) {
+            console.log(error)
+            res.sendStatus(404)
+        }
+    })
     
 }
 
