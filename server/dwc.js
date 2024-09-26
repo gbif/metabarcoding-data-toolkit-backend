@@ -281,7 +281,7 @@ export const addNetwork = async (req, res) => {
         console.log(error)
     }
 }
-
+export const dwcQueue = q;
 export default  (app) => {
     app.post("/dataset/:id/dwc", auth.userCanModifyDataset(), processDwc);
 
