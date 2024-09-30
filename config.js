@@ -29,10 +29,10 @@ let gbifCredentials = {
     prodPublishingEnabled: false,
     prodInstallationKey: null,
     dataDirectory : null,
- 	dwcPublicAccessUrl: null
+ 	dwcPublicAccessUrl: null,
+    port: 9000
 }
 
-let port = 9000
 
 
 try {
@@ -44,7 +44,7 @@ try {
      gbifCredentials.uatAuth = `Basic ${base64.encode(gbifCredentials.uatPublishingOrganizationKey + ":" + gbifCredentials.uatOrganizationToken)}`
      gbifCredentials.organizationFilePath = yargs.organizationfile;
      if(!!yargs?.port){
-        port = yargs?.port
+        gbifCredentials.port = yargs?.port
      }
 /*      gbifCredentials.prodPublishingEnabled = yargs.prodPublishingEnabled
  */     console.log(`Organization configuration file located at ${gbifCredentials.organizationFilePath} - this must be writable`)
@@ -62,7 +62,7 @@ const env = process.env.NODE_ENV || 'local';
 
 const config = {
     local: {
-        expressPort: port,
+        expressPort: gbifCredentials?.port,
         env: 'local',
         prodPublishingEnabled: gbifCredentials?.prodPublishingEnabled,
         nodeKey: gbifCredentials?.nodeKey,
@@ -94,7 +94,7 @@ const config = {
 	    backendProxyUrl: gbifCredentials?.backendProxyUrl
     },
     uat: {
-        expressPort: port,
+        expressPort: gbifCredentials?.port,
         env: 'uat',
         prodPublishingEnabled: gbifCredentials?.prodPublishingEnabled,
         nodeKey: gbifCredentials.nodeKey,
@@ -131,7 +131,7 @@ const config = {
         gbifPassword: gbifCredentials?.password */
     },
     prod: {
-        expressPort: port,
+        expressPort: gbifCredentials.port,
         env: 'prod',
         prodPublishingEnabled: gbifCredentials?.prodPublishingEnabled,
         nodeKey: gbifCredentials.nodeKey,

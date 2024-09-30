@@ -221,7 +221,7 @@ export const getEml = ({id, license, title, description, contact, creator, metad
             <language>ENGLISH</language>
             <abstract>
             ${description ? `<para>${escapeHtml(description)}</para>` : "" }
-                <para>[This dataset was processed using the GBIF eDNA converter tool.]</para>
+                <para>[This dataset was processed using the GBIF Metabarcoding Data Toolkit.]</para>
             </abstract>
             ${getKeywords(keywords, keywordThesaurus)}
             <intellectualRights>
