@@ -3,7 +3,7 @@ import fs from "fs";
 import fileNames from "../validation/filenames.js";
 import { Biom } from "biojs-io-biom";
 import config from "../config.js";
-import util, { getTaxonomyArray } from "../util/index.js";
+import util, { getTaxonomyArray, getMetaDataRow } from "../util/index.js";
 import { writeMapping } from "../util/filesAndDirectories.js";
 import { getGroupMetaDataAsJsonString } from "../validation/termMapper.js";
 import {getStreamAsArrayBuffer} from 'get-stream';
@@ -273,7 +273,7 @@ export const toBiom = async (
       console.log(`Rows length: ${rows.length}`)
       const biom = new Biom({
         type: 'OTU table',
-        rows: rows.map((r) => ({ id: r, metadata: {...taxaMap.get(r), taxonomy: getTaxonomyArray({metadata: taxaMap.get(r)}) }})), // rows.map(r => ({id: r, metadata: taxaMap.get(r)})),
+        rows: rows.map((r) => getMetaDataRow(taxaMap.get(r), true)), //({ id: r, metadata: {...taxaMap.get(r), taxonomy: getTaxonomyArray({metadata: taxaMap.get(r)}) }})), // rows.map(r => ({id: r, metadata: taxaMap.get(r)})),
         comment: getGroupMetaDataAsJsonString(termMapping),
         columns: cols.map((c) => ({ id: c, metadata: sampleMap.get(c) })), // columns.map(c => ({id: c, metadata: sampleMap.get(c)})),
         matrix_type: "sparse",
