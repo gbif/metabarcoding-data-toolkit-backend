@@ -1,5 +1,5 @@
 import { getProcessingReport, writeProcessingReport, getMetadata, getCurrentDatasetVersion, wipeGeneratedDwcFiles, rsyncToPublicAccess, dwcArchiveExists} from '../util/filesAndDirectories.js'
-import {registerDatasetInGBIF, registerDatasetInGBIFusingGBRDS} from '../util/gbifRegistry.js'
+import {registerDatasetInGBIF, registerDatasetInGBIFusingGBRDS, registerBiomEndpoints} from '../util/gbifRegistry.js'
 import { biomToDwc } from '../converters/dwc.js';
 import {getMimeFromPath, getFileSize} from '../validation/files.js'
 import config from '../config.js'
@@ -184,6 +184,16 @@ const processDwc = async function (req, res) {
                     userName: req?.user?.userName
                 })
                 report.publishing.gbifUatDatasetKey = gbifUatDatasetKey;
+                try {
+                    await registerBiomEndpoints({ednaDatasetID: req.params.id,
+                        version,
+                        env,
+                        auth: config?.uatAuth,
+                        gbifDatasetKey: gbifUatDatasetKey
+                    })
+                } catch (error) {
+                    
+                }
             } else if(env === "prod"){
                // const gbifProdDatasetKey = await registerDatasetInGBIF(req.params.id, version, req?.headers?.authorization, 'prod', req?.query?.publishingOrganizationKey)
                const orgs = await auth.getOrganisations()  //.getOrganisationsForUser(req?.user?.userName)
@@ -207,6 +217,17 @@ const processDwc = async function (req, res) {
                 })
                 report.publishing.gbifProdDatasetKey = gbifProdDatasetKey;
                 report.publishing.publishingOrgKey = req?.query?.organizationKey
+
+                try {
+                    await registerBiomEndpoints({ednaDatasetID: req.params.id,
+                        version,
+                        env,
+                        auth: authheader,
+                        gbifDatasetKey: gbifProdDatasetKey
+                    })
+                } catch (error) {
+                    
+                }
                }
                
             }

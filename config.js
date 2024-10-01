@@ -84,8 +84,8 @@ const config = {
         prodInstallationKey:  gbifCredentials?.prodInstallationKey,
         gbifGbrdsBaseUrl: {
             prod: 'https://gbrds.gbif-uat.org/',
-            uat: 'https://gbrds.gbif-uat.org/',
-            local: 'https://gbrds.gbif-uat.org/'
+            uat: 'https://gbrds.gbif-dev.org/',
+            local: 'https://gbrds.gbif-dev.org/'
         },
         organizationFilePath: gbifCredentials.organizationFilePath,
         title: gbifCredentials?.title,

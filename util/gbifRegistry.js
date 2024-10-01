@@ -4,6 +4,7 @@ import config from '../config.js'
 import db from '../server/db/index.js';
 import {URLSearchParams} from 'url';
 import {parseString} from 'xml2js'
+import { url } from 'inspector';
 
 export const isRegisteredInGBIF = async (ednaDatasetID, env) => {
   const response = await axios.get(`${config.gbifBaseUrl[env]}dataset?identifier=${ednaDatasetID}`);
@@ -132,8 +133,6 @@ export const registerStudyGbrds = async ({ednaDatasetID, auth, env, organisation
     throw error
    }
   
-
-
 };
 
 export const deleteDatasetInGbifUAT = async (gbifUatKey, auth) => {
@@ -200,6 +199,38 @@ export const registerDatasetInGBIF = async (ednaDatasetID, version, auth, env, p
     throw error
   }
    
+}
+
+
+export const registerBiomEndpoints = async ({ednaDatasetID, version, auth, env, gbifDatasetKey}) => {
+
+  const biom_2_1_endpoint = `${config.dwcPublicAccessUrl}${ednaDatasetID}/${version}/data.biom.h5`
+  const biom_1_0_endpoint = `${config.dwcPublicAccessUrl}${ednaDatasetID}/${version}/data.biom.json`
+  const endpoints = [{type: 'BIOM-1-0', url: biom_1_0_endpoint},{type: 'BIOM-2-1', url: biom_2_1_endpoint}]
+  for (const ep of endpoints) {
+    try {
+      const urlSearchParams = new URLSearchParams({
+        resourceKey: gbifDatasetKey,
+        url: ep.url,
+        type:  ep.type//'DWC-ARCHIVE-OCCURRENCE' // BIOM_2_1
+       })
+  
+      const xmlResponse = await axios({
+        method: 'post',
+       url:  `${config.gbifGbrdsBaseUrl[env]}registry/service`, // ?resourceKey=${gbifDatasetKey}
+       headers: {
+         authorization: auth,
+         'content-type': 'application/x-www-form-urlencoded'
+     },
+       data: urlSearchParams.toString()
+     }); 
+  
+     //console.log(xmlResponse)
+    } catch (error) {
+      console.log(`Error trying to create ${ep.type} endpont for dataset ${gbifDatasetKey} using ${`${config.gbifGbrdsBaseUrl[env]}registry/service`}`)
+      console.log(error)
+    }
+  }
 }
 
 export const registerDatasetInGBIFusingGBRDS = async ({ednaDatasetID, userName, version, auth, env, publishingOrganizationKey,  metadata, processingReport}) => {
