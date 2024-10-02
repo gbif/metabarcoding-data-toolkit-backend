@@ -22,9 +22,12 @@ export const validate = async (id, user) => {
     if(!!metadata){
       processingReport.metadata = metadata
     }
+    console.log("processingReport?.files?.mapping")
+    console.log(processingReport?.files?.mapping)
     const fileMapping = processingReport?.files?.mapping && !_.isEmpty(processingReport?.files?.mapping) ? processingReport?.files?.mapping : {};
     let files = await uploadedFilesAndTypes(id, version, fileMapping)
-
+    console.log("files")
+    console.log(files)
     /* console.log('processingReport?.files?.mapping')
     console.log(processingReport?.files?.mapping)
     if(processingReport?.files?.mapping && !_.isEmpty(processingReport?.files?.mapping)){

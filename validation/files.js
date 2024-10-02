@@ -123,7 +123,7 @@ export const uploadedFilesAndTypes = async (id, version = 1, fileMapping = {}) =
         const format = determineFormat(files);
 
         if(format.startsWith("TSV")){
-            const filePaths = await determineFileNames(id, version, fileMapping = {});
+            const filePaths = await determineFileNames(id, version, fileMapping);
 
              files = files.map( f => {
                 for(const [key, value] of Object.entries(filePaths)){
@@ -174,7 +174,8 @@ export const uploadedFilesAndTypes = async (id, version = 1, fileMapping = {}) =
 
         return {
             format,
-            files
+            files,
+            mapping: fileMapping
         }
     } catch (error) {
         console.log(error)

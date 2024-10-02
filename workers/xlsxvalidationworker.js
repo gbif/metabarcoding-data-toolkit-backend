@@ -36,7 +36,7 @@ const processDataset = async (id, version, userName) => {
            xlsx.errors = xlsxErrors;
            
            let defaultValueTerms;
-           const defaultValueSheet = sheets.find(s => filenames.defaultvalues.includes(s?.name?.toLowerCase()));
+           const defaultValueSheet = sheets.find(s => filenames.defaultValues.includes(s?.name?.toLowerCase()));
 
            if(defaultValueSheet?.rows?.length > 1){
             defaultValueTerms =  defaultValueSheet?.rows.slice(1).map(i => i[0]).filter(i => !!i)

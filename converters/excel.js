@@ -75,7 +75,7 @@ const determineFileNames = (sheets, termMapping) => {
   try {
     let otuTable = sheets.find((f) => {
       let rawFileName = f.name.replace(/[^0-9a-z]/gi, "").toLowerCase();
-      return fileNames.otutable.indexOf(rawFileName) > -1;
+      return fileNames.otuTable.indexOf(rawFileName) > -1;
     });
     console.log(`OTU table ${otuTable}`);
     const samples = sheets.find((f) => {
@@ -91,7 +91,7 @@ const determineFileNames = (sheets, termMapping) => {
 
     let defaultValues = sheets.find((f) => {
       let rawFileName = f.name.replace(/[^0-9a-z]/gi, "").toLowerCase();
-      return fileNames.defaultvalues.indexOf(rawFileName) > -1;
+      return fileNames.defaultValues.indexOf(rawFileName) > -1;
     });
 
     if (!otuTable) {

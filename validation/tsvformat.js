@@ -15,6 +15,8 @@ const minimumLengthForASequence = 75;
 
 export const determineFileNames = async (id, version, fileMapping = {}) => {
 
+    console.log('determineFileNames fileMapping')
+    console.log(fileMapping)
     const entityToFilename = objectSwap(fileMapping)
 
     try {
@@ -32,10 +34,10 @@ export const determineFileNames = async (id, version, fileMapping = {}) => {
         })
 
      //   console.log(`samples ${samples}`)
-        let taxa = entityToFilename?.taxonomy || fileList.find(f => {
+        let taxa = entityToFilename?.taxa || fileList.find(f => {
             let splitted = f.split('.')// ignore file extension
             let rawFileName = splitted.slice(0,-1).join('.').replace(/[^0-9a-z]/gi, '').toLowerCase();
-            return filenames.taxonomy.indexOf(rawFileName) > -1;
+            return filenames.taxa.indexOf(rawFileName) > -1;
         });
 
         let defaultvalues = entityToFilename?.defaultvalues || fileList.find(f => {
