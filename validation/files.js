@@ -3,7 +3,7 @@ import config from '../config.js'
 import {execSync, exec}  from 'child_process';
 import { determineFileNames, analyseCsv } from './tsvformat.js';
 import {readDefaultValues} from '../util/streamReader.js';
-import {writeMapping, readMapping} from '../util/filesAndDirectories.js'
+import {writeMapping, readMapping, getProcessingReport} from '../util/filesAndDirectories.js'
 // there may be hidden 'application/octet-stream' files when unzipping an excel workbook
 const mimeTypesToBeRemoved = ['application/zip', 'application/octet-stream']
 
@@ -101,7 +101,7 @@ export const getFileSize = file => {
    
 }
 
-export const uploadedFilesAndTypes = async (id, version = 1, fileMapping = {}) => {
+export const uploadedFilesAndTypes = async (id, version = 1) => {
  
     try {
         await unzipIfNeeded(id)
@@ -123,7 +123,7 @@ export const uploadedFilesAndTypes = async (id, version = 1, fileMapping = {}) =
         const format = determineFormat(files);
 
         if(format.startsWith("TSV")){
-            const filePaths = await determineFileNames(id, version, fileMapping);
+            const filePaths = await determineFileNames(id, version);
 
              files = files.map( f => {
                 for(const [key, value] of Object.entries(filePaths)){
@@ -174,8 +174,7 @@ export const uploadedFilesAndTypes = async (id, version = 1, fileMapping = {}) =
 
         return {
             format,
-            files,
-            mapping: fileMapping
+            files
         }
     } catch (error) {
         console.log(error)

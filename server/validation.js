@@ -6,6 +6,7 @@ import {processWorkBookFromFile, readXlsxHeaders} from "../converters/excel.js"
 import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport, readMapping} from '../util/filesAndDirectories.js'
 import {validateXlSX} from "../workers/supervisor.js"
 import _ from "lodash"
+import mapping from './mapping.js';
 //import { getCurrentDatasetVersion, writeProcessingReport, getProcessingReport, getMetadata, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
 
 export const validate = async (id, user) => {
@@ -22,12 +23,9 @@ export const validate = async (id, user) => {
     if(!!metadata){
       processingReport.metadata = metadata
     }
-    console.log("processingReport?.files?.mapping")
-    console.log(processingReport?.files?.mapping)
-    const fileMapping = processingReport?.files?.mapping && !_.isEmpty(processingReport?.files?.mapping) ? processingReport?.files?.mapping : {};
-    let files = await uploadedFilesAndTypes(id, version, fileMapping)
-    console.log("files")
-    console.log(files)
+   
+    let files = await uploadedFilesAndTypes(id, version)
+    
     /* console.log('processingReport?.files?.mapping')
     console.log(processingReport?.files?.mapping)
     if(processingReport?.files?.mapping && !_.isEmpty(processingReport?.files?.mapping)){
@@ -39,7 +37,7 @@ export const validate = async (id, user) => {
      // console.log(filePaths)
      const fileMap = _.keyBy(files.files, "type")
 
-     console.log(Object.keys(fileMap))
+     // console.log(Object.keys(fileMap))
 
      let validationErrors = []
      let samplesAsColumns, errors, invalid;
@@ -86,7 +84,7 @@ export const validate = async (id, user) => {
         }
       }
       
-      let validationReport = {files: {...files, filePaths, samplesAsColumns, sequencesAsHeaders}}
+      let validationReport = {files: {...files, filePaths, samplesAsColumns, sequencesAsHeaders, mapping: processingReport?.files?.mapping || {}}}
       if(fileMap?.samples){
         validationReport.sampleHeaders = await readTsvHeaders(fileMap?.samples?.path, fileMap?.samples?.properties?.delimiter)
      

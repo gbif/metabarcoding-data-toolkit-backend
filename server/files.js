@@ -61,7 +61,7 @@ const downloadFile = async (req, res, fromOriginalDir) => {
   const fileTypeMapping = async (req, res) => {
         const id = req.params.id;
         let version = req?.query?.version;
-        console.log(req.body)
+       // console.log(req.body)
         try {
             if(!version){
                 version = await getCurrentDatasetVersion(req.params.id)

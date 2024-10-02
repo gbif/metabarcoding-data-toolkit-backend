@@ -17,11 +17,10 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     try {
         console.log("Processing dataset "+id + " version "+version)
         console.log("config.dataStorage "+config.dataStorage)
-    const mapping = await readMapping(id, version, config.dataStorage);
+    const mapping = await readMapping(id, version/* , config.dataStorage */);
    
-    const files = await uploadedFilesAndTypes(id, version, config.dataStorage)
-    console.log("files")
-    console.log(files)
+    const files = await uploadedFilesAndTypes(id, version/* , config.dataStorage */)
+   
     const fileMap = _.keyBy(files.files, "type")
 
     const fasta = files.files.find(f => f.name.endsWith('.fasta') || f.name.endsWith('.fa'))

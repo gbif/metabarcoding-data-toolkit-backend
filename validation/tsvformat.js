@@ -4,7 +4,7 @@ import {execSync}  from 'child_process';
 import filenames from './filenames.js'
 import parse from 'csv-parse';
 import streamReader from '../util/streamReader.js'
-import {readTsvHeaders} from '../util/filesAndDirectories.js'
+import {readTsvHeaders, getProcessingReport} from '../util/filesAndDirectories.js'
 import {objectSwap} from '../util/index.js'
 import _ from "lodash"
 const dnaSequencePattern = /[ACGTURYSWKMBDHVNacgturyswkmbdhvn]/g
@@ -13,13 +13,19 @@ const minimumLengthForASequence = 75;
 
 
 
-export const determineFileNames = async (id, version, fileMapping = {}) => {
+export const determineFileNames = async (id, version) => {
 
-    console.log('determineFileNames fileMapping')
-    console.log(fileMapping)
-    const entityToFilename = objectSwap(fileMapping)
 
     try {
+        
+        let entityToFilename = {}
+        try {
+            let processingReport = await getProcessingReport(id, version)
+            const fileMapping = processingReport?.files?.mapping && !_.isEmpty(processingReport?.files?.mapping) ? processingReport?.files?.mapping : {};
+            entityToFilename = objectSwap(fileMapping)
+        } catch (error) {
+            console.log(error)
+        }
         const fileList = await fs.promises.readdir(`${config.dataStorage}${id}/${version}/original`)
         const otutable = entityToFilename?.otuTable || fileList.find(f => {
             let splitted = f.split('.') // ignore file extension
