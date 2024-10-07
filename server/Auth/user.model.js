@@ -39,10 +39,11 @@ async function getFromToken(auth) {
         let response = await axios(options);
         let user = response?.data;
         if(user){
-            let datasets 
+            let datasets = [] 
             try {
                 datasets = await db.getUserDatasets(user?.userName)
             } catch (error) {
+                console.log(`DB error, trying to get datasets for ${user?.userName}`)
                 console.log(error)
             }
            // console.log(datasets)
