@@ -46,7 +46,9 @@ async function getFromToken(auth) {
                 console.log(`DB error, trying to get datasets for ${user?.userName}`)
                 console.log(error)
             }
-           // console.log(datasets)
+            if(!response?.headers?.token){
+                console.log(`No token from registry? Token: ${response?.headers?.token}`)
+            }
             return {...user,datasets: datasets, token: response?.headers?.token || '', isAdmin: config.installationAdmins.includes(user.userName)};
         } else {
             throw "No user from that token, expired?"
@@ -56,6 +58,9 @@ async function getFromToken(auth) {
     } catch (error) {
         if(error?.response?.status || error?.response?.statusText){
             console.log(`Status: ${error?.response?.status} ${error?.response?.statusText || ""}`)
+        }
+        if(auth && [401, 403].includes(error?.response?.status)){
+            console.log("Auth header: "+ auth)
         }
        // console.log(error)
         throw error;  
