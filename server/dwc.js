@@ -192,7 +192,8 @@ const processDwc = async function (req, res) {
                         gbifDatasetKey: gbifUatDatasetKey
                     })
                 } catch (error) {
-                    
+                    console.log(`Error registering BIOM endpoints:`)
+                    console.log(error)
                 }
             } else if(env === "prod"){
                // const gbifProdDatasetKey = await registerDatasetInGBIF(req.params.id, version, req?.headers?.authorization, 'prod', req?.query?.publishingOrganizationKey)
@@ -226,7 +227,8 @@ const processDwc = async function (req, res) {
                         gbifDatasetKey: gbifProdDatasetKey
                     })
                 } catch (error) {
-                    
+                    console.log(`Error registering BIOM endpoints:`)
+                    console.log(error)
                 }
                }
                
