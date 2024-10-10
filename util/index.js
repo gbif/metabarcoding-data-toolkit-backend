@@ -9,7 +9,18 @@ const metaXml = require('./metaXml')
 const streamReader = require('./streamReader') */
 import dwcTerms from './dwcTerms.js';
 import metaXml from './metaXml.js';
-// import streamReader from './streamReader.js';
+
+
+
+export const sanitizeSequence = (sequence) => sequence.replace(/[^ACGTURYSWKMBDHVNacgturyswkmbdhvn]/g, '').toUpperCase();
+export const getAsvID = (sequence) => {
+  if(typeof sequence === "string" ) {
+    return `ASV:${md5(sanitizeSequence(sequence))}` 
+  } else {
+    return ""
+  }
+}
+
 const transformRow = row => Object.keys(row).reduce((acc, cur) => {
   try {
     acc[cur] = cur === "DNA_sequence" ? (row?.[cur] || "").toUpperCase() : row[cur]
@@ -28,7 +39,7 @@ export const getMetaDataRow = (row, addTaxonomy = false) => {
   try {
       let metadata = transformRow(row);
       if(typeof metadata?.["DNA_sequence"] === "string" ) {
-          metadata.taxonID = `ASV:${md5( metadata?.["DNA_sequence"])}` 
+          metadata.taxonID = getAsvID(metadata?.["DNA_sequence"]) 
       }
       if(addTaxonomy){
         metadata.taxonomy = getTaxonomyArray({metadata})

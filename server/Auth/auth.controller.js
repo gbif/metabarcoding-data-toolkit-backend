@@ -22,7 +22,8 @@ export default  (app) => {
                 console.log(user)
                 res.json({...user, datasets: datasets})
         } catch (error) {
-            res.sendStatus(403)
+            console.log(error?.response?.data || error)
+            res.sendStatus(error?.response?.status || 403)
         }
        
             
@@ -44,8 +45,8 @@ export default  (app) => {
             throw "No user"
         }
         } catch (err) {
-            console.log(err)
-            res.sendStatus(403)
+            console.log(err?.response?.data || err)
+            res.sendStatus(err?.response?.status || 403)
         }
        
     })

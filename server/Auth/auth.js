@@ -103,7 +103,8 @@ export const writeOrganisations = async (data) => {
     try {
          await writeOrganizationFile(data);
     } catch (error) {
-        console.log(error)
+        console.log("Failed to write organization file")
+        throw error;
 
     }
 }
