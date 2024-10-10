@@ -80,5 +80,5 @@ export default  (app) => {
     app.delete("/dataset/:id/file/:filename", auth.userCanModifyDataset(),  deleteUploadedFile);
     app.get("/dataset/:id/file/:filename", (req, res) => downloadFile(req, res, false))
     app.get("/dataset/:id/uploaded-file/:filename", (req, res) => downloadFile(req, res, true))
-    app.post("/dataset/:id/file-types", (req, res) => fileTypeMapping(req, res))
+    app.post("/dataset/:id/file-types", auth.userCanModifyDataset(), (req, res) => fileTypeMapping(req, res))
 }
