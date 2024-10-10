@@ -43,6 +43,8 @@ const userCanModifyDataset = () => {
                     if(datasets.map(d => d.dataset_id).includes(req?.params?.id)){
                         console.log('userCanModifyDataset true')
                         next();
+                    } else {
+                        res.sendStatus(403)
                     }
 
                 } else {
