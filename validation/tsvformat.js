@@ -46,7 +46,7 @@ export const determineFileNames = async (id, version) => {
             return filenames.taxa.indexOf(rawFileName) > -1;
         });
 
-        let defaultvalues = entityToFilename?.defaultvalues || fileList.find(f => {
+        let defaultValues = entityToFilename?.defaultValues || fileList.find(f => {
             let splitted = f.split('.')// ignore file extension
             let rawFileName = splitted.slice(0,-1).join('.').replace(/[^0-9a-z]/gi, '').toLowerCase();
             return filenames.defaultValues.indexOf(rawFileName) > -1;
@@ -63,8 +63,8 @@ export const determineFileNames = async (id, version) => {
         if(samples){
             result.samples = `${config.dataStorage}${id}/${version}/original/${samples}`
         }
-        if(defaultvalues){
-            result.defaultValues = `${config.dataStorage}${id}/${version}/original/${defaultvalues}`
+        if(defaultValues){
+            result.defaultValues = `${config.dataStorage}${id}/${version}/original/${defaultValues}`
         }
         return result;
     } catch (error) {

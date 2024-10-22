@@ -64,7 +64,7 @@ export const validate = async (id, user) => {
         }
       }
 
-      const unknownTypeErrors = (files?.files || []).filter(f => !f?.type).map(f => ({file: f?.name, message: "Could not identify the data type. Is it OTU_table, Taxonomy or Samples?"}))
+      const unknownTypeErrors = (files?.files || []).filter(f => !f?.type).map(f => ({file: f?.name, message: "Could not identify the data type. Is it OTU table, Taxonomy table, Sample table or Study defaults?"}))
       validationErrors = [...validationErrors, ...unknownTypeErrors]
       // Give the collected array of errors to the frontend
       files.invalidErrors = validationErrors;
