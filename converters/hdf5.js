@@ -387,12 +387,13 @@ export const readHDF5 = async (hdf5file) => {
         console.log(id)
     }
 
-    //console.log(JSON.stringify(sparseMatrix, null, 2))
+    // console.log(JSON.stringify(sparseMatrix, null, 2))
     try {
         const id = _.get(f.get("/"), 'attrs["id"].value', 'No Table ID')
         const format = _.get(f.get("/"), 'attrs["format"].value', "Biological Observation Matrix 1.0.0")
         const format_url = _.get(f.get("/"), 'attrs["format_url"].value', 'http://biom-format.org/documentation/format_versions/biom-1.0.html')
-        const type = _.get(f.get("/"), 'attrs["type"].value', "OTU table")
+        const type = _.get(f.get("/"), 'attrs["type"].value') || "OTU table"
+        console.log(`TYPE ${typeof type}`)
         const date = new Date().toISOString();
         const generated_by = generatedByString;
         const biom = new Biom({
