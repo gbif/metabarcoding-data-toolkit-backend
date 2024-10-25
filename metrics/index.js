@@ -17,10 +17,10 @@ init();
 export const getSamplesForGeoJson = async (hdf5file) => {
     try {
         let f = new h5wasm.File(hdf5file, "r");
-    let decimalLongitude = f.get('sample/metadata/decimalLongitude').to_array()
-    let decimalLatitude = f.get('sample/metadata/decimalLatitude').to_array()
+    let decimalLongitude = f.get('sample/metadata/decimalLongitude').to_array() //.filter(l => !isNaN(Number(l) && Number(l) <= 180 && Number(l) >= -180))
+    let decimalLatitude = f.get('sample/metadata/decimalLatitude').to_array() // .filter(l => !isNaN(Number(l) && Number(l) <= 90 && Number(l) >= -90))
     let id = f.get('sample/metadata/id').to_array()
-  
+        
     f.close()
     return {id, decimalLatitude, decimalLongitude}
     } catch (error) {

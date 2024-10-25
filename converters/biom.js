@@ -4,6 +4,7 @@ import {Biom} from 'biojs-io-biom';
 import _ from 'lodash'
 import {getGroupMetaDataAsJsonString} from '../validation/termMapper.js'
 import {getMetaDataRow, getTaxonomyArray} from '../util/index.js'
+import {readHDF5} from './hdf5.js'
 /* const getMetaDataRow = row => {
     if(!row?.id){
        console.log(row)
@@ -51,7 +52,7 @@ export const metaDataFileToMap = async (file, mapping, processFn = (progress, to
 }
 
 // converts an otu table with sample and taxon metada files to BIOM format
-export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = false, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id) => {
+export const toBiom = async ({otuTableFile, samples, taxa, samplesAsColumns = false, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id}) => {
     console.log("SAMPLES AS COLUMNS: "+samplesAsColumns)
    /*  processFn(0, 0, 'Reading sample file')
     const samples = await streamReader.readMetaDataAsMap(sampleFile, processFn, termMapping.samples)
@@ -128,6 +129,48 @@ export const toBiom = async (otuTableFile, samples, taxa, samplesAsColumns = fal
     }
     
   }
+
+export const fromHdf5ToBiom = async ({otuTableFile, samples, taxa, samplesAsColumns = false, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id}) => {
+    if(otuTableFile?.mimeType !== 'application/x-hdf5'){
+        throw 'MimeType be application/x-hdf5'
+    } 
+
+    try {
+        const biomFromHdf5 = await readHDF5(otuTableFile?.path);
+
+        const cols = biomFromHdf5.columns.map(c => getMetaDataRow(samples.get(c?.id), false)) ;
+        const rws = biomFromHdf5.rows.map(r => getMetaDataRow(taxa.get(r?.id), true)) ;
+        let sampleIdsWithNoRecordInSampleFile, taxonIdsWithNoRecordInTaxonFile, sampleIdsWithNoRecordInOtuTable, taxonIdsWithNoRecordInOtuTable
+        const b = await new Promise((resolve, reject) => {
+            try {
+                console.log("Create Biom")
+                const biom = new Biom({
+                    id: id || null,
+                    type: 'OTU table',
+                    comment: getGroupMetaDataAsJsonString(termMapping),   // Biom v1 does not support group metadata where we store field default values. Therefore this is given as a JSON string in the comment field 
+                    rows: rws,// rows.map(r => getMetaDataRow(samplesAsColumns ? taxa.get(r) : samples.get(r) )), 
+                    columns: cols, // columns.map(c => getMetaDataRow(samplesAsColumns ? samples.get(c)  : taxa.get(c))),
+                    matrix_type: 'sparse',
+                    matrix_element_type: "int",
+                    date: new Date().toISOString().split("Z")[0],
+                    shape: [rws.length, cols.length], // samplesAsColumns ? [taxa.size, samples.size] : [samples.size, taxa.size],
+                    data: biomFromHdf5.data
+                  })
+                  console.log("Biom created")
+                
+                  console.log("Resolve toBiom")
+                 resolve({biom, consistencyCheck: {sampleIdsWithNoRecordInSampleFile, taxonIdsWithNoRecordInTaxonFile, sampleIdsWithNoRecordInOtuTable, taxonIdsWithNoRecordInOtuTable } /* sampleIdsWithNoRecordInSampleFile */});
+            } catch (error) {
+                reject(error)
+            }
+           
+          })
+          return b;
+        
+    } catch (error) {
+        
+    }
+}  
 
 // converts an otu table with sample and taxon metada files to BIOM format
 export const toBiom_old = async (otuTableFile, sampleFile, taxaFile, samplesAsColumns = true, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id) => {

@@ -1,5 +1,6 @@
 import {getSamplesForGeoJson, getSamples, getSampleMetadataTypes, getSampleTaxonomy, getSampleIndicesForOtu, getSampleMetadataColumn, getTaxonomyForAllSamples, getMetrics} from "../metrics/index.js"
 import { fileAtPathExists, getCurrentDatasetVersion, readMetrics, writeMetricsToFile} from '../util/filesAndDirectories.js'
+import { filterAndValidateCoordinates } from "../validation/coordinates.js"
 import config from '../config.js'
 
 export default  (app) => {
@@ -15,10 +16,11 @@ export default  (app) => {
                       version = await getCurrentDatasetVersion(req.params.id)
                   } 
                 const data =  await getSamplesForGeoJson(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`)
-              
+                 const [invalidSamples, features] =  filterAndValidateCoordinates(data)
                 let geoJson = {
                     "type": "FeatureCollection",
-                    "features": data?.id.map((id, idx) => {
+                    "metadata": { errors: invalidSamples},
+                    "features": features /* data?.id.map((id, idx) => {
                         return {
                             "type": "Feature",
                             "geometry": {
@@ -29,7 +31,7 @@ export default  (app) => {
                               "id": id
                             }
                           }
-                    })
+                    }) */
                 }
                  // console.log(eml)data
                   res.send(geoJson) 

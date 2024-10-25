@@ -17,7 +17,8 @@ const workers = {
     TSV: 'tsvworker.js',
     TSV_WITH_FASTA: 'tsvworker.js',
     XLSX: 'xlsxworker.js',
-    XLSX_WITH_FASTA: 'xlsxworker.js'
+    XLSX_WITH_FASTA: 'xlsxworker.js',
+    BIOM_2_1: 'biomworker.js'
 }
 
 const prepareForProcessing = async (id, version, job) => {

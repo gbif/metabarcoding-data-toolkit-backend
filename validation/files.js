@@ -58,10 +58,15 @@ export const cleanUploadFromZipAndOctetStream = async (id, version = 1) => {
 const unzipIfNeeded = async (id, version = 1) => {
     try {
      let fileList = await fs.promises.readdir(`${config.dataStorage}${id}/${version}/original`)
-     if(fileList.length === 1 && getMimeFromPath(`${config.dataStorage}${id}/${version}/original/${fileList[0]}`) === 'application/zip'){
-        await unzip(id, fileList[0])
-        await cleanUploadFromZipAndOctetStream(id)
-    }
+
+     for(const file of fileList){
+        if(getMimeFromPath(`${config.dataStorage}${id}/${version}/original/${file}`) === 'application/zip'){
+            await unzip(id, file, version)
+            
+        }
+     }
+     
+    await cleanUploadFromZipAndOctetStream(id)
     } catch (error) {
         throw error
     }   
@@ -72,7 +77,7 @@ const getfastaFile = (files) => files.find(f => f.name.endsWith('.fasta') || f.n
 const determineFormat = (files) => {
    
     const fasta = getfastaFile(files);
-    if(files.length === 1 && files[0].mimeType === 'application/x-hdf5'){
+    if(files.find(f => f?.mimeType === 'application/x-hdf5')){
         return 'BIOM_2_1'
     } else if(files.length === 1 && files[0].mimeType === 'application/json'){
         return 'BIOM_1'
@@ -104,7 +109,7 @@ export const getFileSize = file => {
 export const uploadedFilesAndTypes = async (id, version = 1) => {
  
     try {
-        await unzipIfNeeded(id)
+        await unzipIfNeeded(id, version)
         const fileList = await fs.promises.readdir(`${config.dataStorage}${id}/${version}/original`)
                     // have to filter out some odd files starting with .nfs
         let files = fileList.filter(f => !f.startsWith('.nfs')).map(f => {
@@ -122,7 +127,7 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
 
         const format = determineFormat(files);
 
-        if(format.startsWith("TSV")){
+        if(format.startsWith("TSV") || format.startsWith("BIOM_2_1")){
             const filePaths = await determineFileNames(id, version);
 
              files = files.map( f => {
@@ -148,7 +153,7 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
             }
 
             let otuTableFile = files.find(f => f.type === "otuTable");
-            if(otuTableFile) {
+            if(otuTableFile && otuTableFile?.mimeType !== "application/x-hdf5") {
                 const csvProperties = await analyseCsv(otuTableFile.path)
                 otuTableFile.properties =  csvProperties; // {delimiter : csvProperties.delimiter} ;
             }

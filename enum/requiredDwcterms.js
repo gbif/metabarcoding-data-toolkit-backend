@@ -4,7 +4,7 @@ export default {
              {
                 name: 'id',
                 description: "The sample id corresponding to the column header in the OTU table",
-                synonyms: [],
+                synonyms: ['samp_name', 'sample_name'],
                 isRequired: true
             },
             {
@@ -50,7 +50,9 @@ export default {
             {
                 name: 'id',
                 description: "The OTU id corresponding to the row identifier in the OTU table",
-                isRequired: true
+                isRequired: true,
+                synonyms: ['seq_id', 'feature id'],
+
             },
              {
                 name: 'DNA_sequence',

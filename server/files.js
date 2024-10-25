@@ -3,6 +3,7 @@ import {deleteOriginalFile, getCurrentDatasetVersion, getProcessingReport, write
 import {validate} from './validation.js'
 import {getMimeFromPath} from '../validation/files.js'
 import filenames from '../validation/filenames.js'
+import validFileExtensions from '../enum/validFileExtensions.js'
 import auth from './Auth/auth.js';
 import config from '../config.js'
 import db from './db/index.js';
@@ -85,11 +86,21 @@ const getFileNameSynonyms = async (req, res) => {
         } 
 }
 
+const getValidFileExtensions = async (req, res) => {
+
+    try {
+        res.json(validFileExtensions)
+        } catch (error) {
+            res.sendStatus(500)
+        } 
+}
+
 export default  (app) => {
     app.delete("/dataset/:id/file/:filename", auth.userCanModifyDataset(),  deleteUploadedFile);
     app.get("/dataset/:id/file/:filename", (req, res) => downloadFile(req, res, false))
     app.get("/dataset/:id/uploaded-file/:filename", (req, res) => downloadFile(req, res, true))
     app.post("/dataset/:id/file-types", auth.userCanModifyDataset(), (req, res) => fileTypeMapping(req, res))
     app.get("/file-name-synonyms", getFileNameSynonyms)
+    app.get("/valid-file-extensions", getValidFileExtensions)
 
 }

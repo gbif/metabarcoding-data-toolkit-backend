@@ -75,16 +75,16 @@ export const determineFileNames = async (id, version) => {
 }
 
 // Check if there is an ID column in a tsv
-export const hasIdColumn = async (path, delimiter) => {
+export const hasIdColumn = async (path, delimiter, idName = "id") => {
     const columns = await readTsvHeaders(path, delimiter);
            // Accept id case insensitive
-    const term = columns.find(c => !!c && c.toLowerCase() === "id");
+    const term = columns.find(c => !!c && c.toLowerCase() === idName);
    let  errors = []
     if(!term){
         console.log("# hasIdColumn ")
         console.log(columns)
         let splitted = path.split("/");
-        errors.push({file: splitted[splitted.length-1], message: `No "id" column found in file ${splitted[splitted.length-1]}`})
+        errors.push({file: splitted[splitted.length-1], message: `No "${idName}" column found in file ${splitted[splitted.length-1]}`})
 
     }
     return { term, errors};

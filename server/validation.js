@@ -7,7 +7,7 @@ import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetada
 import {validateXlSX} from "../workers/supervisor.js"
 import _ from "lodash"
 import mapping from './mapping.js';
-//import { getCurrentDatasetVersion, writeProcessingReport, getProcessingReport, getMetadata, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
+import validFileExtensions from '../enum/validFileExtensions.js';
 
 export const validate = async (id, user) => {
   try {
@@ -26,13 +26,14 @@ export const validate = async (id, user) => {
    
     let files = await uploadedFilesAndTypes(id, version)
     
+    console.log(files)
     /* console.log('processingReport?.files?.mapping')
     console.log(processingReport?.files?.mapping)
     if(processingReport?.files?.mapping && !_.isEmpty(processingReport?.files?.mapping)){
       files.mapping = processingReport?.files?.mapping
     } */
    // console.log(files)
-    if(files.format.startsWith('TSV')){
+    if(files.format.startsWith('TSV') || files.format.startsWith('BIOM_2_1')){
       const filePaths = await determineFileNames(id, version);
      // console.log(filePaths)
      const fileMap = _.keyBy(files.files, "type")
@@ -41,30 +42,37 @@ export const validate = async (id, user) => {
 
      let validationErrors = []
      let samplesAsColumns, errors, invalid;
+
+     if(files.format.startsWith('TSV')){
       try {
-         [samplesAsColumns, errors, invalid] = await otuTableHasSamplesAsColumns(fileMap, validationErrors);
-      validationErrors = [...validationErrors, ...errors]
-      if(invalid){
-        files.format = "INVALID";
-      }
+        [samplesAsColumns, errors, invalid] = await otuTableHasSamplesAsColumns(fileMap, validationErrors);
+        validationErrors = [...validationErrors, ...errors]
+        if(invalid){
+          files.format = "INVALID";
+        }
       } catch (error) {
-        validationErrors.push(error)
-        files.invalidMessage = error
-        files.format = "INVALID";
+       validationErrors.push(error)
+       files.invalidMessage = error
+       files.format = "INVALID";
       }
+     } else if(files.format.startsWith('BIOM_2_1')){
+      samplesAsColumns = true;
+      errors = []
+     }
+      
       
       
 
       if(fileMap?.taxa?.path){
         // Check there is an "id" column in the taxon file
-        const {term, errors: idInvalidErrors} = await hasIdColumn(fileMap?.taxa?.path, fileMap?.taxa?.properties?.delimiter);
+        const {term, errors: idInvalidErrors} = await hasIdColumn(fileMap?.taxa?.path, fileMap?.taxa?.properties?.delimiter, files.format.startsWith('BIOM_2_1') ? "feature id" : "id" );
         validationErrors = [...validationErrors, ...idInvalidErrors]
         if(!term) {
           files.format = "INVALID";
         }
       }
 
-      const unknownTypeErrors = (files?.files || []).filter(f => !f?.type).map(f => ({file: f?.name, message: "Could not identify the data type. Is it OTU table, Taxonomy table, Sample table or Study defaults?"}))
+      const unknownTypeErrors = (files?.files || []).filter(f => !f?.type && validFileExtensions.includes(f?.name.split('.').pop())).map(f => ({file: f?.name, message: "Could not identify the data type. Is it OTU table, Taxonomy table, Sample table or Study defaults?"}))
       validationErrors = [...validationErrors, ...unknownTypeErrors]
       // Give the collected array of errors to the frontend
       files.invalidErrors = validationErrors;
@@ -147,7 +155,36 @@ export const validate = async (id, user) => {
       await writeProcessingReport(id,version, report)
       return report;
 
-    } else if(files.format.startsWith('XLSX')) {
+    } /* else if(files.format.startsWith('BIOM_2_1')) {
+
+      const filePaths = await determineFileNames(id, version);
+     // console.log(filePaths)
+     const fileMap = _.keyBy(files.files, "type")
+
+     // console.log(Object.keys(fileMap))
+
+     let validationErrors = []
+     
+      
+      
+
+      if(fileMap?.taxa?.path){
+        // Check there is an "id" column in the taxon file
+        const {term, errors: idInvalidErrors} = await hasIdColumn(fileMap?.taxa?.path, fileMap?.taxa?.properties?.delimiter);
+        validationErrors = [...validationErrors, ...idInvalidErrors]
+        if(!term) {
+          files.format = "INVALID";
+        }
+      }
+
+      const unknownTypeErrors = (files?.files || []).filter(f => !f?.type).map(f => ({file: f?.name, message: "Could not identify the data type. Is it OTU table, Taxonomy table, Sample table or Study defaults?"}))
+      validationErrors = [...validationErrors, ...unknownTypeErrors]
+      // Give the collected array of errors to the frontend
+      files.invalidErrors = validationErrors;
+
+
+
+    } */ else if(files.format.startsWith('XLSX')) {
     /*   console.log("XLSX coming in")
       let xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || f?.name?.endsWith('.xlsx'))
       let headers_ = {};

@@ -1,13 +1,11 @@
-import { toBiom, addReadCounts, metaDataFileToMap } from '../converters/biom.js';
+import { fromHdf5ToBiom, addReadCounts, metaDataFileToMap } from '../converters/biom.js';
 
 import { getYargs } from '../util/index.js';
 // import config from '../config.js'
 import _ from 'lodash'
 import { mergeFastaMapIntoTaxonMap, readMapping, readTsvHeaders } from '../util/filesAndDirectories.js'
-import { otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders } from '../validation/tsvformat.js'
 import {uploadedFilesAndTypes} from '../validation/files.js'
 import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, missingSampleRecords, consistencyCheckReport, writeMetrics} from "./util.js"
-import { md5 } from '../util/index.js';
 import { readFastaAsMap } from '../util/streamReader.js';
 import { assignTaxonomy } from '../classifier/index.js';
 import config from '../config.js';
@@ -26,18 +24,11 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     const fasta = files.files.find(f => f.name.endsWith('.fasta') || f.name.endsWith('.fa'))
     
 
-    let sequencesAsHeaders;
-    const [samplesAsColumns, errors] =   await otuTableHasSamplesAsColumns(fileMap);
-    if (!samplesAsColumns) {
-        sequencesAsHeaders = await otuTableHasSequencesAsColumnHeaders(fileMap.otuTable)
-
-    } 
-    
     beginStep('readData')
     updateStatusOnCurrentStep(0, 0, 'Reading sample file')
     const samples = await metaDataFileToMap(fileMap?.samples, mapping?.samples, updateStatusOnCurrentStep)  
     updateStatusOnCurrentStep(0, 0, 'Reading taxon file', {sampleCount: samples.size});
-    let taxa = fileMap?.taxa ? await metaDataFileToMap(fileMap?.taxa, mapping.taxa, updateStatusOnCurrentStep, sequencesAsHeaders ? md5 : (key) => key) : null; // If there is no Taxon file, create an empty MAP
+    let taxa = fileMap?.taxa ? await metaDataFileToMap(fileMap?.taxa, mapping.taxa, updateStatusOnCurrentStep, (key) => key) : null; // If there is no Taxon file, create an empty MAP
     
     if(fasta){
         const fastaMap = await readFastaAsMap(`${config.dataStorage}${id}/${version}/original/${fasta.name}`);
@@ -46,24 +37,8 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
             taxa = new Map();
         };
         mergeFastaMapIntoTaxonMap(fastaMap, taxa)
-    } else if(sequencesAsHeaders){
-       // console.log("#### IT HAS SEQ HEADERS")
-        const headers = await readTsvHeaders(fileMap?.otuTable?.path, fileMap?.otuTable?.properties?.delimiter);
-       // console.log(`Num sequences ${headers.length}`)
-        const fastaMap = new Map(
-            headers.slice(1).map(seq => {
-                const hash = md5(seq);
-               // return [hash,{id: hash, DNA_sequence: seq}]
-               return [hash, seq]
-            } )
-        )
-      //  console.log(`fastaMap size ${fastaMap.size}`)
-        if(!taxa){
-            taxa = new Map();
-        };
-            mergeFastaMapIntoTaxonMap(fastaMap, taxa)
-           
-    }
+    } 
+
     updateStatusOnCurrentStep(taxa.size, taxa.size, 'Reading taxon file', {taxonCount: taxa.size});
 
     stepFinished('readData');
@@ -77,10 +52,10 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
 
     beginStep('convertToBiom')
     updateStatusOnCurrentStep(0, taxa.size, 'Reading OTU table', {taxonCount: taxa.size});
-    console.log(`TSV worker running id ${id}`)
+    console.log(`BIOM 2.1 worker running id ${id}`)
    // console.log(`#### TSV worker samplesAsColumns ${samplesAsColumns}`)
-   //{otuTableFile, samples, taxa, samplesAsColumns = false, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id}
-    const {biom, consistencyCheck} = await toBiom({otuTableFile: fileMap?.otuTable, samples, taxa, samplesAsColumns,  processFn: updateStatusOnCurrentStep ,termMapping: mapping, id})
+   // {otuTableFile, samples, taxa, samplesAsColumns = false, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id}
+    const {biom, consistencyCheck} = await fromHdf5ToBiom({otuTableFile: fileMap?.otuTable, samples, taxa,  processFn: updateStatusOnCurrentStep , termMapping: mapping, id})
     consistencyCheckReport(consistencyCheck)
     /* if(sampleIdsWithNoRecordInSampleFile?.length > 0){
         // Some ids did not have a corresponding entry in the sample file
