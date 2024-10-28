@@ -145,7 +145,7 @@ export default  (app) => {
                       version = await getCurrentDatasetVersion(req.params.id)
                   } 
                 let metrics = await readMetrics(req.params.id, version)
-                if(!metrics){
+                /* if(!metrics){
                     const h5BiomFileExists = await fileAtPathExists(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`)
 
                     if(!h5BiomFileExists){
@@ -157,8 +157,13 @@ export default  (app) => {
                          
                     }
                     
-                }
-                res.send(metrics)
+                } */
+                  if(metrics){
+                    res.send(metrics)
+                  } else {
+                    res.sendStatus(404)
+                  }
+                
                  // console.log(eml)data
                  
               } catch (error) {
