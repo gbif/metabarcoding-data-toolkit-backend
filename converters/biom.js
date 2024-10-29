@@ -138,9 +138,17 @@ export const fromHdf5ToBiom = async ({otuTableFile, samples, taxa, samplesAsColu
     try {
         const biomFromHdf5 = await readHDF5(otuTableFile?.path);
 
-        const cols = biomFromHdf5.columns.map(c => getMetaDataRow(samples.get(c?.id), false)) ;
-        const rws = biomFromHdf5.rows.map(r => getMetaDataRow(taxa.get(r?.id), true)) ;
-        let sampleIdsWithNoRecordInSampleFile, taxonIdsWithNoRecordInTaxonFile, sampleIdsWithNoRecordInOtuTable, taxonIdsWithNoRecordInOtuTable
+        const cols = biomFromHdf5.columns.map(c => samples.has(c?.id) ? getMetaDataRow(samples.get(c?.id), false) : {id: c?.id, metdata: {}}) ;
+        const rws = biomFromHdf5.rows.map(r => taxa.has(r?.id) ? getMetaDataRow(taxa.get(r?.id), true) : {id: r?.id, metdata: {}}) ;
+
+        const otuTableColIdSet = new Set(biomFromHdf5.columns.map(s => s?.id));
+        const otuTableRowIdSet = new Set(biomFromHdf5.rows.map(s => s?.id));
+
+        const sampleIdsWithNoRecordInSampleFile =  biomFromHdf5.columns.filter(s => !samples.has(s?.id)).map(s => s?.id);
+        const taxonIdsWithNoRecordInTaxonFile = biomFromHdf5.rows.filter(s => !taxa.has(s?.id)).map(s => s?.id);
+        const sampleIdsWithNoRecordInOtuTable = [...samples.keys()].filter(s => !otuTableColIdSet.has(s))
+        const taxonIdsWithNoRecordInOtuTable = [...taxa.keys()].filter(s => !otuTableRowIdSet.has(s))
+        //, sampleIdsWithNoRecordInOtuTable, taxonIdsWithNoRecordInOtuTable
         const b = await new Promise((resolve, reject) => {
             try {
                 console.log("Create Biom")
@@ -168,7 +176,7 @@ export const fromHdf5ToBiom = async ({otuTableFile, samples, taxa, samplesAsColu
           return b;
         
     } catch (error) {
-        
+        console.log(error)
     }
 }  
 

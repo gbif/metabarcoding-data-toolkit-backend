@@ -91,7 +91,7 @@ export const hasIdColumn = async (path, delimiter, idName = "id") => {
 } 
 // This function does more than just calculating the direction of the OTU table. It will test CSV parsing of the sample file and throw an error of more than 5% of the samples are not in the OTU table
 
-export const otuTableHasSamplesAsColumns = async (files) => {
+export const otuTableHasSamplesAsColumns = async (files, columnIds, rowIds) => {
     // console.log("hasSamplesAsColumns")
     if(!files.samples && !files.otuTable){
         throw "No Otu table and no sample file"
@@ -121,8 +121,8 @@ export const otuTableHasSamplesAsColumns = async (files) => {
             console.log(error?.message)
         }
         console.log("The sample id term is: "+sampleIdTerm)
-        let otuTableColumns =  files.otuTable.properties.headers; 
-        let otuTableRowIds =  files.otuTable.properties.rows.slice(1).map(r => r[0]);
+        let otuTableColumns =  columnIds || files.otuTable.properties.headers; 
+        let otuTableRowIds =  rowIds || files.otuTable.properties.rows.slice(1).map(r => r[0]);
 
         const otuTableColumnsAreTruncated = ((files?.otuTable?.properties?.columnLimit || 0) < (files?.otuTable?.properties?.numColumns || 0))
 

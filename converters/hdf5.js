@@ -380,12 +380,7 @@ export const readHDF5 = async (hdf5file) => {
             return acc;
         }, {})
     }))
-    try {
-        const id = _.get(f.get("/"), 'attrs["id"].value')
-        console.log(id)
-    } catch (error) {
-        console.log(id)
-    }
+   
 
     // console.log(JSON.stringify(sparseMatrix, null, 2))
     try {
@@ -415,4 +410,27 @@ export const readHDF5 = async (hdf5file) => {
     } catch (error) {
         console.log(error)
     }
+}
+
+export const readHDF5data = async (hdf5file, paths) => {
+    // const h5wasm = await import("h5wasm");
+    
+    try {
+        if(!h5wasm){
+            await init()
+        }
+        await h5wasm?.ready ;  
+        let f = new h5wasm.File(hdf5file/* "rich_sparse_otu_table_hdf5.biom" */, "r");
+
+        const data = paths.reduce((acc, cur) => {
+            acc[cur] =  f.get(cur)?.to_array();
+            return acc
+        },{})
+        f.close()
+        return data;
+    } catch (error) {
+        console.log(`readHDF5data  error`)
+        console.log(error)
+        return null
+    } 
 }

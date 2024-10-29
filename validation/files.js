@@ -156,7 +156,7 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
             if(otuTableFile && otuTableFile?.mimeType !== "application/x-hdf5") {
                 const csvProperties = await analyseCsv(otuTableFile.path)
                 otuTableFile.properties =  csvProperties; // {delimiter : csvProperties.delimiter} ;
-            }
+            } 
 
             let defaultValuesFile = files.find(f => f.type === "defaultValues");
             if(defaultValuesFile) {

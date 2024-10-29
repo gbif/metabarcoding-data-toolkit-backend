@@ -8,7 +8,7 @@ import {validateXlSX} from "../workers/supervisor.js"
 import _ from "lodash"
 import mapping from './mapping.js';
 import validFileExtensions from '../enum/validFileExtensions.js';
-
+import {readHDF5data} from '../converters/hdf5.js'
 export const validate = async (id, user) => {
   try {
                 
@@ -45,7 +45,7 @@ export const validate = async (id, user) => {
 
      if(files.format.startsWith('TSV')){
       try {
-        [samplesAsColumns, errors, invalid] = await otuTableHasSamplesAsColumns(fileMap, validationErrors);
+        [samplesAsColumns, errors, invalid] = await otuTableHasSamplesAsColumns(fileMap);
         validationErrors = [...validationErrors, ...errors]
         if(invalid){
           files.format = "INVALID";
@@ -56,8 +56,11 @@ export const validate = async (id, user) => {
        files.format = "INVALID";
       }
      } else if(files.format.startsWith('BIOM_2_1')){
-      samplesAsColumns = true;
-      errors = []
+
+      const ids = await readHDF5data(fileMap?.otuTable?.path, ["sample/ids", "observation/ids"]);
+      // [samplesAsColumns, errors, invalid] = await otuTableHasSamplesAsColumns(fileMap, ids["sample/ids"], ids["observation/ids"]);
+       samplesAsColumns = true;
+       errors = []
      }
       
       
