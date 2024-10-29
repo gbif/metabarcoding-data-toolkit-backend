@@ -69,7 +69,7 @@ const downloadFile = async (req, res, fromOriginalDir) => {
                 version = await getCurrentDatasetVersion(req.params.id)
             } 
             let processionReport = await getProcessingReport(id, version)
-            await writeProcessingReport(id, version, {...processionReport, files: {...processionReport.files, mapping: req.body}})
+            await writeProcessingReport(id, version, {...processionReport, files: {...(processionReport?.files || {}), mapping: req.body}})
             res.sendStatus(201)
         } catch (error) {
             console.log(error)
