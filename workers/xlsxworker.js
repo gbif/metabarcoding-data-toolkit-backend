@@ -1,4 +1,4 @@
-import { getYargs } from '../util/index.js';
+import { getYargs, isFastaFile } from '../util/index.js';
 import { addReadCounts } from '../converters/biom.js';
 import { getMapFromMatrix, readWorkBookFromFile, toBiom } from "../converters/excel.js"
 import { uploadedFilesAndTypes, getMimeFromPath, getFileSize, unzip } from '../validation/files.js'
@@ -17,7 +17,7 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     const mapping = await readMapping(id, version);
     const  files = await uploadedFilesAndTypes(id, version)
     const xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || f?.name?.endsWith('.xlsx'))
-    const fasta = files.files.find(f => f.name.endsWith('.fasta') || f.name.endsWith('.fa'))
+    const fasta = files.files.find(f => isFastaFile(f.name))
    /*  if (filePaths?.samples) {
         job.sampleHeaders = await readTsvHeaders(filePaths?.samples)
     }

@@ -71,6 +71,7 @@ const pushJob = async (id, assignTaxonomy, user) => {
         // in case the user starts the proceesing again 
        // let version = await getCurrentDatasetVersion(id);
         await wipeGeneratedFilesAndResetProccessing(id, version)
+        delete newJob.dwc;
         runningJobs.set(id, newJob)
         q.push({ id: id }, async (error, result) => {
             if (error) {

@@ -3,7 +3,7 @@ import {partitionArray} from '../util/index.js'
 
 export const filterAndValidateCoordinates = data => {
     const allFeatures = data?.id.map((id, idx) => {
-        console.log([ data.decimalLongitude[idx], data.decimalLatitude[idx]])
+       // console.log([ data.decimalLongitude[idx], data.decimalLatitude[idx]])
         return {
             "type": "Feature",
             "geometry": {

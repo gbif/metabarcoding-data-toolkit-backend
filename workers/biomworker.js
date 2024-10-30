@@ -1,6 +1,6 @@
 import { fromHdf5ToBiom, addReadCounts, metaDataFileToMap } from '../converters/biom.js';
 
-import { getYargs } from '../util/index.js';
+import { getYargs, isFastaFile } from '../util/index.js';
 // import config from '../config.js'
 import _ from 'lodash'
 import { mergeFastaMapIntoTaxonMap, readMapping, readTsvHeaders } from '../util/filesAndDirectories.js'
@@ -21,7 +21,7 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
    
     const fileMap = _.keyBy(files.files, "type")
 
-    const fasta = files.files.find(f => f.name.endsWith('.fasta') || f.name.endsWith('.fa'))
+    const fasta = files.files.find(f => isFastaFile(f.name))
     
 
     beginStep('readData')

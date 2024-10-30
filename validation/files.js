@@ -4,6 +4,7 @@ import {execSync, exec}  from 'child_process';
 import { determineFileNames, analyseCsv } from './tsvformat.js';
 import {readDefaultValues} from '../util/streamReader.js';
 import {writeMapping, readMapping, getProcessingReport} from '../util/filesAndDirectories.js'
+import {isFastaFile} from '../util/index.js'
 // there may be hidden 'application/octet-stream' files when unzipping an excel workbook
 const mimeTypesToBeRemoved = ['application/zip', 'application/octet-stream']
 
@@ -72,7 +73,7 @@ const unzipIfNeeded = async (id, version = 1) => {
     }   
 }
 
-const getfastaFile = (files) => files.find(f => f.name.endsWith('.fasta') || f.name.endsWith('.fa'))
+const getfastaFile = (files) => files.find(f => isFastaFile(f.name))
 
 const determineFormat = (files) => {
    

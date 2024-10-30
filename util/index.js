@@ -9,7 +9,7 @@ const metaXml = require('./metaXml')
 const streamReader = require('./streamReader') */
 import dwcTerms from './dwcTerms.js';
 import metaXml from './metaXml.js';
-
+import { fastaFileExtensions } from "../enum/validFileExtensions.js"
 
 
 export const sanitizeSequence = (sequence) => sequence.replace(/[^ACGTURYSWKMBDHVNacgturyswkmbdhvn]/g, '').toUpperCase();
@@ -102,6 +102,8 @@ export const partitionArray = (array, isValid) => {
   }, [[], []]);
 }
 
+export const isFastaFile = (fileName) => typeof fileName === "string" ?  fastaFileExtensions.includes(fileName.split('.').pop()) : false
+
 export default {
     metaXml,
     dwcTerms,
@@ -110,5 +112,6 @@ export default {
     getMetaDataRow,
     getTaxonomyArray,
     getYargs,
-    partitionArray
+    partitionArray,
+    isFastaFile
 }
