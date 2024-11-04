@@ -13,6 +13,10 @@ const appendUser = () => {
                 if (user) {
                     req.user = {...user, isAdmin: config.installationAdmins.includes(user.userName)};
                     res.setHeader('token', user?.token);
+
+                    res.setHeader("Surrogate-Control", "no-store");
+                    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+                    res.setHeader("Expires", "0");
                 } else {
                    // removeTokenCookie(res);
                     res.removeHeader('token');
@@ -41,7 +45,7 @@ const userCanModifyDataset = () => {
                     const datasets = user?.datasets || [];
 
                     if(datasets.map(d => d.dataset_id).includes(req?.params?.id)){
-                        console.log('userCanModifyDataset true')
+                       //  console.log('userCanModifyDataset true')
                         next();
                     } else {
                         res.sendStatus(403)
