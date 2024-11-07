@@ -85,7 +85,7 @@ const determineFormat = (files) => {
     } else if(files.length < 3 && files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || f.name?.endsWith('.xlsx')) ){
         
         return !!fasta ? 'XLSX_WITH_FASTA' : 'XLSX'
-    } else if(files.length >= 2){
+    } else if(files.filter(f => ['txt', 'tsv', 'csv'].includes(f?.name?.split(".").pop())).length>= 2) {
         return  !!fasta ? 'TSV_WITH_FASTA' : 'TSV'
     } /* else if(files.length === 2){
         return 'TSV_2_FILE'
