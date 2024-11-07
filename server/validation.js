@@ -33,7 +33,7 @@ export const validate = async (id, user) => {
       files.mapping = processingReport?.files?.mapping
     } */
    // console.log(files)
-    if(files.format.startsWith('TSV') || files.format.startsWith('BIOM_2_1')){
+    if(files?.format?.startsWith('TSV') || files?.format?.startsWith('BIOM_2_1')){
       const filePaths = await determineFileNames(id, version);
      // console.log(filePaths)
      const fileMap = _.keyBy(files.files, "type")
@@ -43,7 +43,7 @@ export const validate = async (id, user) => {
      let validationErrors = []
      let samplesAsColumns, errors, invalid;
 
-     if(files.format.startsWith('TSV')){
+     if(files?.format?.startsWith('TSV')){
       try {
         [samplesAsColumns, errors, invalid] = await otuTableHasSamplesAsColumns(fileMap);
         validationErrors = [...validationErrors, ...errors]
@@ -55,7 +55,7 @@ export const validate = async (id, user) => {
        files.invalidMessage = error
        files.format = "INVALID";
       }
-     } else if(files.format.startsWith('BIOM_2_1')){
+     } else if(files?.format?.startsWith('BIOM_2_1')){
 
       const ids = await readHDF5data(fileMap?.otuTable?.path, ["sample/ids", "observation/ids"]);
       // [samplesAsColumns, errors, invalid] = await otuTableHasSamplesAsColumns(fileMap, ids["sample/ids"], ids["observation/ids"]);
@@ -68,7 +68,7 @@ export const validate = async (id, user) => {
 
       if(fileMap?.taxa?.path){
         // Check there is an "id" column in the taxon file
-        const {term, errors: idInvalidErrors} = await hasIdColumn(fileMap?.taxa?.path, fileMap?.taxa?.properties?.delimiter, files.format.startsWith('BIOM_2_1') ? "feature id" : "id" );
+        const {term, errors: idInvalidErrors} = await hasIdColumn(fileMap?.taxa?.path, fileMap?.taxa?.properties?.delimiter, files?.format?.startsWith('BIOM_2_1') ? "feature id" : "id" );
         validationErrors = [...validationErrors, ...idInvalidErrors]
         if(!term) {
           files.format = "INVALID";
@@ -158,7 +158,7 @@ export const validate = async (id, user) => {
       await writeProcessingReport(id,version, report)
       return report;
 
-    } /* else if(files.format.startsWith('BIOM_2_1')) {
+    } /* else if(files?.format?.startsWith('BIOM_2_1')) {
 
       const filePaths = await determineFileNames(id, version);
      // console.log(filePaths)
@@ -187,7 +187,7 @@ export const validate = async (id, user) => {
 
 
 
-    } */ else if(files.format.startsWith('XLSX')) {
+    } */ else if(files?.format?.startsWith('XLSX')) {
     /*   console.log("XLSX coming in")
       let xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || f?.name?.endsWith('.xlsx'))
       let headers_ = {};

@@ -5,6 +5,8 @@ const TAX_COVERAGE_LIMIT = 200;
 
 const TAX_COVERAGE_RANKS = ['kingdom', 'phylum', 'class', 'order', 'family']
 
+const DEFAULT_KEYWORDS = ['metabarcoding', 'DNA', 'MDT']
+
 const escapeHtml = (unsafe) => {
     return encode(unsafe, {mode: 'nonAsciiPrintable', level: 'xml'})
 }
@@ -45,14 +47,12 @@ const getSamplingDescription = (description) => {
 </samplingDescription>` : null;
 }
 
-const getKeywords = (keywords, keywordThesaurus) => {
-    if(!keywords || keywords?.length === 0){
-        return ""
-    } else {
-      let kWords = keywords.map(s => `<keyword>${escapeHtml(s)}</keyword>`).join("")
+const getKeywords = (keywords = [], keywordThesaurus) => {
+   
+      let kWords = [...DEFAULT_KEYWORDS,...keywords].map(s => `<keyword>${escapeHtml(s)}</keyword>`).join("")
       return `<keywordSet>${kWords}<keywordThesaurus>${escapeHtml(keywordThesaurus || "N/A")}</keywordThesaurus>
       </keywordSet>`
-    }
+    
 }
 
 const getComplexType = (entity, attrs, atrrName) => {
