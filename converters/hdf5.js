@@ -2,7 +2,7 @@ import { Biom } from 'biojs-io-biom';
 import _ from 'lodash'
 import {getTaxonomyArray} from '../util/index.js'
 let h5wasm;
-const generatedByString = "GBIF eDNA Tool";
+const generatedByString = "GBIF Metabarcoding Data Toolkit";
 const MAX_FIXED_STRING_LENGTH = 1024
 
 const init = async () => {

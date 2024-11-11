@@ -36,7 +36,7 @@ const getRssXml = ({link, atomLink, title, description, installationKey, items})
     <lastBuildDate>Tue, 06 Aug 2024 15:02:48 +0000</lastBuildDate>
     <!--  UUID of the IPT making RSS feed available  -->
     <${EDNA_NAMESPACE}:identifier>${installationKey}</${EDNA_NAMESPACE}:identifier>
-    <generator>GBIF eDNA Tool</generator>
+    <generator>GBIF Metabarcoding Data Toolkit</generator>
     <webMaster>${config?.installationContactEmail}</webMaster>
     <docs>http://cyber.law.harvard.edu/rss/rss.html</docs>
     <ttl>15</ttl>
