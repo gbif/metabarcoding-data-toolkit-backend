@@ -19,7 +19,7 @@ export const filterAndValidateCoordinates = data => {
     const [features, invalidSamples] = partitionArray(allFeatures, f => {
         const lat = f?.geometry?.coordinates?.[1] //    data.decimalLongitude[idx]
         const lon = f?.geometry?.coordinates?.[0]
-        if((!isNaN(Number(lon) && Number(lon) <= 180 && Number(lon) >= -180)) && (!isNaN(Number(lat) && Number(lat) <= 90 && Number(lat) >= -90))){
+        if(isValidDecimalLatitude(lat) && isValidDecimalLongitude(lon)){
             return true
         } else {
            
@@ -34,3 +34,6 @@ export const filterAndValidateCoordinates = data => {
 
     
 }
+
+export const isValidDecimalLatitude = lat => (!isNaN(Number(lat) && Number(lat) <= 90 && Number(lat) >= -90))
+export const isValidDecimalLongitude = lon => (!isNaN(Number(lon) && Number(lon) <= 180 && Number(lon) >= -180))

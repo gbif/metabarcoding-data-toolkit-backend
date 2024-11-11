@@ -1,5 +1,5 @@
 import os from "os"
-
+import {isValidDecimalLatitude, isValidDecimalLongitude} from "../validation/coordinates.js"
 export const objectSwap = obj => Object.fromEntries(Object.entries(obj).map(([k, v]) => [v, k]))
 import { createHash } from 'node:crypto'
 export const md5 = (content) => {  
@@ -23,7 +23,35 @@ export const getAsvID = (sequence) => {
 
 const transformRow = row => Object.keys(row).reduce((acc, cur) => {
   try {
-    acc[cur] = cur === "DNA_sequence" ? (row?.[cur] || "").toUpperCase() : row[cur]
+
+    switch (cur) {
+      case "DNA_sequence":
+        acc[cur] = (row?.[cur] || "").toUpperCase()
+        break;
+      case "decimalLatitude":
+          if(!isValidDecimalLatitude(row?.[cur]) 
+            && ((row?.[cur] || "").toString().match(/,/g) || []).length === 1 
+            && isValidDecimalLatitude((row?.[cur] || "").toString()?.replace(',','.'))){
+            acc[cur] = (row?.[cur] || "").toString()?.replace(',','.');
+          } else {
+            acc[cur] = row[cur];
+          }
+          break;
+      case "decimalLongitude":
+          if(!isValidDecimalLongitude(row?.[cur])
+            && ((row?.[cur] || "").toString().match(/,/g) || []).length === 1 
+            && isValidDecimalLongitude((row?.[cur] || "").toString()?.replace(',','.'))){
+              acc[cur] = (row?.[cur] || "").toString()?.replace(',','.');
+          } else {
+              acc[cur] = row[cur];
+          }
+          break;      
+          
+      default:
+        acc[cur] = row[cur];
+        break;
+    }
+   // acc[cur] = cur === "DNA_sequence" ? (row?.[cur] || "").toUpperCase() : row[cur]
   return acc;
   } catch (error) {
    
