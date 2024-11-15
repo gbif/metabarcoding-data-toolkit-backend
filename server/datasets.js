@@ -2,7 +2,7 @@
 import auth from './Auth/auth.js'
 import db from './db/index.js'
 import config from '../config.js';
-import { getDataset } from '../util/dataset.js';
+import { getDataset, getDatasetLog } from '../util/dataset.js';
 import {getCurrentDatasetVersion, getProcessingReport, writeProcessingReport, readMetrics} from '../util/filesAndDirectories.js'
 import {deleteDatasetInGbifUAT} from "../util/gbifRegistry.js"
 
@@ -30,11 +30,38 @@ export default  (app) => {
                 if(report){
                     res.json(report)
                 } else {
-                    res.status(404)
+                    res.sendStatus(404)
                 }
             } catch (error) {
                 console.log(error)
-                res.status(404)
+                res.sendStatus(404)
+            }
+            
+    
+        }
+    });
+
+    app.get("/dataset/:id/log.txt", async function (req, res) {
+        if (!req.params.id) {
+            res.sendStatus(404);
+        } else {
+    
+            try {
+                let version = req.query?.version;
+                if(!version){
+                    version = await getCurrentDatasetVersion(req.params.id);
+                } 
+                const log = await getDatasetLog(req.params.id, version);
+                if(log){
+                    res.set('Content-Type', 'text/plain');
+                   // res.set('Content-Disposition', 'attachment');
+                    res.send(log)
+                } else {
+                    res.sendStatus(404)
+                }
+            } catch (error) {
+                console.log(error)
+                res.sendStatus(500)
             }
             
     

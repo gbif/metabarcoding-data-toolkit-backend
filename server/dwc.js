@@ -184,6 +184,7 @@ const processDwc = async function (req, res) {
                     userName: req?.user?.userName
                 })
                 report.publishing.gbifUatDatasetKey = gbifUatDatasetKey;
+                report.publishing.registeredUAT = Date.now()
                 try {
                     await registerBiomEndpoints({ednaDatasetID: req.params.id,
                         version,
@@ -218,6 +219,7 @@ const processDwc = async function (req, res) {
                 })
                 report.publishing.gbifProdDatasetKey = gbifProdDatasetKey;
                 report.publishing.publishingOrgKey = req?.query?.organizationKey
+                report.publishing.registeredPROD = Date.now()
 
                 try {
                     await registerBiomEndpoints({ednaDatasetID: req.params.id,
