@@ -8,11 +8,11 @@ const EDNA_NAMESPACE = "mdt";
 const getItem = (e, frontendUrl) => {
 
     return `<item>
-    <title>${e?.title}</title>
+    <title>${encode(e?.title)}</title>
     <link>${frontendUrl}/dataset/${e?.dataset_id}</link>
     <!--  shows what changed in this version, or shows the resource description if change summary was empty  -->
-    <description>${e?.dataset_description}</description>
-    <author>${e?.dataset_author || e?.user_name}</author>
+    <description>${encode(e?.dataset_description)}</description>
+    <author>${encode(e?.dataset_author || e?.user_name)}</author>
     <${EDNA_NAMESPACE}:eml>${config.dwcPublicAccessUrl}${e?.dataset_id}/${e?.version}/archive/eml.xml</${EDNA_NAMESPACE}:eml>
     <${EDNA_NAMESPACE}:dwca>${config.dwcPublicAccessUrl}${e?.dataset_id}/${e?.version}/archive.zip</${EDNA_NAMESPACE}:dwca>
     <${EDNA_NAMESPACE}:biom>${config.dwcPublicAccessUrl}${e?.dataset_id}/${e?.version}/data.biom.h5</${EDNA_NAMESPACE}:biom>
