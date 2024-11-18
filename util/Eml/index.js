@@ -84,15 +84,20 @@ const getAgent = (agent, type) => {
 const getGeographicCoverage = (geographicCoverage) => {
 
     // TODO add <geographicDescription>The samples were collected at 19 stations distributed along the Baltic Sea, Kattegat and Skagerrak</geographicDescription>
-
-    return geographicCoverage ? `
-    <geographicCoverage>          
-           <boundingCoordinates>
+    const boundingCoordinates = !!geographicCoverage?.westBoundingCoordinate 
+        && !!geographicCoverage?.eastBoundingCoordinate 
+        && !!geographicCoverage?.northBoundingCoordinate 
+        && !!geographicCoverage?.southBoundingCoordinate ? `<boundingCoordinates>
                <westBoundingCoordinate>${geographicCoverage?.westBoundingCoordinate}</westBoundingCoordinate>
                <eastBoundingCoordinate>${geographicCoverage?.eastBoundingCoordinate}</eastBoundingCoordinate>
                <northBoundingCoordinate>${geographicCoverage?.northBoundingCoordinate}</northBoundingCoordinate>
                <southBoundingCoordinate>${geographicCoverage?.southBoundingCoordinate}</southBoundingCoordinate>
-           </boundingCoordinates>
+           </boundingCoordinates>` : "";
+    const geographicDescription = !!geographicCoverage?.geographicDescription ? `<geographicDescription>${escapeHtml(geographicCoverage?.geographicDescription)}</geographicDescription>` : "";
+    return !!boundingCoordinates || !!geographicDescription ? 
+    `<geographicCoverage>   
+            ${geographicDescription}       
+           ${boundingCoordinates}
        </geographicCoverage>` : ""
 }
 
@@ -122,13 +127,13 @@ const getTaxonomicCoverage = taxonomicCoverage => {
         return acc
     },{})
 
-    const hasData = TAX_COVERAGE_RANKS.filter(rank => Object.keys(taxonomicCoverage || {}).includes(rank)).reduce((acc, curr) => (acc || taxonomicCoverage[curr].length > 0 ), false)
+    const hasData = TAX_COVERAGE_RANKS.filter(rank => Object.keys(taxonomicCoverage || {}).includes(rank)).reduce((acc, curr) => (acc || taxonomicCoverage[curr].length > 0 ), false) || !!taxonomicCoverage?.generalTaxonomicCoverage
     // todo  <generalTaxonomicCoverage>Eukaryotic plankton</generalTaxonomicCoverage>
 
     return hasData ?`<taxonomicCoverage>
+    ${!!taxonomicCoverage?.generalTaxonomicCoverage ? "<generalTaxonomicCoverage>"+ escapeHtml(taxonomicCoverage?.generalTaxonomicCoverage) +"</generalTaxonomicCoverage>":""}
    ${TAX_COVERAGE_RANKS.filter(rank => Object.keys(taxonomicCoverage || {}).includes(rank)).reduce((acc, curr) => (acc.length + taxonomicClassifications[curr].length  < TAX_COVERAGE_LIMIT ? [...acc, ...taxonomicClassifications[curr]]: acc), []).join('\n')}
-  
-</taxonomicCoverage>`: ""
+    </taxonomicCoverage>`: ""
 }
 
 const getCoverage = ({geographicCoverage, temporalCoverage, taxonomicCoverage}) => {
@@ -203,12 +208,12 @@ export const getEml = ({id, license, title, description, contact, creator, metad
     const sampling = [getStudyExtent(studyExtent), getSamplingDescription(samplingDescription)].filter(e => !!e).join("\n");
 
     return `
-    <eml:eml
-        xmlns:eml="eml://ecoinformatics.org/eml-2.1.1"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xsi:schemaLocation="eml://ecoinformatics.org/eml-2.1.1 http://rs.gbif.org/schema/eml-gbif-profile/1.1/eml.xsd"
-            packageId="${id}"  system="http://gbif.org" scope="system"
-      xml:lang="en">
+    <eml:eml xmlns:eml="https://eml.ecoinformatics.org/eml-2.2.0"
+         xmlns:dc="http://purl.org/dc/terms/"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://eml.ecoinformatics.org/eml-2.2.0 https://rs.gbif.org/schema/eml-gbif-profile/1.3/eml.xsd"
+         packageId="${id}" system="http://gbif.org" scope="system"
+         xml:lang="eng">
         <dataset>
             ${doi ? `<alternateIdentifier>https://doi.org/${escapeHtml(doi)}</alternateIdentifier>` : ""}
             <title>${escapeHtml(title)}</title>
@@ -232,6 +237,8 @@ export const getEml = ({id, license, title, description, contact, creator, metad
                 </para>
             </intellectualRights>
             ${getUrl(url)}
+            ${getCoverage({geographicCoverage, temporalCoverage, taxonomicCoverage})}
+
             <maintenance>
                     <description>
                         <para></para>
@@ -239,12 +246,13 @@ export const getEml = ({id, license, title, description, contact, creator, metad
                 <maintenanceUpdateFrequency>unkown</maintenanceUpdateFrequency>
             </maintenance>
             ${getAgent(contact, 'contact')}
-            ${getProject(project)}
-           ${(steps || sampling) ? `<methods>
+             ${(steps || sampling) ? `<methods>
             ${steps ? steps : ""}
             ${sampling ? "<sampling>" + sampling + "</sampling>": ""}
         </methods>` : ""}
-        ${getCoverage({geographicCoverage, temporalCoverage, taxonomicCoverage})}
+            ${getProject(project)}
+            
+          
         </dataset>
         <additionalMetadata>
             <metadata>
