@@ -1,5 +1,7 @@
 import db from "../../server/db/index.js"
 import config from "../../config.js"
+import {encode} from 'html-entities';
+
 import {getApplicationIP} from "../index.js"
 const EDNA_NAMESPACE = "mdt";
 // http://localhost:9000/dataset/436ddffe-d29a-43ff-a065-0f1bf7748284/file/data.biom.h5
@@ -26,10 +28,10 @@ const getRssXml = ({link, atomLink, title, description, installationKey, items})
 
     return `<rss xmlns:${EDNA_NAMESPACE}="${link}" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
-    <title>${title}</title>
+    <title>${encode(title)}</title>
     <link>${link}</link>
     <atom:link href="${atomLink}" rel="self" type="application/rss+xml"/>
-    <description>${description}</description>
+    <description>${encode(description)}</description>
     <language>en-us</language>
     <!--  RFC-822 date-time / Wed, 02 Oct 2010 13:00:00 GMT  -->
     <pubDate>${''/** pubdate ?? */}Tue, 15 Feb 2011 15:43:23 +0000</pubDate>
