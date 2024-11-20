@@ -14,7 +14,7 @@ import { dwcQueue } from './dwc.js';
 const q = queue(async (options) => {
     const id = options?.id;
     let job = runningJobs.get(id);
-    job.summary = {};
+    job.summary = { createdBy: options?.createdBy};
     try {
         const version = await getCurrentDatasetVersion(id)
         //  let job = runningJobs.get(id);
@@ -46,7 +46,7 @@ const q = queue(async (options) => {
 const pushJob = async (id, assignTaxonomy, user) => {
     let version;
 
-    let newJob = { id: id, createdBy: user?.userName, assignTaxonomy: assignTaxonomy, filesAvailable: [], steps: [{ status: 'queued', time: Date.now() }] }
+    let newJob = { id: id, /* createdBy: user?.userName, */ assignTaxonomy: assignTaxonomy, filesAvailable: [], steps: [{ status: 'queued', time: Date.now() }] }
     try {
         version = await getCurrentDatasetVersion(id);
        const existingReport = await getDataset(id, version);
@@ -73,7 +73,7 @@ const pushJob = async (id, assignTaxonomy, user) => {
         await wipeGeneratedFilesAndResetProccessing(id, version)
         delete newJob.dwc;
         runningJobs.set(id, newJob)
-        q.push({ id: id }, async (error, result) => {
+        q.push({ id: id, createdBy: user?.userName }, async (error, result) => {
             if (error) {
                 console.log(error);
                 let job = runningJobs.get(id);

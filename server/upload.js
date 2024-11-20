@@ -35,7 +35,7 @@ export default  (app) => {
         const datasetTitle = req.body?.datasetTitle || ""
         const author = getAuthorString(req.user)
         await db.createUserDataset({userName: req?.user?.userName, datasetId: req.id, title: datasetTitle, author, version})
-        let  processReport = {id: req.id, createdBy: req?.user?.userName, datasetAuthor: getAuthorString(req?.user)}
+        let  processReport = {id: req.id, createdAt: new Date().toISOString(), createdBy: req?.user?.userName, datasetAuthor: getAuthorString(req?.user)}
         await writeProcessingReport(req.id, version, processReport)
       
     console.log(`Dataset ${req.id} created by ${req?.user?.userName}. Title: ${datasetTitle}`)

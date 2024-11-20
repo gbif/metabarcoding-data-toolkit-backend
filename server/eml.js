@@ -95,7 +95,7 @@ const submitDwcToDataValidator = async (req, res) => {
                 res.json({key: response?.data?.key})
             } catch (error) {
                 console.log(error)
-                if(error === "No DWC Archive found"){
+                if(error === "No DWC Archive found" || error === "DwC archive does not exist"){
                     res.status(400).send(error)
                 } else {
                     res.sendStatus(500)
