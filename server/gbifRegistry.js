@@ -61,7 +61,7 @@ const getOrganizationToken = async (req, res) => {
     try {
         let options = {
             method: 'get',
-            url: `${config.gbifRegistryBaseUrl[config.env]}organization/${req?.params?.key}/password`,
+            url: `${config.gbifRegistryBaseUrl[config.env === "prod" ? "prod" : "uat"]}organization/${req?.params?.key}/password`,
             headers: {
                 authorization: req?.headers?.authorization
             }

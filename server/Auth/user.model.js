@@ -5,8 +5,9 @@ import axios from 'axios'
 //const url = config.env === "prod" ? config.gbifBaseUrlProd : config.gbifBaseUrl
 
 async function login(auth) {
+    // Use prod users for all user management
     let loginRequest = {
-        url: `${config.gbifRegistryBaseUrl[config.env]}user/login`,
+        url: `${config.gbifRegistryBaseUrl.prod}user/login`,
         method: 'get',
         headers: {
             authorization: auth
@@ -24,10 +25,10 @@ async function login(auth) {
 }
 
 async function getFromToken(auth) {
-    
+    // Use prod users for all user management
     let options = {
         method: 'post',
-        url: `${config.gbifRegistryBaseUrl[config.env]}user/whoami`,
+        url: `${config.gbifRegistryBaseUrl.prod}user/whoami`,
         headers: {
             authorization: auth
         }

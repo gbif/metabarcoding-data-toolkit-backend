@@ -124,9 +124,9 @@ export const getDatasetLog = async (id, version) =>  {
                     }
                 } 
                 if(s?.status === "failed" && !!s?.message){
-                    log.push(`${!!steps?.[idx +1]?.time ? new Date(report?.steps?.[idx +1]?.time).toUTCString() +":" : spacer+" "} ${s?.message})}`)
+                    log.push(`${!!steps?.[idx +1]?.time ? new Date(steps?.[idx +1]?.time).toUTCString() +":" : spacer+" "} ${s?.message})}`)
                 }
-                log.push(`${!!steps?.[idx +1]?.time ? new Date(report?.steps?.[idx +1]?.time).toUTCString() +":" : spacer+" "} ${_.startCase(s?.status)} ${_.startCase(s?.name)}`)
+                log.push(`${!!steps?.[idx +1]?.time ? new Date(steps?.[idx +1]?.time).toUTCString() +":" : spacer+" "} ${_.startCase(s?.status)} ${_.startCase(s?.name)}`)
             });
         }
 
@@ -141,18 +141,21 @@ export const getDatasetLog = async (id, version) =>  {
                 }
                 
                 if(s?.status === "failed" && !!s?.message){
-                    log.push(`${!!steps?.[idx +1]?.time ? new Date(report?.steps?.[idx +1]?.time).toUTCString() +":" : spacer+" "} ${s?.message})}`)
+                    log.push(`${!!steps?.[idx +1]?.time ? new Date(steps?.[idx +1]?.time).toUTCString() +":" : spacer+" "} ${s?.message})}`)
                 }
-                log.push(`${!!steps?.[idx +1]?.time ? new Date(report?.steps?.[idx +1]?.time).toUTCString() +":" : spacer+" "} ${_.startCase(s?.status)} ${_.startCase(s?.name)}`)
+                log.push(`${!!steps?.[idx +1]?.time ? new Date(steps?.[idx +1]?.time).toUTCString() +":" : spacer+" "} ${_.startCase(s?.status)} ${_.startCase(s?.name)}`)
 
             })
-
+            if(report?.publishing?.validationId){
+                log.push(`${report?.publishing?.validationCreatedAt ? new Date(report?.publishing?.validationCreatedAt).toUTCString() + ": ":  spacer+"  "}User ${report?.publishing?.validationCreatedBy} created validation report: https://www.gbif.org/tools/data-validator/${report?.publishing?.validationId}`)
+            }
             if(report?.publishing?.gbifUatDatasetKey){
                 log.push(`${report?.publishing?.registeredUAT ? new Date(report?.publishing?.registeredUAT).toUTCString() + ": ":  spacer+"  "}Dataset tested in GBIF-UAT environment: https://www.gbif-uat.org/dataset/${report?.publishing?.gbifUatDatasetKey}`)
             }
             if(report?.publishing?.gbifProdDatasetKey){
                 log.push(`${report?.publishing?.registeredPROD ? new Date(report?.publishing?.registeredPROD).toUTCString() + ": ":  spacer+"  "}Dataset published to GBIF: https://www.gbif.org/dataset/${report?.publishing?.gbifProdDatasetKey}`)
             }
+
         }
 
         return log.join("\n")

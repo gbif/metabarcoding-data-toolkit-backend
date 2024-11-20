@@ -84,10 +84,10 @@ export default  (app) => {
                     if(report?.publishing?.gbifDatasetKey){
                         try {
                             console.log("delete at UAT")
-                            await deleteDatasetInGbifUAT(report?.publishing?.gbifDatasetKey, config.gbifUsername, config.gbifPassword)
+                            await deleteDatasetInGbifUAT(report?.publishing?.gbifDatasetKey || report?.publishing?.gbifUatDatasetKey, config.gbifUsername, config.gbifPassword)
                             console.log("Successfully deleted at UAT")
                         } catch (error) {
-                            console.log(`Could not delete dataset ${report?.publishing?.gbifDatasetKey} in the GBIF-UAT Registry`)
+                            console.log(`Could not delete dataset ${report?.publishing?.gbifDatasetKey || report?.publishing?.gbifUatDatasetKey} in the GBIF-UAT Registry`)
                             console.log(error)
                         }
                     }

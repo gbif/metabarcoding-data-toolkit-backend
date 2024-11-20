@@ -250,7 +250,7 @@ export const dwcArchiveExists = async (id, version) => {
     if (error) {
       reject("DwC archive does not exist")
     }
-    resolve()
+    resolve(true)
   });
 })
 }
@@ -433,7 +433,8 @@ export const readDataStorage = async () => {
             dataset_description: !!storedDataset?.metadata?.description ? storedDataset?.metadata?.description.substring(0, 300) : "",
             dataset_author: storedDataset?.datasetAuthor || "",
             dwc_generated: getDwcGeneratedFromStoredDataset(storedDataset),
-            current_version: currentVersion
+            current_version: currentVersion,
+            validation_id: storedDataset?.publishing?.validationId || ""
           })
         } catch (error) {
           console.log(error)

@@ -27,6 +27,8 @@ export const updateOccurrenceCountOnDataset = dbImplementation.updateOccurrenceC
 
 export const updatePublishingOrgKeyOnDataset = dbImplementation.updatePublishingOrgKeyOnDataset
 
+export const updateValidationIdOnDataset = dbImplementation.updateValidationIdOnDataset
+
 export const updateDwcGeneratedOnDataset = dbImplementation.updateDwcGeneratedOnDataset
 
 export const getDatasetsOrderedByDwcCreated = dbImplementation.getDatasetsOrderedByDwcCreated
@@ -52,6 +54,7 @@ export default {
     updateUatKeyOnDataset,
     updateProdKeyOnDataset,
     updatePublishingOrgKeyOnDataset,
+    updateValidationIdOnDataset,
     getDatasetsOrderedByDwcCreated,
     getDatasetsOrderedByDwcCreatedNoPaging,
     initialize

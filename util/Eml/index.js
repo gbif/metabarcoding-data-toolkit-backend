@@ -7,6 +7,17 @@ const TAX_COVERAGE_RANKS = ['kingdom', 'phylum', 'class', 'order', 'family']
 
 const DEFAULT_KEYWORDS = ['metabarcoding', 'DNA', 'MDT']
 
+const formatXml = (xml, tab) => { // tab = optional indent value, default is tab (\t)
+    let formatted = '', indent= '';
+    tab = tab || '\t';
+    xml.split(/>\s*</).forEach(function(node) {
+        if (node.match( /^\/\w/ )) indent = indent.substring(tab.length); // decrease indent by one 'tab'
+        formatted += indent + '<' + node + '>\r\n';
+        if (node.match( /^<?\w[^>]*[^\/]$/ )) indent += tab;              // increase indent
+    });
+    return formatted.substring(1, formatted.length-3);
+}
+
 const escapeHtml = (unsafe) => {
     return encode(unsafe, {mode: 'nonAsciiPrintable', level: 'xml'})
 }
@@ -207,8 +218,7 @@ export const getEml = ({id, license, title, description, contact, creator, metad
     const steps = getMethodSteps(methodSteps);
     const sampling = [getStudyExtent(studyExtent), getSamplingDescription(samplingDescription)].filter(e => !!e).join("\n");
 
-    return `
-    <eml:eml xmlns:eml="https://eml.ecoinformatics.org/eml-2.2.0"
+    return formatXml(`<eml:eml xmlns:eml="https://eml.ecoinformatics.org/eml-2.2.0"
          xmlns:dc="http://purl.org/dc/terms/"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="https://eml.ecoinformatics.org/eml-2.2.0 https://rs.gbif.org/schema/eml-gbif-profile/1.3/eml.xsd"
@@ -262,5 +272,5 @@ export const getEml = ({id, license, title, description, contact, creator, metad
                 </gbif>
             </metadata>
         </additionalMetadata>
-    </eml:eml>`
+    </eml:eml>`)
 } 
