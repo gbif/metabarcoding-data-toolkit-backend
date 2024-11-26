@@ -108,6 +108,52 @@ const addPendingSteps = job => {
     return [...steps_, ...Object.keys(STEPS).filter(s => (!job.unzip ? s !== 'extractArchive' : true) && (!job.assignTaxonomy ? s !== 'assignTaxonomy' : true) && !steps_.map(a => a?.name).includes(s)).map(k => STEPS[k])]
 }
 
+const getProcess = async (req, res) => {
+
+    if (!req.params.id) {
+        res.sendStatus(404);
+    } else {
+
+        
+      //  console.log("Process request 1")
+        // this will only find jobs that are being processed -will need
+        const job = runningJobs.get(req.params.id);
+      //  console.log("Process request 2")
+        try {
+            let version = req.params?.version;
+            if (!version) {
+                
+                version = await getCurrentDatasetVersion(req.params.id);
+               // console.log("Process request 3")
+            }
+            let report = await getDataset(req.params.id, version);
+          //  console.log("Process request 4")
+
+            if (job) {
+                let data = { ...report, ...job, steps: addPendingSteps(job) };
+              //  console.log("Process request 5")
+                return data
+                // res.json(data);
+            } else {
+              //  console.log("Process request 6")
+
+                if (report) {
+                    return report;
+                    //res.json(report)
+                } else {
+                    return null
+                    //res.sendStatus(404)
+                }
+            }
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
+
+
+    }
+}
+
 export default (app) => {
     app.post("/dataset/:id/process", auth.userCanModifyDataset(), async function (req, res) {
         if (!req.params.id) {
@@ -131,8 +177,51 @@ export default (app) => {
         }
     });
 
-
     app.get("/dataset/:id/process/:version?", async function (req, res) {
+
+        if (!req.params.id) {
+            res.sendStatus(404);
+        } else {
+
+            try {
+                 const report = await getProcess(req, res)
+                    if (report) {
+                        res.json(report)
+                    } else {
+                        res.sendStatus(404)
+                    }
+                
+            } catch (error) {
+                console.log(error)
+                res.sendStatus(404)
+            }
+
+        }
+    });
+
+    app.get("/dataset/:id/process-status", async function (req, res) {
+
+        if (!req.params.id) {
+            res.sendStatus(404);
+        } else {
+
+            try {
+                 const report = await getProcess(req, res)
+                    if (report?.steps) {
+                        const filteredSteps = report?.steps.filter(s => s?.status !== 'pending' && !!s?.name)
+                        res.json(filteredSteps[filteredSteps.length -1])
+                    } else {
+                        res.sendStatus(404)
+                    }
+                
+            } catch (error) {
+                console.log(error)
+                res.sendStatus(404)
+            }
+
+        }
+    });
+/*     app.get("/dataset/:id/process/:version?", async function (req, res) {
 
         if (!req.params.id) {
             res.sendStatus(404);
@@ -174,7 +263,7 @@ export default (app) => {
 
 
         }
-    });
+    }); */
 
     app.get("/running-processes", async (req, res) => {
         try {

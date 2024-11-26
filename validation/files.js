@@ -110,6 +110,8 @@ export const getFileSize = file => {
 export const uploadedFilesAndTypes = async (id, version = 1) => {
  
     try {
+        const report = await getProcessingReport(id, version)
+        const mapping = report?.files?.mapping || {};
         await unzipIfNeeded(id, version)
         const fileList = await fs.promises.readdir(`${config.dataStorage}${id}/${version}/original`)
                     // have to filter out some odd files starting with .nfs
@@ -180,7 +182,8 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
 
         return {
             format,
-            files
+            files,
+            mapping
         }
     } catch (error) {
         console.log(error)
