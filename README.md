@@ -9,13 +9,15 @@ Node v18 or higher
 git clone git@github.com:gbif/metabarcoding-data-toolkit-backend.git
 cd metabarcoding-data-toolkit-backend
 npm install
-node server/index.js --credentials path/to/credentials.json
+node server/index.js --credentials /Path/to/credentials.json --organizationfile /Path/to/organizations.json
 ````
 
-In order to run large datasets (e.g. Global soil), increase heap space
+In order to run very large datasets, increase heap space
 `export NODE_OPTIONS="--max-old-space-size=6144" # Increase to 6 GB`
 
 # API
+This section describes the API methods needed to run a dataset through the MDT, from raw data files to a Darwin Core Archive, published to GBIF.org.
+
 In the examples below, the base url of the API is assumed to be `https://mdt.gbif.org/service`. You will need to modify the examples to use the base url of your MDT installation.
 
 ## Authentication

@@ -306,6 +306,42 @@ export const addNetwork = async (req, res) => {
         console.log(error)
     }
 }
+
+const getDwcProcess = async (req, res) => {
+   
+        // this will only find jobs that are being processed -will need
+        const job = runningJobs.get(req.params.id);
+
+        try {
+            let version = req.params?.version;
+            if(!version){
+                version = await getCurrentDatasetVersion(req.params.id);
+            } 
+            let report = await getProcessingReport(req.params.id, version);
+            const metadata = await getMetadata(req.params.id, version)
+
+            if(!!metadata){
+                report.metadata = metadata
+            }
+            if (job) {
+               
+                let dwc = {...job, steps: addPendingSteps(job)};
+                return {...report, dwc: dwc};
+            } else {        
+                return report
+           
+        }
+        } catch (error) {
+            console.log(error)
+            throw error
+            // res.sendStatus(404)
+        }
+        
+
+    
+}
+
+
 export const dwcQueue = q;
 export default  (app) => {
     app.post("/dataset/:id/dwc", auth.userCanModifyDataset(), processDwc);
@@ -319,32 +355,13 @@ export default  (app) => {
             res.sendStatus(404);
         } else {
 
-            // this will only find jobs that are being processed -will need
-            const job = runningJobs.get(req.params.id);
-
             try {
-                let version = req.params?.version;
-                if(!version){
-                    version = await getCurrentDatasetVersion(req.params.id);
-                } 
-                let report = await getProcessingReport(req.params.id, version);
-                const metadata = await getMetadata(req.params.id, version)
-
-                if(!!metadata){
-                    report.metadata = metadata
-                }
-                if (job) {
-                   
-                    let dwc = {...job, steps: addPendingSteps(job)};
-                    res.json({...report, dwc: dwc});
-                } else {     
-                if(report){
-                    
+                const report = await getDwcProcess(req, res)
+                if(!!report){
                     res.json(report)
                 } else {
                     res.sendStatus(404)
                 }
-            }
             } catch (error) {
                 console.log(error)
                 res.sendStatus(404)
@@ -354,6 +371,27 @@ export default  (app) => {
         }
     })
 
+    app.get("/dataset/:id/dwc-status", async (req, res) => {
+        if (!req.params.id) {
+            res.sendStatus(404);
+        } else {
+
+            try {
+                const report = await getDwcProcess(req, res)
+                if (report?.dwc?.steps) {
+                    const filteredSteps = report?.dwc?.steps.filter(s => s?.status !== 'pending' && !!s?.name)
+                    res.json(filteredSteps[filteredSteps.length -1])
+                } else {
+                    res.sendStatus(404)
+                }
+            } catch (error) {
+                console.log(error)
+                res.sendStatus(404)
+            }
+            
+
+        }
+    })
 
 
 }
