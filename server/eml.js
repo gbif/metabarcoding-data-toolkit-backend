@@ -18,7 +18,7 @@ const processEml = async function (req, res) {
             if(!version){
                 version = await getCurrentDatasetVersion(req.params.id)
             } 
-            await writeEmlJson(req.params.id, version, req.body)
+            await writeEmlJson(req.params.id, version, {...req.body, createdBy: req?.user?.userName, createdAt: Date.now()})
             const xml = getEml({...req.body, id : req.params.id})
             await writeEmlXml(req.params.id, version, xml)
             await db.updateTitleOnDataset(req?.user?.userName, req.params.id, req.body?.title)

@@ -1,6 +1,6 @@
 
 import auth from './Auth/auth.js';
-import {writeMapping, readMapping, getCurrentDatasetVersion} from '../util/filesAndDirectories.js'
+import {writeMapping, readMapping, getCurrentDatasetVersion, getProcessingReport, writeProcessingReport} from '../util/filesAndDirectories.js'
 
 
 const saveMapping = async function (req, res) {
@@ -16,9 +16,10 @@ const saveMapping = async function (req, res) {
             const {createdAt, createdBy, ...rest} = oldMapping || {};
             if(JSON.stringify(rest) !== JSON.stringify(req.body)){
                 console.log(`Save mapping for dataset ${req.params.id}`)
-
-            await writeMapping(req.params.id, version, {...req.body, createdAt: new Date(), createdBy: req?.user?.userName})
-            
+                const newMapping = {...req.body, createdAt: new Date(), createdBy: req?.user?.userName}
+            await writeMapping(req.params.id, version, newMapping)
+            const report = await getProcessingReport(req.params.id, version)
+            await writeProcessingReport(req.params.id, version, {...report, mapping: newMapping})
            // console.log(eml)
             res.send(req.body)
             } else {

@@ -44,7 +44,7 @@ const userCanModifyDataset = () => {
                     res.setHeader('token', user?.token);
                     const datasets = user?.datasets || [];
 
-                    if(datasets.map(d => d.dataset_id).includes(req?.params?.id)){
+                    if(user.isAdmin || datasets.map(d => d.dataset_id).includes(req?.params?.id)){
                        //  console.log('userCanModifyDataset true')
                         next();
                     } else {
@@ -67,7 +67,7 @@ const userCanModifyDataset = () => {
         });
 }
 
-export const userCanPublishWithOrganisation = async (userName, organisationKey) => {
+/* export const userCanPublishWithOrganisation = async (userName, organisationKey) => {
     try {
         const admin = await readOrganizationFile();
         return admin?.organizations?.[organisationKey]?.includes(userName)
@@ -75,7 +75,7 @@ export const userCanPublishWithOrganisation = async (userName, organisationKey) 
         console.log(error)
         throw error;
     }
-}
+} */
 
 
 
@@ -118,8 +118,8 @@ export const writeOrganisations = async (data) => {
 export default {
     appendUser,
     userCanModifyDataset,
-    userCanPublishWithOrganisation,
-    getOrganisationsForUser,
+/*     userCanPublishWithOrganisation,
+ */    getOrganisationsForUser,
     getOrganisations,
     writeOrganisations
 }

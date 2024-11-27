@@ -33,9 +33,11 @@ Start by uploading a set of files to the MDT. Replace `@/Path/to/OTU_table.tsv`,
 
 ````
 curl 'https://mdt.gbif.org/service/dataset/upload' \
-  -H 'Authorization: Bearer <AUTHORIZATION_TOKEN>' \
-  -H 'Content-Type: multipart/form-data; boundary=----FormBoundary' \
-  --data-raw $'------FormBoundary\r\nContent-Disposition: form-data; name="tables"; filename="@/Path/to/OTU_table.tsv"\r\n\r\n\r\n------FormBoundary\r\nContent-Disposition: form-data; name="tables"; filename="@/Path/to/samples.tsv"\r\n\r\n\r\n------FormBoundary\r\nContent-Disposition: form-data; name="tables"; filename="@/Path/to/taxonomy.tsv"\r\n\r\n\r\n------FormBoundary\r\nContent-Disposition: form-data; name="tables"; filename="@/Path/to/study.tsv"\r\n\r\n\r\n------FormBoundary--\r\n'
+-F 'tables=@/Path/to/OTU_table.tsv' \
+-F 'tables=@/Path/to/samples.tsv'  \
+-F 'tables=@/Path/to/taxonomy.tsv'  \
+-F 'tables=@/Path/to/study.tsv'  \
+-H 'Authorization: Bearer <AUTHORIZATION_TOKEN>' 
 ````
 This will return a `DATASET_KEY` (UUID) for the dataset.
 

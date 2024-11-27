@@ -27,8 +27,12 @@ const upload = multer({
   storage: storage,
 })
 
+const logMulterError = (error, req, res, next) => {
+  console.log('This is the rejected field ->', error.field);
+}
+
 export default  (app) => {
-  app.post('/dataset/upload', auth.appendUser(), upload.array('tables', 5), async function (req, res, next) {
+  app.post('/dataset/upload', auth.appendUser(), upload.array('tables', 5), /* logMulterError, */ async function (req, res, next) {
     try {
       const version = req?.query?.version ?? "1";
       if(req?.user){

@@ -45,7 +45,9 @@ export default  (app) => {
         if (!req.params.id) {
             res.sendStatus(404);
         } else {
-    
+            res.setHeader("Surrogate-Control", "no-store");
+            res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+            res.setHeader("Expires", "0");
             try {
                 let version = req.query?.version;
                 if(!version){
