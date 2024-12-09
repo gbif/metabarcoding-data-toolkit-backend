@@ -48,7 +48,7 @@ curl 'https://mdt.gbif.org/service/validate/<DATASET_KEY>' \
   -H 'Authorization: Bearer <AUTHORIZATION_TOKEN>'  | jq .files.format
 ````
 
-If Your file names comply with the [naming convention](https://docs.gbif-uat.org/mdt-user-guide/en/#fitting-the-data-into-a-template), and you have `id` columns in the sample and taxonomy files, the validation should respond with one of the formats listed here: https://mdt.gbif.org/service/enum/format
+If your file names comply with the [naming convention](https://docs.gbif-uat.org/mdt-user-guide/en/#fitting-the-data-into-a-template), and you have `id` columns in the sample and taxonomy files, the validation should respond with one of the formats listed here: https://mdt.gbif.org/service/enum/format
 If the response is `INVALID`, you will probably need to tell the API which file is the OTU table, taxonomy and sample file.
 
 You will do this by posting a simple mapping like the following:
@@ -143,7 +143,7 @@ This will return a `VALIDATION_KEY` from the gif data validator. The validation 
 
 ## Publishing the dataset to GBIF.org
 
-To publish the dataset to gif.org, you must provide a `PUBLISHING_ORGANIZATION_KEY`
+To publish the dataset to gbif.org, your user account must be an admin within the tool, or the account must be paired with the organization. Once enabled you must provide a `PUBLISHING_ORGANIZATION_KEY`
 
 ````
 curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/register-in-gbif-prod?organizationKey=<PUBLISHING_ORGANIZATION_KEY>' \
