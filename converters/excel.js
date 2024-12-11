@@ -494,7 +494,8 @@ export const readXlsxHeaders = async (id, fileName, version) => {
 
             if (entity === otuTable && otuTableHeadersNotInSampleIds > 0) {
               errors.push(
-                `${otuTableHeadersNotInSampleIds} of ${otuTableColumns.length} columns in the OTU table does not have a corresponding row in the sample file`
+                `Attention: ${otuTableHeadersNotInSampleIds} of ${otuTableColumns.length} sample IDs in the OTU table has no matching row in the Sample table. Non-matching IDs will be excluded from the final dataset.`
+                /* `${otuTableHeadersNotInSampleIds} of ${otuTableColumns.length} columns in the OTU table does not have a corresponding row in the sample file` */
               );
             }
             if (entity === samples && sampleIdsNotInOtuTableHeaders > 0) {

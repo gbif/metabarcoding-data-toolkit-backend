@@ -77,7 +77,6 @@ export const determineFileNames = async (id, version) => {
 // Check if there is an ID column in a tsv
 export const hasIdColumn = async (path, delimiter, idName = "id") => {
 
-    console.log("Path: "+path)
     const columns = await readTsvHeaders(path, delimiter);
            // Accept id case insensitive
     const term =  columns.find(c => !!c && c.toLowerCase() === idName) || columns[0]//columns.find(c => !!c && c.toLowerCase() === idName);
@@ -113,7 +112,7 @@ export const otuTableHasSamplesAsColumns = async (files, columnIds, rowIds) => {
         let sampleIdTerm;
         let errors = []
         try {
-            console.log(`Sample file: ${files.samples.path} - delimiter ${ files.samples.properties.delimiter}`)
+           // console.log(`Sample file: ${files.samples.path} - delimiter ${ files.samples.properties.delimiter}`)
             samples = await streamReader.readMetaData(files.samples.path, ()=>{}, files.samples.properties.delimiter); // readTsvHeaders(`${config.dataStorage}${id}/${version}/original/${files.samples}`);
             const {term, errors: idErrors} = await hasIdColumn(files.samples.path, files.samples.properties.delimiter)
             sampleIdTerm = term;
@@ -187,13 +186,13 @@ export const otuTableHasSamplesAsColumns = async (files, columnIds, rowIds) => {
             
             errors.push({
                 file: splitted[splitted.length-1], 
-                message: `${sampleIdsNotInOtuTableColumns.length} of ${samples.length} samples are not in the OTU table`})
+                message: `Attention: ${sampleIdsNotInOtuTableColumns.length} of ${samples.length} sample IDs in the Sample table has no matching column in the OTU table. Non-matching IDs will be excluded from the final dataset.`})
         }
         if(sampleIdTerm && otuTableColumnsNotInSamples.length > 0){
             let splitted = files.otuTable.path.split("/");
             errors.push({
                 file: splitted[splitted.length-1], 
-                message: `${otuTableColumnsNotInSamples.length} of ${otuTableColumns.length -1 } columns in the OTU table does not have a corresponding row in the sample file`})
+                message: `Attention: ${otuTableColumnsNotInSamples.length} of ${otuTableColumns.length -1} sample IDs in the OTU table has no matching row in the Sample table. Non-matching IDs will be excluded from the final dataset.`})
             }
        } else {
        /*  if(sampleIdTerm && sampleIdsNotInOtuTableRowIds.length > 0){
