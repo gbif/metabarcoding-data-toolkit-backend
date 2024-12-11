@@ -10,7 +10,7 @@ export default {
             {
                 name: 'eventDate',
                 description: "The date when the sample was collected from its environment",
-                synonyms: ['date', 'collectiondate'],
+                synonyms: ['date', 'collectiondate', 'collection_date'],
                 isRequired: true
             }, 
              {

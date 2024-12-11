@@ -6,7 +6,7 @@ import { getYargs } from '../util/index.js';
 import {getArrayIntersection} from '../validation/misc.js'
 import { readFastaAsMap } from '../util/streamReader.js';
 import _ from 'lodash'
-import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport,} from '../util/filesAndDirectories.js'
+import {readMapping, writeMapping, getProcessingReport, getMetadata, writeProcessingReport,} from '../util/filesAndDirectories.js'
 import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, consistencyCheckReport} from "./util.js"
 import { assignTaxonomy } from '../classifier/index.js';
 import config from '../config.js';
@@ -17,6 +17,7 @@ const processDataset = async (id, version, userName) => {
         console.log("XLSX coming in, start worker process")
         let files = await uploadedFilesAndTypes(id, version)
         let processionReport = await getProcessingReport(id, version)
+        const oldMapping = await readMapping(id, version)
         if(!processionReport){
             processionReport= {id: id, createdBy: userName, createdAt: new Date().toISOString()}
           }
@@ -42,7 +43,14 @@ const processDataset = async (id, version, userName) => {
             defaultValueTerms =  defaultValueSheet?.rows.slice(1).map(i => i[0]).filter(i => !!i)
           }
     
-           const sampleTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders, headers?.taxonHeaders);       
+           const sampleTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders, headers?.taxonHeaders);    
+           
+           // get the ID terms
+           const sampleId = headers?.sampleHeaders?.[0]
+           const taxonId = headers?.taxonHeaders?.[0]
+
+           const newMapping = oldMapping ? {...oldMapping, samples: {...oldMapping.samples, id: sampleId}, taxa: {...oldMapping.taxa, id: taxonId}} : {samples: {id: sampleId}, taxa: {id: taxonId}, defaultValues: {}, measurements: {}}
+           await writeMapping(id, version, newMapping)
     
            if(sampleTaxonHeaderIntersection.filter(e => !!e).length > 0) {
             const plural = sampleTaxonHeaderIntersection.length > 1;

@@ -4,7 +4,7 @@ import {execSync}  from 'child_process';
 import filenames from './filenames.js'
 import parse from 'csv-parse';
 import streamReader from '../util/streamReader.js'
-import {readTsvHeaders, getProcessingReport} from '../util/filesAndDirectories.js'
+import {readTsvHeaders, getProcessingReport, writeMapping, readMapping} from '../util/filesAndDirectories.js'
 import {objectSwap} from '../util/index.js'
 import _ from "lodash"
 const dnaSequencePattern = /[ACGTURYSWKMBDHVNacgturyswkmbdhvn]/g
@@ -76,9 +76,11 @@ export const determineFileNames = async (id, version) => {
 
 // Check if there is an ID column in a tsv
 export const hasIdColumn = async (path, delimiter, idName = "id") => {
+
+    console.log("Path: "+path)
     const columns = await readTsvHeaders(path, delimiter);
            // Accept id case insensitive
-    const term = columns.find(c => !!c && c.toLowerCase() === idName);
+    const term =  columns.find(c => !!c && c.toLowerCase() === idName) || columns[0]//columns.find(c => !!c && c.toLowerCase() === idName);
    let  errors = []
     if(!term){
         console.log("# hasIdColumn ")
@@ -86,6 +88,9 @@ export const hasIdColumn = async (path, delimiter, idName = "id") => {
         let splitted = path.split("/");
         errors.push({file: splitted[splitted.length-1], message: `No "${idName}" column found in file ${splitted[splitted.length-1]}`})
 
+    } else if(term !== "id"){
+        let splitted = path.split("/");
+        errors.push({file: splitted[splitted.length-1], message: `No id column found in file ${splitted[splitted.length-1]}. Using column "${term}" instead. This can be changed in the mapping step.`})
     }
     return { term, errors};
 } 
@@ -212,9 +217,10 @@ export const otuTableHasSamplesAsColumns = async (files, columnIds, rowIds) => {
         
        // console.log(`##### hasSamplesAsColumns `+hasSamplesAsColumns)
         return [
-            hasSamplesAsColumns,
-            errors,
-            !sampleIdTerm
+            hasSamplesAsColumns, // samples are in the column dimension ofg the matrix
+            errors, // errors to report to the user
+            !sampleIdTerm, // invalid?
+            sampleIdTerm // the sample id
         ]
        /*  if(errors.length > 0){
            

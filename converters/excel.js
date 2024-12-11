@@ -449,8 +449,12 @@ export const readXlsxHeaders = async (id, fileName, version) => {
         };
         console.log(headers)
         let sampleId = headers.sampleHeaders.find(
-          (e) => !!e && ["id", "sampleid"].includes(e.toLowerCase())
-        );
+          (e) => !!e && ["id"].includes(e.toLowerCase())
+        ) ||  headers.sampleHeaders[0];
+        let taxonId = headers.taxonHeaders.find(
+          (e) => !!e && ["id"].includes(e.toLowerCase())
+        ) ||  headers.taxonHeaders[0];
+
         console.log("samp id "+sampleId)
         const sampleIdIndex = headers.sampleHeaders.indexOf(sampleId);
 
@@ -496,6 +500,16 @@ export const readXlsxHeaders = async (id, fileName, version) => {
             if (entity === samples && sampleIdsNotInOtuTableHeaders > 0) {
               errors.push(
                 `${sampleIdsNotInOtuTableHeaders} of ${sampleIds.length} samples are not in the OTU table`
+              );
+            }
+            if (entity === samples && (sampleId || "").toString().toLowerCase() !== "id") {
+              errors.push(
+                `No "id" column found in Samples sheet! Using column "${sampleId}" instead. This can be changed in the mapping step.`
+              );
+            }
+            if (entity === taxa && (taxonId || "").toString().toLowerCase() !== "id") {
+              errors.push(
+                `No "id" column found in Taxonomy sheet! Using column "${taxonId}" instead. This can be changed in the mapping step.`
               );
             }
 

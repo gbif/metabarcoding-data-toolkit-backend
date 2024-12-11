@@ -3,7 +3,7 @@ import auth from './Auth/auth.js';
 import {determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders, hasIdColumn} from '../validation/tsvformat.js'
 import {getArrayIntersection} from '../validation/misc.js'
 import {processWorkBookFromFile, readXlsxHeaders} from "../converters/excel.js"
-import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport, readMapping} from '../util/filesAndDirectories.js'
+import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport, readMapping, writeMapping} from '../util/filesAndDirectories.js'
 import {validateXlSX} from "../workers/supervisor.js"
 import _ from "lodash"
 import mapping from './mapping.js';
@@ -15,7 +15,7 @@ export const validate = async (id, user) => {
     let version = await getCurrentDatasetVersion(id)
     let processingReport = await getProcessingReport(id, version)
     let metadata = await getMetadata(id, version)
-   // const mapping = await readMapping(id, version);
+    const oldMapping = await readMapping(id, version);
 
     if(!processingReport){
       processingReport= {id: id, createdBy: user?.userName,  createdAt: new Date().toISOString()}
@@ -41,11 +41,11 @@ export const validate = async (id, user) => {
      // console.log(Object.keys(fileMap))
 
      let validationErrors = []
-     let samplesAsColumns, errors, invalid;
+     let samplesAsColumns, errors, invalid, sampleId, taxonId;
 
      if(files?.format?.startsWith('TSV')){
       try {
-        [samplesAsColumns, errors, invalid] = await otuTableHasSamplesAsColumns(fileMap);
+        [samplesAsColumns, errors, invalid, sampleId] = await otuTableHasSamplesAsColumns(fileMap);
         validationErrors = [...validationErrors, ...errors]
         if(invalid){
           files.format = "INVALID";
@@ -58,9 +58,13 @@ export const validate = async (id, user) => {
      } else if(files?.format?.startsWith('BIOM_2_1')){
 
       const ids = await readHDF5data(fileMap?.otuTable?.path, ["sample/ids", "observation/ids"]);
-      // [samplesAsColumns, errors, invalid] = await otuTableHasSamplesAsColumns(fileMap, ids["sample/ids"], ids["observation/ids"]);
-       samplesAsColumns = true;
-       errors = []
+       [samplesAsColumns, errors, invalid, sampleId] = await otuTableHasSamplesAsColumns(fileMap, ids["sample/ids"], ids["observation/ids"]);
+       validationErrors = [...validationErrors, ...errors]
+        if(invalid){
+          files.format = "INVALID";
+        }
+      // samplesAsColumns = true;
+      // errors = []
      }
       
       
@@ -72,6 +76,8 @@ export const validate = async (id, user) => {
         validationErrors = [...validationErrors, ...idInvalidErrors]
         if(!term) {
           files.format = "INVALID";
+        } else {
+          taxonId = term
         }
       }
 
@@ -154,6 +160,8 @@ export const validate = async (id, user) => {
          }
       }
       
+      const newMapping = oldMapping ? {...oldMapping, samples: {...oldMapping.samples, id: sampleId}, taxa: {...oldMapping.taxa, id: taxonId}} : {samples: {id: sampleId}, taxa: {id: taxonId}, defaultValues: {}, measurements: {}}
+      await writeMapping(id, version, newMapping)
       const report = {...processingReport, unzip: false, ...validationReport}
       await writeProcessingReport(id,version, report)
       return report;
