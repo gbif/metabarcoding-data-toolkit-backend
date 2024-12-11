@@ -55,6 +55,7 @@ You will do this by posting a simple mapping like the following:
 ````
 curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/file-types' \
   -H 'Authorization: Bearer <AUTHORIZATION_TOKEN>' \
+  -H 'Content-Type: application/json' \
   --data-raw '{"MyArbitraryNamedOTUTable.tsv":"otuTable","MyArbitraryNamedSamples.tsv":"samples","MyArbitraryNamedTaxa.tsv":"taxa","MyArbitraryNamedStudy.txt":"defaultValues"}'
 ````
 
@@ -68,6 +69,7 @@ If you use recognised DWC fields such as `decimalLatitude`, `decimalLongitude`, 
 ````
 curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/mapping' \
   -H 'Authorization: Bearer <AUTHORIZATION_TOKEN>' \
+  -H 'Content-Type: application/json' \
   --data-raw '{"taxa":{"id":"id","kingdom":"kingdom","phylum":"phylum","class":"class","order":"order","family":"family","genus":"genus","DNA_sequence":"sequence","scientificName":"species","verbatimIdentification":"taxpath"},"samples":{"id":"id","decimalLatitude":"Latitude","decimalLongitude":"Longitude","footprintWKT":"polygon","eventDate":"Date"},"defaultValues":{"env_medium":"soil [ENVO:00001998]","target_gene":"ITS2","pcr_primer_forward":"GTGARTCATCGARTCTTTG","pcr_primer_name_forward":"gITS7","pcr_primer_reverse":"TCCTCCGCTTATTGATATGC","pcr_primer_name_reverse":"ITS4","sop":"https://www.biorxiv.org/content/10.1101/2023.08.03.551543v1","seq_meth":"Illumina MiSeq","samplingProtocol":"https://dx.doi.org/10.17504/protocols.io.bp2l69y7klqe/v2","samp_vol_we_dna_ext":"1000 mL","annealingTemp":"69.5","annealingTempUnit":"Degrees Celsius","amplificationReactionVolume":"25","amplicationReactionVolumeUnit":"µl","nucl_acid_ext":"https://dx.doi.org/10.17504/protocols.io.ewov1qyyygr2/v1","nucl_acid_amp":"https://dx.doi.org/10.17504/protocols.io.dm6gp3wpdvzp/v1","lib_layout":"paired","otu_db":"UNITE v9.3"},"measurements":{"surfacetemp_sd_all":{"measurementType":"surfacetemp_sd_all","measurementUnit":"Degrees (Celcius)","measurementAccuracy":"0.1"}}}'
 ````
 
