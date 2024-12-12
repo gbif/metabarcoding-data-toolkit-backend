@@ -39,8 +39,15 @@ const processDataset = async (id, version, userName) => {
            let defaultValueTerms;
            const defaultValueSheet = sheets.find(s => filenames.defaultValues.includes(s?.name?.toLowerCase()));
 
+           let defaultValueMapping = {}
            if(defaultValueSheet?.rows?.length > 1){
             defaultValueTerms =  defaultValueSheet?.rows.slice(1).map(i => i[0]).filter(i => !!i)
+            defaultValueMapping = defaultValueSheet?.rows.slice(1).reduce((acc, cur) => {
+              if(!!cur[0] && !!cur[1]){
+                acc[cur[0]] = cur[1]
+              }
+              return acc
+            }, {})
           }
     
            const sampleTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders, headers?.taxonHeaders);    
@@ -49,7 +56,7 @@ const processDataset = async (id, version, userName) => {
            const sampleId = headers?.sampleHeaders?.[0]
            const taxonId = headers?.taxonHeaders?.[0]
 
-           const newMapping = oldMapping ? {...oldMapping, samples: {...oldMapping.samples, id: sampleId}, taxa: {...oldMapping.taxa, id: taxonId}} : {samples: {id: sampleId}, taxa: {id: taxonId}, defaultValues: {}, measurements: {}}
+           const newMapping = oldMapping ? {...oldMapping, samples: {...oldMapping.samples, id: sampleId}, taxa: {...oldMapping.taxa, id: taxonId}} : {samples: {id: sampleId}, taxa: {id: taxonId}, defaultValues: defaultValueMapping}
            await writeMapping(id, version, newMapping)
     
            if(sampleTaxonHeaderIntersection.filter(e => !!e).length > 0) {

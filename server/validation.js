@@ -15,7 +15,6 @@ export const validate = async (id, user) => {
     let version = await getCurrentDatasetVersion(id)
     let processingReport = await getProcessingReport(id, version)
     let metadata = await getMetadata(id, version)
-    const oldMapping = await readMapping(id, version);
 
     if(!processingReport){
       processingReport= {id: id, createdBy: user?.userName,  createdAt: new Date().toISOString()}
@@ -26,7 +25,7 @@ export const validate = async (id, user) => {
    
     let files = await uploadedFilesAndTypes(id, version)
     
-    console.log(files)
+    // console.log(files)
     /* console.log('processingReport?.files?.mapping')
     console.log(processingReport?.files?.mapping)
     if(processingReport?.files?.mapping && !_.isEmpty(processingReport?.files?.mapping)){
@@ -159,8 +158,9 @@ export const validate = async (id, user) => {
         
          }
       }
-      
-      const newMapping = oldMapping ? {...oldMapping, samples: {...oldMapping.samples, id: sampleId}, taxa: {...oldMapping.taxa, id: taxonId}} : {samples: {id: sampleId}, taxa: {id: taxonId}, defaultValues: {}, measurements: {}}
+      const oldMapping = await readMapping(id, version);
+
+      const newMapping = oldMapping ? {...oldMapping, samples: {...oldMapping.samples, id: sampleId}, taxa: {...oldMapping.taxa, id: taxonId}} : {samples: {id: sampleId}, taxa: {id: taxonId}}
       await writeMapping(id, version, newMapping)
       const report = {...processingReport, unzip: false, ...validationReport}
       await writeProcessingReport(id,version, report)
