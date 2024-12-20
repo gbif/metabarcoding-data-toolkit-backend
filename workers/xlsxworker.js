@@ -14,8 +14,9 @@ import config from '../config.js';
 const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     try {
         console.log("Processing dataset "+id + " version "+version)
-    const mapping = await readMapping(id, version);
     const  files = await uploadedFilesAndTypes(id, version)
+    const mapping = await readMapping(id, version);
+
     const xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || f?.name?.endsWith('.xlsx'))
     const fasta = files.files.find(f => isFastaFile(f.name))
    /*  if (filePaths?.samples) {

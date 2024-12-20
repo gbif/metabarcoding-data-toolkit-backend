@@ -5,7 +5,7 @@ import { determineFileNames, analyseCsv } from './tsvformat.js';
 import {readDefaultValues} from '../util/streamReader.js';
 import {writeMapping, readMapping, getProcessingReport} from '../util/filesAndDirectories.js'
 import {isFastaFile} from '../util/index.js'
-// there may be hidden 'application/octet-stream' files when unzipping an excel workbook
+import validMimeTypes from '../enum/validMimeTypes.js';
 const mimeTypesToBeRemoved = ['application/zip', 'application/octet-stream']
 
 export const getMimeFromPath = (filePath) => {
@@ -44,7 +44,7 @@ export const cleanUploadFromZipAndOctetStream = async (id, version = 1) => {
             let fileList = await fs.promises.readdir(`${config.dataStorage}${id}/${version}/original`);
             for (const f of fileList) {
                 const mimeType = getMimeFromPath(`${config.dataStorage}${id}/${version}/original/${f}`)
-                if(mimeTypesToBeRemoved.indexOf(mimeType) > -1){
+                if(mimeTypesToBeRemoved.indexOf(mimeType) > -1 || validMimeTypes.indexOf(mimeType) === -1){
                     console.log(`Deleting ${f}`)
                     await deleteFile(id, f)
                 }

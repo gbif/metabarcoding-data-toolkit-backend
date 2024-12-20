@@ -5,11 +5,19 @@ import auth from './Auth/auth.js';
 import db from './db/index.js'
 import {getAuthorString} from '../util/index.js'
 import {writeEmlJson,fileExists, wipeGeneratedFilesAndResetProccessing, getMetadata, getProcessingReport, writeProcessingReport, writeEmlXml, getCurrentDatasetVersion} from '../util/filesAndDirectories.js'
-
+import validMimeTypes from "../enum/validMimeTypes.js";
+import {hdf5FileExtensions} from "../enum/validFileExtensions.js"
 const storage = multer.diskStorage({
   //Specify the destination directory where the file needs to be saved
   destination: function (req, file, cb) {
-    console.log("Uploaded by "+ req?.user?.userName)
+    //console.log("Uploaded by "+ req?.user?.userName)
+    if (!validMimeTypes.includes(file.mimetype)) {
+      if(!(file.mimetype === 'application/octet-stream' && [...hdf5FileExtensions, 'qza'].includes(file.originalname.split('.').pop()))){
+        console.log("Unsupported: " +file.mimetype + " " + file.originalname) 
+        console.log("Uploaded by "+ req?.user?.userName)
+        return cb(new Error('Unsupported file type'))
+      }
+    }
     let id = req?.params?.id ?? req.id;
     const dir = config.dataStorage + id + `/${req?.query?.version ?? "1"}` + "/original";
     if (!fs.existsSync(dir)){
@@ -31,8 +39,14 @@ const logMulterError = (error, req, res, next) => {
   console.log('This is the rejected field ->', error.field);
 }
 
+const handleUploadError = (error, req, res, next) => {
+  console.log(error.message)
+  if(error.message === 'Unsupported file type'){
+  res.sendStatus(415)
+  }
+}
 export default  (app) => {
-  app.post('/dataset/upload', auth.appendUser(), upload.array('tables', 5), /* logMulterError, */ async function (req, res, next) {
+  app.post('/dataset/upload', auth.appendUser(), upload.array('tables', 5), handleUploadError, /* logMulterError, */ async function (req, res, next) {
     try {
       const version = req?.query?.version ?? "1";
       if(req?.user){
@@ -57,7 +71,8 @@ export default  (app) => {
     }
     
   })
-app.put('/dataset/:id/upload', auth.userCanModifyDataset(), upload.array('tables', 5), async function (req, res, next) {
+  
+app.put('/dataset/:id/upload', auth.userCanModifyDataset(), upload.array('tables', 5), handleUploadError, async function (req, res, next) {
   try {
     let version = req?.query?.version;
     const currentVersion = await getCurrentDatasetVersion(req.params.id)
