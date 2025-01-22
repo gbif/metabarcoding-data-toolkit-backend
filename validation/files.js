@@ -44,7 +44,7 @@ export const cleanUploadFromZipAndOctetStream = async (id, version = 1) => {
             let fileList = await fs.promises.readdir(`${config.dataStorage}${id}/${version}/original`);
             for (const f of fileList) {
                 const mimeType = getMimeFromPath(`${config.dataStorage}${id}/${version}/original/${f}`)
-                if(mimeTypesToBeRemoved.indexOf(mimeType) > -1 || validMimeTypes.indexOf(mimeType) === -1){
+                if(!f.endsWith(".xlsx") && (mimeTypesToBeRemoved.indexOf(mimeType) > -1 || validMimeTypes.indexOf(mimeType) === -1)){
                     console.log(`Deleting ${f}`)
                     await deleteFile(id, f)
                 }

@@ -25,7 +25,7 @@ export const validate = async (id, user) => {
    
     let files = await uploadedFilesAndTypes(id, version)
     
-    // console.log(files)
+    console.log(files)
     /* console.log('processingReport?.files?.mapping')
     console.log(processingReport?.files?.mapping)
     if(processingReport?.files?.mapping && !_.isEmpty(processingReport?.files?.mapping)){
@@ -233,6 +233,7 @@ export const validate = async (id, user) => {
       }
      const report = {...processingReport, ...headers_, unzip: false, files:{...files, id: id}};
      await writeProcessingReport(id, version, report) */
+     console.log("Validating XLSX "+ files )
      const validation = await validateXlSX(id, version, user?.userName)
      processingReport = await getProcessingReport(id, version)
      if(!!metadata){
