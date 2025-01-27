@@ -6,13 +6,13 @@ import db from './db/index.js'
 import {getAuthorString} from '../util/index.js'
 import {writeEmlJson,fileExists, wipeGeneratedFilesAndResetProccessing, getMetadata, getProcessingReport, writeProcessingReport, writeEmlXml, getCurrentDatasetVersion} from '../util/filesAndDirectories.js'
 import validMimeTypes from "../enum/validMimeTypes.js";
-import {hdf5FileExtensions} from "../enum/validFileExtensions.js"
+import {hdf5FileExtensions, fastaFileExtensions} from "../enum/validFileExtensions.js"
 const storage = multer.diskStorage({
   //Specify the destination directory where the file needs to be saved
   destination: function (req, file, cb) {
     //console.log("Uploaded by "+ req?.user?.userName)
     if (!validMimeTypes.includes(file.mimetype)) {
-      if(!(file.mimetype === 'application/octet-stream' && [...hdf5FileExtensions, 'qza', 'xlsx'].includes(file.originalname.split('.').pop()))){
+      if(!(file.mimetype === 'application/octet-stream' && [...hdf5FileExtensions, ...fastaFileExtensions, 'qza', 'xlsx'].includes(file.originalname.split('.').pop()))){
         console.log("Unsupported: " +file.mimetype + " " + file.originalname) 
         console.log("Uploaded by "+ req?.user?.userName)
         return cb(new Error('Unsupported file type'))
