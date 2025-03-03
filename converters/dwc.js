@@ -8,6 +8,7 @@ import streamReader from '../util/streamReader.js';
 
 const DEFAULT_UNIT = "DNA sequence reads";
 const BASIS_OF_RECORD = "MATERIAL_SAMPLE";
+export const otherEMOFfields = ["measurementUnit", "measurementAccuracy", "measurementMethod", "measurementTypeID","measurementUnitID"]
 
 const writeMetaXml = async (hasEmof, occCore, dnaExt, path, ignoreHeaderLines ) =>  await fs.promises.writeFile(`${path}/archive/meta.xml`, util.metaXml(occCore, dnaExt, hasEmof, ignoreHeaderLines))
 
@@ -51,8 +52,10 @@ const writeEmofForRow = (emofStream, termMapping, sample, occurrenceId) => {
     let dataString = "";
     const measurements = termMapping?.measurements || {};
     Object.keys(measurements).forEach(m => {
-      dataString += `${occurrenceId}\t${measurements[m]?.measurementType || ""}\t${sample?.metadata?.[m]}\t${measurements[m]?.measurementUnit || ""}\t${measurements[m]?.measurementAccurracy || ""}\t${measurements[m]?.measurementMethod || ""}\n`
-    })
+/*       dataString += `${occurrenceId}\t${measurements[m]?.measurementType || ""}\t${sample?.metadata?.[m]}\t${measurements[m]?.measurementUnit || ""}\t${measurements[m]?.measurementAccurracy || ""}\t${measurements[m]?.measurementMethod || ""}\n`
+ */   
+      dataString += `${occurrenceId}\t${measurements[m]?.measurementType || ""}\t${sample?.metadata?.[m]}\t${otherEMOFfields.map(f => measurements[m]?.[f] || "").join("\t")}\n`
+})
     emofStream.write(dataString)
   } catch (error) {
     console.log("EMOF ERROR")
@@ -116,7 +119,7 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
           flags: "a",
         }) : null;
         if(hasEmof && ignoreHeaderLines === 1){
-          emofStream.write(`occurrenceID\t${["measurementType", "measurementValue", "measurementUnit", "measurementAccuracy", "measurementMethod"].join("\t")}\n`)
+          emofStream.write(`occurrenceID\t${["measurementType", "measurementValue", ...otherEMOFfields ].join("\t")}\n`)
         }
       let occStreamClosed = false;
       let dnaStreamClosed = false; 

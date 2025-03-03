@@ -1,5 +1,5 @@
 import {encode} from 'html-entities';
-
+import {otherEMOFfields} from '../converters/dwc.js';
 export default (occCore, dnaExt, hasEmof, ignoreHeaderLines = 0) => {
 const coreTerms = occCore.filter(term => !term.default).map((term, idx) => `<field index="${idx+1}" term="${term.qualName}"/>`).join(`
 `);
@@ -17,9 +17,8 @@ const emof = hasEmof ? `<extension encoding="UTF-8" fieldsTerminatedBy="\\t" lin
 <coreid index="0" />
     <field index="1" term="http://rs.tdwg.org/dwc/terms/measurementType"/>
     <field index="2" term="http://rs.tdwg.org/dwc/terms/measurementValue"/>
-    <field index="3" term="http://rs.tdwg.org/dwc/terms/measurementUnit"/>
-    <field index="4" term="http://rs.tdwg.org/dwc/terms/measurementAccuracy"/>
-    <field index="5" term="http://rs.tdwg.org/dwc/terms/measurementMethod"/>
+    ${otherEMOFfields.map((term, idx) => `<field index="${idx+3}" term="http://rs.tdwg.org/dwc/terms/${term}"/>`).join("\n")}
+    
 </extension>` : "";
 
 return `<archive
