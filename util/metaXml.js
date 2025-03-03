@@ -17,8 +17,11 @@ const emof = hasEmof ? `<extension encoding="UTF-8" fieldsTerminatedBy="\\t" lin
 <coreid index="0" />
     <field index="1" term="http://rs.tdwg.org/dwc/terms/measurementType"/>
     <field index="2" term="http://rs.tdwg.org/dwc/terms/measurementValue"/>
-    ${otherEMOFfields.map((term, idx) => `<field index="${idx+3}" term="http://rs.tdwg.org/dwc/terms/${term}"/>`).join("\n")}
-    
+    <field index="3" term="http://rs.tdwg.org/dwc/terms/measurementUnit"/>
+    <field index="4" term="http://rs.tdwg.org/dwc/terms/measurementAccuracy"/>
+    <field index="5" term="http://rs.tdwg.org/dwc/terms/measurementMethod"/>
+    <field index="6" term="http://rs.iobis.org/obis/terms/measurementTypeID"/>
+    <field index="7" term="http://rs.iobis.org/obis/terms/measurementUnitID"/>
 </extension>` : "";
 
 return `<archive
