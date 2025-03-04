@@ -3,7 +3,7 @@ import * as url from 'url';
 
 import fs from 'fs'
 import base64 from 'base-64';
-import {getYargs} from './util/index.js'
+// import {getYargs} from './util/index.js'
 const gbifBaseUrl = {
     prod: "https://api.gbif.org/v1/",
     uat: "https://api.gbif-uat.org/v1/"
@@ -14,7 +14,12 @@ const gbifRegistryBaseUrl = {
     uat: 'https://registry-api.gbif-uat.org/',
     local: 'https://registry-api.gbif-uat.org/'
 }
-
+const getYargs = () =>  process.argv.reduce((acc, curr, idx) => {
+    if(curr?.startsWith('--')){
+      acc[curr.substring(2)] = process.argv[idx+1]
+    }
+    return acc
+   }, {})
 
 
 
@@ -36,7 +41,7 @@ let gbifCredentials = {
 
 
 try {
-    console.log("Reading credentials from "+process.argv)
+    console.log("Reading credentials from "+ process.argv)
     const yargs = getYargs()
     const creds = fs.readFileSync(`${yargs.credentials || '../somefakepathfortesting/gbifCredentials.json'}`,
     { encoding: 'utf8', flag: 'r' });
@@ -51,6 +56,7 @@ try {
 
 } catch (error) {
     console.log("No GBIF user credentials given")
+    throw error
 }
 
 
@@ -75,7 +81,7 @@ const config = {
         rsyncDirectory: 'tsjeppesen@labs.gbif.org:~/public_html/edna',
         gbifBaseUrl,
         gbifRegistryBaseUrl,
-        blastService: "http://localhost:9001", //"http://blast.gbif-dev.org",
+        blastService: "http://blast.gbif-dev.org",
         uatInstallationKey: gbifCredentials?.uatInstallationKey, 
         uatPublishingOrganizationKey: gbifCredentials?.uatPublishingOrganizationKey,  
      /*    uatUsername: gbifCredentials?.uatUsername,
