@@ -284,8 +284,10 @@ export const getTaxonomicScope =   (f) => {
        
         const taxonomicScope = {};
         f.get("observation/metadata").keys().filter(key => ['kingdom', 'phylum', 'class', 'order', 'family'].includes(key)).forEach(key => {
-            const rank = f.get(`observation/metadata/${key}`).to_array()
+            const rank = f.get(`observation/metadata/${key}`).to_array().filter(x => !!x)
+            if(rank.length > 0){
             taxonomicScope[key] = [...new Set(rank)]
+            }
         });
        return taxonomicScope
     } catch (error) {

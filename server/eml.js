@@ -108,5 +108,5 @@ export default  (app) => {
     app.put("/dataset/:id/metadata", auth.userCanModifyDataset(), processEml);
     app.post("/dataset/:id/metadata", auth.userCanModifyDataset(), processEml);
     app.get("/agents", auth.appendUser(), getAgentsFromOtherResources);
-    app.post("/dataset/:id/data-validator", auth.appendUser(), submitDwcToDataValidator)
+    app.post("/dataset/:id/data-validator", auth.userCanModifyDataset(), submitDwcToDataValidator)
 }

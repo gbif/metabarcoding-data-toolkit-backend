@@ -50,11 +50,13 @@ const processDataset = async (id, version, userName) => {
             }, {})
           }
     
-           const sampleTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders, headers?.taxonHeaders);    
            
            // get the ID terms
            const sampleId = headers?.sampleHeaders?.[0]
            const taxonId = headers?.taxonHeaders?.[0]
+
+           const sampleTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders.filter(s => s !== sampleId), headers?.taxonHeaders.filter(s => s !== taxonId));    
+
 
            const newMapping = oldMapping ? {...oldMapping, samples: {...oldMapping.samples, id: sampleId}, taxa: {...oldMapping.taxa, id: taxonId}} : {samples: {id: sampleId}, taxa: {id: taxonId}, defaultValues: defaultValueMapping}
            await writeMapping(id, version, newMapping)

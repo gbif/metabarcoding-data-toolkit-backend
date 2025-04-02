@@ -117,7 +117,7 @@ export const validate = async (id, user) => {
       }
 
       if(validationReport.sampleHeaders && validationReport.taxonHeaders ){
-        const sampeTaxonHeaderIntersection = getArrayIntersection(validationReport?.sampleHeaders, validationReport?.taxonHeaders);
+        const sampeTaxonHeaderIntersection = getArrayIntersection(validationReport?.sampleHeaders.filter(s => s !== sampleId), validationReport?.taxonHeaders).filter(t => t !== taxonId);
          if(sampeTaxonHeaderIntersection.length > 0) {
           const plural = sampeTaxonHeaderIntersection.length > 1;
           

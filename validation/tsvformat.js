@@ -79,15 +79,15 @@ export const hasIdColumn = async (path, delimiter, idName = "id") => {
 
     const columns = await readTsvHeaders(path, delimiter);
            // Accept id case insensitive
-    const term =  columns.find(c => !!c && c.toLowerCase() === idName) || columns[0]//columns.find(c => !!c && c.toLowerCase() === idName);
+    const term =  columns.find(c => !!c && c.toLowerCase() === idName) || columns?.[0]//columns.find(c => !!c && c.toLowerCase() === idName);
    let  errors = []
     if(!term){
-        console.log("# hasIdColumn ")
-        console.log(columns)
+        
         let splitted = path.split("/");
         errors.push({file: splitted[splitted.length-1], message: `No "${idName}" column found in file ${splitted[splitted.length-1]}`})
 
-    } else if(term !== "id"){
+    } else if(term?.toString()?.trim() !== idName ){
+        
         let splitted = path.split("/");
         errors.push({file: splitted[splitted.length-1], message: `No id column found in file ${splitted[splitted.length-1]}. Using column "${term}" instead. This can be changed in the mapping step.`})
     }
