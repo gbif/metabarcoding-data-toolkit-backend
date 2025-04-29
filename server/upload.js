@@ -12,7 +12,7 @@ const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     //console.log("Uploaded by "+ req?.user?.userName)
     if (!validMimeTypes.includes(file.mimetype)) {
-      if(!(file.mimetype === 'application/octet-stream' && [...hdf5FileExtensions, ...fastaFileExtensions, 'qza', 'xlsx'].includes(file.originalname.split('.').pop()))){
+      if(!(file.mimetype === 'application/octet-stream' && [...hdf5FileExtensions, ...fastaFileExtensions, 'qza', 'xlsx', 'tsv', 'csv'].includes(file.originalname.split('.').pop()))){
         console.log("Unsupported: " +file.mimetype + " " + file.originalname) 
         console.log("Uploaded by "+ req?.user?.userName)
         return cb(new Error('Unsupported file type'))
