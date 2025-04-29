@@ -96,7 +96,7 @@ export default {
                 isRequired: false
             },
             {
-                name: 'identificatioRemarks',
+                name: 'identificationRemarks',
                 description: "",
                 isRequired: false
             },
