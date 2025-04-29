@@ -70,7 +70,7 @@ export default  (app) => {
         }
     });
 
-    app.delete("/dataset/:id", auth.appendUser(), async function (req, res) {
+    app.delete("/dataset/:id", auth.userCanModifyDataset(), async function (req, res) {
         if (!req.params.id) {
             res.sendStatus(404);
         } else if(req?.user){
@@ -82,7 +82,7 @@ export default  (app) => {
                 } 
                 const report = await getProcessingReport(req.params.id, version)
 
-                if(report && report?.createdBy === req?.user?.userName){
+                if(report/*  && report?.createdBy === req?.user?.userName */){
                     if(report?.publishing?.gbifDatasetKey){
                         try {
                             console.log("delete at UAT")
@@ -93,13 +93,13 @@ export default  (app) => {
                             console.log(error)
                         }
                     }
-                    await writeProcessingReport(req.params.id, version, {...report, deletedAt: new Date().toISOString()})
+                    await writeProcessingReport(req.params.id, version, {...report, deletedAt: new Date().toISOString(), deletedBy: req?.user?.userName})
                     await db.deleteUserDataset(req?.user?.userName, req.params.id)
                     res.sendStatus(200)
-                } else if(report){
+                } /* else if(report){
                     // Only the user that created it should be able to mark as deleted
                     res.sendStatus(403)
-                } else {
+                } */ else {
                     res.sendStatus(404)
                 }
                 

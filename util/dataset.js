@@ -181,6 +181,9 @@ export const getDatasetLog = async (id, version) =>  {
         if(report?.metadata?.createdAt && report?.metadata?.createdBy){
             events.push({created: new Date(report?.metadata?.createdAt), data: [`${new Date(report?.metadata?.createdAt).toUTCString()}: Metadata (EML) saved by ${report?.metadata?.createdBy}`]})
         }
+        if(report?.deletedAt && report?.deletedBy){
+            events.push({created: new Date(report?.deletedAt), data: [`${new Date(report?.deletedAt).toUTCString()}: Dataset deleted by ${report?.deletedBy}`]})
+        }
         return [...initLog, ...events.sort((a, b) => a?.created - b?.created).map(e => e.data).flat()].join("\n")
     } catch (error) {
         console.log(error)

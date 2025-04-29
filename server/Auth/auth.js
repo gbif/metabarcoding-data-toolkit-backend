@@ -52,7 +52,7 @@ const userCanModifyDataset = () => {
                     }
 
                 } else {
-                    console.log('userCanModifyDataset false')
+                   // console.log('userCanModifyDataset false')
                     res.removeHeader('token');
                     delete req.user;
                     res.sendStatus(403)
