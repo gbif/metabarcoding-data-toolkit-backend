@@ -22,6 +22,11 @@ const emof = hasEmof ? `<extension encoding="UTF-8" fieldsTerminatedBy="\\t" lin
     <field index="5" term="http://rs.tdwg.org/dwc/terms/measurementMethod"/>
     <field index="6" term="http://rs.iobis.org/obis/terms/measurementTypeID"/>
     <field index="7" term="http://rs.iobis.org/obis/terms/measurementUnitID"/>
+    <field index="8" term="http://rs.iobis.org/obis/terms/measurementValueID"/>
+    <field index="9" term="http://rs.tdwg.org/dwc/terms/measurementDeterminedDate"/>
+    <field index="10" term="http://rs.tdwg.org/dwc/terms/measurementDeterminedBy"/>
+    <field index="11" term="http://rs.tdwg.org/dwc/terms/measurementRemarks"/>
+
 </extension>` : "";
 
 return `<archive

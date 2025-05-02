@@ -8,7 +8,7 @@ import streamReader from '../util/streamReader.js';
 
 const DEFAULT_UNIT = "DNA sequence reads";
 const BASIS_OF_RECORD = "MATERIAL_SAMPLE";
-export const otherEMOFfields = ["measurementUnit", "measurementAccuracy", "measurementMethod", "measurementTypeID","measurementUnitID"]
+export const otherEMOFfields = ["measurementUnit", "measurementAccuracy", "measurementMethod", "measurementTypeID","measurementUnitID", "measurementValueID", "measurementDeterminedDate", "measurementDeterminedBy", "measurementRemarks"]
 
 const writeMetaXml = async (hasEmof, occCore, dnaExt, path, ignoreHeaderLines ) =>  await fs.promises.writeFile(`${path}/archive/meta.xml`, util.metaXml(occCore, dnaExt, hasEmof, ignoreHeaderLines))
 
