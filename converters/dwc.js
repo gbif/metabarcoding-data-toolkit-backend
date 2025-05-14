@@ -46,21 +46,51 @@ const getDefaultTermsForMetaXml = (biomData, dnaTerms, occTerms) => {
   return {occDefaultTerms, dnaDefaultTerms, keySet}
 }
 
-const writeEmofForRow = (emofStream, termMapping, sample, occurrenceId) => {
-
-  try {
-    let dataString = "";
-    const measurements = termMapping?.measurements || {};
-    Object.keys(measurements).forEach(m => {
-/*       dataString += `${occurrenceId}\t${measurements[m]?.measurementType || ""}\t${sample?.metadata?.[m]}\t${measurements[m]?.measurementUnit || ""}\t${measurements[m]?.measurementAccurracy || ""}\t${measurements[m]?.measurementMethod || ""}\n`
- */   
-      dataString += `${occurrenceId}\t${measurements[m]?.measurementType || ""}\t${sample?.metadata?.[m]}\t${otherEMOFfields.map(f => measurements[m]?.[f] || "").join("\t")}\n`
-})
-    emofStream.write(dataString)
-  } catch (error) {
-    console.log("EMOF ERROR")
-    console.log(error)
+function writeOneMillionTimes(writer, data, encoding, callback) {
+  var i = 1000000;
+  write();
+  function write() {
+    var ok = true;
+    do {
+      i -= 1;
+      if (i === 0) {
+        // last time!
+        writer.write(data, encoding, callback);
+      } else {
+        // see if we should continue, or wait
+        // don't pass the callback, because we're not done yet.
+        ok = writer.write(data, encoding);
+      }
+    } while (i > 0 && ok);
+    if (i > 0) {
+      // had to stop early!
+      // write some more once it drains
+      writer.once('drain', write);
+    }
   }
+}
+
+const writeEmofForRow = async (emofStream, termMapping, sample, occurrenceId) => {
+
+  return new Promise((resolve, reject) => {
+    try {
+      let dataString = "";
+    const measurements = termMapping?.measurements || {};
+    Object.keys(measurements).forEach(m => { 
+      dataString += `${occurrenceId}\t${measurements[m]?.measurementType || ""}\t${sample?.metadata?.[m]}\t${otherEMOFfields.map(f => measurements[m]?.[f] || "").join("\t")}\n`
+    })
+
+    if (!emofStream.write(dataString)) {
+      emofStream.once('drain', resolve)
+    }
+    else {
+      resolve()
+    }
+    } catch (error) {
+      reject(error)
+    }
+    
+  })
 }
 
 export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {}, defaultValues: {}, measurements: {}}, path, processFn = (progress, total, message, summary) => {}, ignoreHeaderLines = 1) => {
@@ -151,26 +181,32 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
         }
       })
       occStream.on('error', (err) => {
+        console.log('occ stream')
+        console.log(err)
         reject(err)
       })
       dnaStream.on('error', (err) => {
+        console.log('dnaStream')
+        console.log(err)
         reject(err)
       })
       emofStream?.on('error', (err) => {
+        console.log("EMOF err ")
+        console.log(err)
         reject(err)
       })
 
       const getDataForTermfromSample = (sample, terms) => terms.filter(term => term.name in sample.metadata).map(term => sample.metadata[term.name] || "").join("\t");
       const getDataForTermFromTaxon = (taxon, terms) => terms.filter(term => !sampleHeaderSet.has(term.name) && term.name in taxon.metadata).map(term => taxon.metadata[term.name] || "").join("\t"); 
-        biomData.columns.forEach((c, cidx) => {
+       
+/*       biomData.columns.forEach((c, cidx) => {
            const rowData = biomData.getDataColumn(c.id);
-           rowData.forEach((r, i) => {
+           rowData.forEach(async (r, i) => {
               if(Number(r) > 0){
                   // row = taxon, column = sample 
                   const row = biomData.rows[i];
                   const occurrenceId = `${c.id}:${row.id}`;
                   const sampleId = c.id;
-  
                   let occSampleData = getDataForTermfromSample(c, relevantOccTerms);         
                   let occTaxonData = getDataForTermFromTaxon(row, relevantOccTerms);
                   
@@ -180,7 +216,7 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
                   let dnaTaxonData = getDataForTermFromTaxon(row, relevantDnaTerms);
                   dnaStream.write(`${occurrenceId}\t${dnaSampleData ? `${dnaSampleData}\t` : ""}${dnaTaxonData ? dnaTaxonData : ""}\n`);
                  if(hasEmof){
-                  writeEmofForRow(emofStream, termMapping, c, occurrenceId)
+                  await writeEmofForRow(emofStream, termMapping, c, occurrenceId)
                  }
                   
                   occurrenceCount ++
@@ -188,7 +224,37 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
            })
            processFn(cidx, biomData.columns.length, 'Writing DWC Ocurrences and DNA sequences')
   
-        })
+        }) */
+           for (const [cidx, c] of biomData.columns.entries()) {
+            const rowData = biomData.getDataColumn(c.id);
+        
+            for (const [i, r] of rowData.entries()) {
+                if (Number(r) > 0) {
+                    // row = taxon, column = sample 
+                    const row = biomData.rows[i];
+                    const occurrenceId = `${c.id}:${row.id}`;
+                    const sampleId = c.id;
+        
+                    let occSampleData = getDataForTermfromSample(c, relevantOccTerms);         
+                    let occTaxonData = getDataForTermFromTaxon(row, relevantOccTerms);
+        
+                    occStream.write(`${occurrenceId}\t${occSampleData ? `${occSampleData}\t` : ""}${occTaxonData ? `${occTaxonData}\t` : ""}${_.get(c, 'metadata.readCount','')}\t${DEFAULT_UNIT}\t${r}\t${DEFAULT_UNIT}\t${BASIS_OF_RECORD}\t${sampleId}\n`);
+        
+                    let dnaSampleData = getDataForTermfromSample(c, relevantDnaTerms);         
+                    let dnaTaxonData = getDataForTermFromTaxon(row, relevantDnaTerms);
+        
+                    dnaStream.write(`${occurrenceId}\t${dnaSampleData ? `${dnaSampleData}\t` : ""}${dnaTaxonData ? dnaTaxonData : ""}\n`);
+        
+                    if (hasEmof) {
+                        await writeEmofForRow(emofStream, termMapping, c, occurrenceId);
+                    }
+        
+                    occurrenceCount++;
+                }
+            }
+        
+            processFn(cidx, biomData.columns.length, 'Writing DWC Ocurrences and DNA sequences');
+        }
         occStream.close()
         dnaStream.close()
         emofStream?.close()
