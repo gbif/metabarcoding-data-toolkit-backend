@@ -164,6 +164,27 @@ export const getDatasetLog = async (id, version) =>  {
             events.push({created: steps[0]?.time ? new Date(steps[0]?.time) : null, data:log})
 
         }
+        if(_.isArray(report?.dwcdp?.steps)){
+            let log = []
+            const steps = report?.dwcdp?.steps;
+            if(report?.dwcdp?.createdBy && steps[0]?.time){
+                log.push(`${new Date(steps[0]?.time).toUTCString()}: Generated DWC data package, started by user ${report?.dwcdp?.createdBy}`)
+            }
+            steps.forEach((s, idx ) => {
+                if(!!s?.time && !!s?.name){
+                    log.push(`${new Date(s?.time).toUTCString()}: ${_.startCase(s?.name)}`)
+                };
+               
+                
+                if(s?.status === "failed" && !!s?.message){
+                    log.push(`${!!steps?.[idx +1]?.time ? new Date(steps?.[idx +1]?.time).toUTCString() +":" : spacer+" "} ${s?.message})}`)
+                }
+                log.push(`${!!steps?.[idx +1]?.time ? new Date(steps?.[idx +1]?.time).toUTCString() +":" : spacer+" "} ${_.startCase(s?.status)} ${_.startCase(s?.name)}`)
+
+            })
+            events.push({created: steps[0]?.time ? new Date(steps[0]?.time) : null, data:log})
+
+        }
         if(report?.publishing?.validationId){
            // log.push(`${report?.publishing?.validationCreatedAt ? new Date(report?.publishing?.validationCreatedAt).toUTCString() + ": ":  spacer+"  "}User ${report?.publishing?.validationCreatedBy} created validation report: https://www.gbif.org/tools/data-validator/${report?.publishing?.validationId}`)
            events.push({created: new Date(report?.publishing?.validationCreatedAt), data: [`${report?.publishing?.validationCreatedAt ? new Date(report?.publishing?.validationCreatedAt).toUTCString() + ": ":  spacer+"  "}Validation report created: https://www.gbif.org/tools/data-validator/${report?.publishing?.validationId} (User ${report?.publishing?.validationCreatedBy})`]})

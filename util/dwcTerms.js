@@ -41,6 +41,48 @@ const getTerms = async (schema) => {
 //  console.log(xmlFile)
 }
 
+export const getDwcDPtermsFromSchema = async (schema)=> {
+  try {
+    const fileList = await fs.promises.readdir(`${__dirname}/../schemas/dwcdp`);
+    const jsonFile = fileList.find((file) => file.split('.')[0] === schema);
+    const jsonString = await fs.promises.readFile(`${__dirname}/../schemas/dwcdp/${jsonFile}`);
+    return new Promise((resolve, reject) => {
+      try{
+        const entity =JSON.parse(jsonString)
+      resolve(new Map(entity.fields.map(f => [_.get(f, 'name'), f])))
+      } catch (e){
+        reject(e)
+      }
+      
+    })
+    } catch (error) {
+      console.log("ERROR in getDwcDPtermsFromSchema "+__dirname)
+      console.log(error)
+    }
+}
+
+export const getDwcDPSchema = async (schema)=> {
+  try {
+    const fileList = await fs.promises.readdir(`${__dirname}/../schemas/dwcdp`);
+    const jsonFile = fileList.find((file) => file.split('.')[0] === schema);
+    const jsonString = await fs.promises.readFile(`${__dirname}/../schemas/dwcdp/${jsonFile}`);
+    return new Promise((resolve, reject) => {
+      try{
+        const entity =JSON.parse(jsonString)
+      resolve(entity)
+      } catch (e){
+        reject(e)
+      }
+      
+    })
+    } catch (error) {
+      console.log("ERROR in getDwcDPSchema "+__dirname)
+      console.log(error)
+    }
+}
+
+
+
 // module.exports = getTerms;
 export default getTerms;
 //getTerms('dwc_occurrence').then(json => console.log(json))

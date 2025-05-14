@@ -10,6 +10,7 @@ import queue from 'async/queue.js';
 import STEPS from '../enum/processingSteps.js'
 import runningJobs from '../workers/runningJobs.js';
 import { dwcQueue } from './dwc.js';
+import { dwcDpQueue } from './dwcdp.js';
 
 const q = queue(async (options) => {
     const id = options?.id;
@@ -267,7 +268,7 @@ export default (app) => {
 
     app.get("/running-processes", async (req, res) => {
         try {
-            res.json({biom: q.running(), dwc:  dwcQueue.running()}) 
+            res.json({biom: q.running(), dwc:  dwcQueue.running(), dwcdp: dwcDpQueue.running()}) 
         } catch (error) {
             console.log(error)
             res.sendStatus(500)

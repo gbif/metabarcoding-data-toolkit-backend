@@ -7,10 +7,10 @@ export const md5 = (content) => {
   }/* const dwcTerms = require('./dwcTerms')
 const metaXml = require('./metaXml')
 const streamReader = require('./streamReader') */
-import dwcTerms from './dwcTerms.js';
+import dwcTerms, {getDwcDPtermsFromSchema, getDwcDPSchema} from './dwcTerms.js';
 import metaXml from './metaXml.js';
 import { fastaFileExtensions } from "../enum/validFileExtensions.js"
-
+import dataPackageJson from "./dataPackageJson.js"
 
 export const sanitizeSequence = (sequence) => sequence.replace(/[^ACGTURYSWKMBDHVNacgturyswkmbdhvn]/g, '').toUpperCase();
 export const getAsvID = (sequence) => {
@@ -135,11 +135,14 @@ export const isFastaFile = (fileName) => typeof fileName === "string" ?  fastaFi
 export default {
     metaXml,
     dwcTerms,
+    getDwcDPtermsFromSchema,
     objectSwap,
     md5,
     getMetaDataRow,
     getTaxonomyArray,
     getYargs,
     partitionArray,
-    isFastaFile
+    isFastaFile,
+    dataPackageJson,
+    getDwcDPSchema
 }

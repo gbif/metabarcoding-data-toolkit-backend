@@ -10,6 +10,7 @@ import validation from './validation.js'
 import metadata from './eml.js';
 import processing from './process.js'
 import dwc from './dwc.js'
+import dwcdp from './dwcdp.js'
 import terms from './terms.js';
 import enums from './enum.js';
 import datasets from './datasets.js';
@@ -65,6 +66,8 @@ metadata(app)
 processing(app)
 // add routes for dwc generation
 dwc(app)
+// add routes for dwcdp generation
+dwcdp(app)
 // add routes for terms
 terms(app)
 // add routes for enums

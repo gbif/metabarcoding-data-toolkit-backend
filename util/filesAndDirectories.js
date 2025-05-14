@@ -83,6 +83,8 @@ export const writeMapping = async (id, version, mapping) => {
   await fs.promises.writeFile(`${config.dataStorage}${id}/${version}/mapping.json`, JSON.stringify(mapping, null, 2));
 }
 
+
+
 export const writeMetricsToFile = async (id, version, metrics) => {
   await fs.promises.writeFile(`${config.dataStorage}${id}/${version}/metrics.json`, JSON.stringify(metrics, null, 2));
 }
@@ -182,6 +184,24 @@ export const zipDwcArchive = (id, version) => {
         `zip -r ${config.dataStorage}${id}/${version}/archive.zip *`,
         {
           cwd: `${config.dataStorage}${id}/${version}/archive`,
+        },
+        function (err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        }
+      );
+    });
+  };
+
+  export const zipDwcDatapackage = (id, version) => {
+    return new Promise((resolve, reject) => {
+      child_process.exec(
+        `zip -r ${config.dataStorage}${id}/${version}/dwc-dp.zip *`,
+        {
+          cwd: `${config.dataStorage}${id}/${version}/dwc-dp`,
         },
         function (err) {
           if (err) {
@@ -314,6 +334,8 @@ const resetFilesAndProcessingStepsInReport = async (id, version) => {
         delete report?.filesAvailable;
         delete report?.steps;
         delete report?.dwc;
+        delete report?.dwcdp;
+
         delete report?.summary;
       //  console.log("Write report")
      //   console.log(report)
@@ -338,6 +360,7 @@ export const wipeGeneratedFilesAndResetProccessing = async (id, version) => {
         }
         
       }
+      await wipeGeneratedDwcDpFiles(id, version)
       await resetFilesAndProcessingStepsInReport(id, version)
       resolve(`Cleaned directories`)
     } catch (error) {
@@ -359,6 +382,25 @@ export const wipeGeneratedDwcFiles = async (id, version) => {
         }
         
       }
+      resolve(`Cleaned directories`)
+    } catch (error) {
+      reject(error)
+    }
+      
+})
+
+}
+
+export const wipeGeneratedDwcDpFiles = async (id, version) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+        const exists = await fileExists(id, version, 'dwc-dp.zip')
+        if(exists){
+          await deleteFile(id, version, 'dwc-dp.zip')
+        }
+        await fs.promises.rm(`${config.dataStorage}${id}/${version}/dwc-dp`, {recursive: true, force: true})
+        
+      
       resolve(`Cleaned directories`)
     } catch (error) {
       reject(error)
