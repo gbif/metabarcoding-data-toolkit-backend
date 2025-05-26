@@ -13,7 +13,7 @@ import { assignTaxonomy } from '../classifier/index.js';
 import config from '../config.js';
 
 
-const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
+const processDataset = async (id, version, systemShouldAssignTaxonomy, skipSimiliarityPlots) => {
     try {
         console.log("Processing dataset "+id + " version "+version)
         console.log("config.dataStorage "+config.dataStorage)
@@ -91,7 +91,7 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
     await addReadCounts(biom, updateStatusOnCurrentStep)
     stepFinished('addReadCounts')
     await writeBiomFormats(biom, id, version)
-    await writeMetrics(id, version)
+    await writeMetrics(id, version, skipSimiliarityPlots)
 
     finishedJobSuccesssFully('success')
     } catch (error) {
@@ -104,9 +104,8 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy) => {
 
 try {
 const yargs = getYargs()
-const {id, version, assigntaxonomy} = yargs;
-
- processDataset(id, version, assigntaxonomy)
+const {id, version, assigntaxonomy, skipsimiliarityplots} = yargs;
+ processDataset(id, version, assigntaxonomy, skipsimiliarityplots)
 } catch (error) {
     console.log(error)
 }

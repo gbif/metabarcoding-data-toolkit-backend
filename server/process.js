@@ -44,10 +44,10 @@ const q = queue(async (options) => {
 }, 3)
 
 
-const pushJob = async (id, assignTaxonomy, user) => {
+const pushJob = async ({id, assignTaxonomy, user, skipSimiliarityPlots}) => {
     let version;
 
-    let newJob = { id: id, processedBy: user?.userName, assignTaxonomy: assignTaxonomy, filesAvailable: [], steps: [{ status: 'queued', time: Date.now() }] }
+    let newJob = { id: id, processedBy: user?.userName, assignTaxonomy: assignTaxonomy, skipSimiliarityPlots: skipSimiliarityPlots, filesAvailable: [], steps: [{ status: 'queued', time: Date.now() }] }
     try {
         version = await getCurrentDatasetVersion(id);
        const existingReport = await getDataset(id, version);
@@ -164,8 +164,8 @@ export default (app) => {
                 // Make sure a job is not already running
                 if (!runningJobs.has(req.params.id)) {
                     let assignTaxonomy = req?.query?.assignTaxonomy && (req?.query?.assignTaxonomy === true || req?.query?.assignTaxonomy === "true" )
-                    
-                    pushJob(req.params.id, assignTaxonomy, req?.user );
+                    let skipSimiliarityPlots = req?.query?.skipSimiliarityPlots && (req?.query?.skipSimiliarityPlots === true || req?.query?.skipSimiliarityPlots === "true" )
+                    pushJob({id:req.params.id, assignTaxonomy, user:req?.user, skipSimiliarityPlots} );
                     res.sendStatus(201)
                 } else {
                     res.sendStatus(302)

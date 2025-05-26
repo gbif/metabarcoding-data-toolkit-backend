@@ -86,7 +86,13 @@ export const processDataset = (id, version, job) => {
         console.log("Worker "+worker)
         console.log("FORK "+__dirname + '/' + worker)
         console.log(process.argv)
-        const args = job?.assignTaxonomy ? [...process.argv,'--id', id, '--version', version, '--assigntaxonomy',  job?.assignTaxonomy] : [...process.argv, '--id', id, '--version', version];
+        let args = /* job?.assignTaxonomy ?  */[...process.argv,'--id', id, '--version', version] /* : [...process.argv, '--id', id, '--version', version]; */
+        if(job?.assignTaxonomy){
+            args = [...args, '--assigntaxonomy', job?.assignTaxonomy]
+        }
+        if(job?.skipSimiliarityPlots){
+            args = [...args, '--skipsimiliarityplots', job?.skipSimiliarityPlots]
+        }
        console.log(args)
         const work = fork(__dirname + '/' + worker, args);
         console.log("Worker got started")

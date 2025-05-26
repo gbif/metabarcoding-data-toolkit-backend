@@ -502,7 +502,7 @@ export const getSampleIds = (f) => {
    
 }
 
-export const getMetrics = async (hdf5file, processFn = (progress, total, message, summary) => {}) => {
+export const getMetrics = async (hdf5file, processFn = (progress, total, message, summary) => {}, skipSimiliarityPlots = false) => {
     try {
         if(!h5wasm){
             await init()
@@ -516,18 +516,25 @@ export const getMetrics = async (hdf5file, processFn = (progress, total, message
         let temporalScope;
         let geographicScope;
         let taxonomicScope;
-        try {
-            jaccard = getDataForDissimilarityPlot(processFn, sparseMatrix, 'jaccard', sampleIds)
-        } catch (error) {
-            console.log("Not able to generate Jaccard index")
-            console.log(error)
+        if(!skipSimiliarityPlots){
+                try {
+                jaccard = getDataForDissimilarityPlot(processFn, sparseMatrix, 'jaccard', sampleIds)
+                    } catch (error) {
+                        console.log("Not able to generate Jaccard index")
+                        console.log(error)
+                    }
+            try {
+                brayCurtis = getDataForDissimilarityPlot(processFn, sparseMatrix, 'bray-curtis', sampleIds, getReadCountPrSample(f))
+                    } catch (error) {
+                        console.log("Not able to generate Bray-Curtis index")
+                        console.log(error)
+                    }
+        } else {
+            console.log("Skipping similarity plots")
+            jaccard = null;
+            brayCurtis = null;
         }
-        try {
-            brayCurtis = getDataForDissimilarityPlot(processFn, sparseMatrix, 'bray-curtis', sampleIds, getReadCountPrSample(f))
-        } catch (error) {
-            console.log("Not able to generate Bray-Curtis index")
-            console.log(error)
-        }
+        
 
         try {
             temporalScope = getTemporalScope(f);
