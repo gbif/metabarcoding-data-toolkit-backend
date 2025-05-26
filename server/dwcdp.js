@@ -184,8 +184,8 @@ export default  (app) => {
 
             try {
                 const report = await getDwcDpProcess(req, res)
-                if (report?.dwc?.steps) {
-                    const filteredSteps = report?.dwc?.steps.filter(s => s?.status !== 'pending' && !!s?.name)
+                if (report?.dwcdp?.steps) {
+                    const filteredSteps = report?.dwcdp?.steps.filter(s => s?.status !== 'pending' && !!s?.name)
                     res.json(filteredSteps[filteredSteps.length -1])
                 } else {
                     res.sendStatus(404)

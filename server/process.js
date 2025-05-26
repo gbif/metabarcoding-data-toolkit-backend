@@ -73,6 +73,8 @@ const pushJob = async ({id, assignTaxonomy, user, skipSimiliarityPlots}) => {
        // let version = await getCurrentDatasetVersion(id);
         await wipeGeneratedFilesAndResetProccessing(id, version)
         delete newJob.dwc;
+        delete newJob.dwcdp;
+        delete newJob.metrics;
         runningJobs.set(id, newJob)
         q.push({ id: id, createdBy: user?.userName }, async (error, result) => {
             if (error) {
