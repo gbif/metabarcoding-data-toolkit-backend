@@ -83,6 +83,14 @@ curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/process' \
   -H 'Authorization: Bearer <AUTHORIZATION_TOKEN>' \
 ````
 
+It is possible to skip generation of ordination plots by adding a parameter:
+
+````
+curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/process?skipSimiliarityPlots=true' \
+  -X 'POST' \
+  -H 'Authorization: Bearer <AUTHORIZATION_TOKEN>' \
+````
+
 The processing status can be retrieved:
 
 ````
@@ -154,3 +162,17 @@ curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/register-in-gbif-prod?o
 ````
 
 This will return a `GBIF_PROD_DATASET_KEY` for gbif.org. The dataset will be published and available at `https://www.gbif.org/dataset/<GBIF_PROD_DATASET_KEY>`
+
+## Generating a DWC datapackage (optional)
+
+````
+curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/dwc-dp' \
+  -X 'POST' \
+  -H 'Authorization: Bearer <AUTHORIZATION_TOKEN>'
+````
+
+The DWC datapackage processing status can be retrieved:
+````
+curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/dwcdp-status' | jq .status
+````
+
