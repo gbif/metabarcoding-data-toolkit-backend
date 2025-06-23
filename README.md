@@ -61,6 +61,22 @@ curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/file-types' \
 
 You can now re-run the validation to verify that the files have been properly mapped to entities.
 
+Should you need to delete an uploaded file, this can be done like in this example, which will delete the file `taxonomy.tsv` :
+
+````
+curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/file/taxonomy.tsv' \
+  -X 'DELETE' \
+  -H 'Authorization: Bearer <AUTHORIZATION_TOKEN>'
+````
+
+Adding files to an existing dataset is also possible. In this example we are re-uploading `taxonomy.tsv`:
+
+````
+curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/upload' \
+  -X 'PUT' \
+  -F 'tables=@/Path/to/taxonomy.tsv'  \
+  -H 'Authorization: Bearer <AUTHORIZATION_TOKEN>'
+````
 
 ## Mapping field names (tsv headers) to Darwin Core terms
 
