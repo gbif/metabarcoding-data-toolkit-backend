@@ -23,7 +23,7 @@ In the examples below, the base url of the API is assumed to be `https://mdt.gbi
 ## Authentication
 In order to operate the Metabarcoding Data Toolkit through the API, you need to login and get a token:
 
-`curl -u username:@password 'https://mdt.gbif.org/service/auth/login' | jq .token`
+`curl -u username:password 'https://mdt.gbif.org/service/auth/login' | jq .token`
 
 This will give you an `AUTHORIZATION_TOKEN` valid for 30 minutes,
 
