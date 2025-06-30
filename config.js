@@ -6,13 +6,13 @@ import base64 from 'base-64';
 // import {getYargs} from './util/index.js'
 const gbifBaseUrl = {
     prod: "https://api.gbif.org/v1/",
-    uat: "https://api.gbif-uat.org/v1/"
+    test: "https://api.gbif-test.org/v1/"
 }
 
 const gbifRegistryBaseUrl = {
     prod: 'https://registry-api.gbif.org/',
-    uat: 'https://registry-api.gbif-uat.org/',
-    local: 'https://registry-api.gbif-uat.org/'
+    test: 'https://registry-api.gbif-test.org/',
+    local: 'https://registry-api.gbif-test.org/'
 }
 const getYargs = () =>  process.argv.reduce((acc, curr, idx) => {
     if(curr?.startsWith('--')){
@@ -45,7 +45,7 @@ try {
     const yargs = getYargs()
     const creds = fs.readFileSync(`${yargs.credentials || '../somefakepathfortesting/gbifCredentials.json'}`,
     { encoding: 'utf8', flag: 'r' });
-     gbifCredentials = JSON.parse(creds) 
+     gbifCredentials = JSON.parse(creds)
      gbifCredentials.uatAuth = `Basic ${base64.encode(gbifCredentials.uatPublishingOrganizationKey + ":" + gbifCredentials.uatOrganizationToken)}`
      gbifCredentials.organizationFilePath = yargs.organizationfile;
      if(!!yargs?.port){
@@ -82,16 +82,16 @@ const config = {
         gbifBaseUrl,
         gbifRegistryBaseUrl,
         blastService: "http://blast.gbif-dev.org",
-        uatInstallationKey: gbifCredentials?.uatInstallationKey, 
-        uatPublishingOrganizationKey: gbifCredentials?.uatPublishingOrganizationKey,  
+        uatInstallationKey: gbifCredentials?.uatInstallationKey,
+        uatPublishingOrganizationKey: gbifCredentials?.uatPublishingOrganizationKey,
      /*    uatUsername: gbifCredentials?.uatUsername,
         uatPassword: gbifCredentials?.uatPassword, */
         uatAuth: gbifCredentials.uatAuth ,
         prodInstallationKey:  gbifCredentials?.prodInstallationKey,
         gbifGbrdsBaseUrl: {
-            prod: 'https://gbrds.gbif-uat.org/',
-            uat: 'https://gbrds.gbif-uat.org/',
-            local: 'https://gbrds.gbif-uat.org/'
+            prod: 'https://gbrds.gbif-test.org/',
+            uat: 'https://gbrds.gbif-test.org/',
+            local: 'https://gbrds.gbif-test.org/'
         },
         organizationFilePath: gbifCredentials.organizationFilePath,
         title: gbifCredentials?.title,
@@ -99,9 +99,9 @@ const config = {
         frontendUrl: gbifCredentials?.frontendUrl,
 	    backendProxyUrl: gbifCredentials?.backendProxyUrl
     },
-    uat: {
+    test: {
         expressPort: gbifCredentials?.port,
-        env: 'uat',
+        env: 'test',
         prodPublishingEnabled: gbifCredentials?.prodPublishingEnabled,
         nodeKey: gbifCredentials.nodeKey,
         termsLink: gbifCredentials?.termsLink,
@@ -115,15 +115,15 @@ const config = {
         gbifBaseUrl,
         gbifRegistryBaseUrl,
         blastService: "http://blast.gbif-dev.org",
-        uatInstallationKey: gbifCredentials?.uatInstallationKey, 
-        uatPublishingOrganizationKey: gbifCredentials?.uatPublishingOrganizationKey,  
+        uatInstallationKey: gbifCredentials?.uatInstallationKey,
+        uatPublishingOrganizationKey: gbifCredentials?.uatPublishingOrganizationKey,
         /* uatUsername: gbifCredentials?.uatUsername,
         uatPassword: gbifCredentials?.uatPassword, */
         uatAuth: gbifCredentials.uatAuth,
         prodInstallationKey:  gbifCredentials?.prodInstallationKey,
         gbifGbrdsBaseUrl: {
             prod: 'https://gbrds.gbif-uat.org/', // if the env is UAT, we do not publish to prod
-            uat: 'https://gbrds.gbif-uat.org/'
+            uat: 'https://gbrds.gbif-test.org/'
         },
         organizationFilePath: gbifCredentials.organizationFilePath,
         title: gbifCredentials?.title,
@@ -152,15 +152,15 @@ const config = {
         gbifBaseUrl,
         gbifRegistryBaseUrl,
         blastService: "http://blast.gbif-dev.org",
-        uatInstallationKey: gbifCredentials?.uatInstallationKey, 
-        uatPublishingOrganizationKey: gbifCredentials?.uatPublishingOrganizationKey,  
+        uatInstallationKey: gbifCredentials?.uatInstallationKey,
+        uatPublishingOrganizationKey: gbifCredentials?.uatPublishingOrganizationKey,
        /*  uatUsername: gbifCredentials?.uatUsername,
         uatPassword: gbifCredentials?.uatPassword, */
         uatAuth: gbifCredentials.uatAuth,
         prodInstallationKey:  gbifCredentials?.prodInstallationKey,
         gbifGbrdsBaseUrl: {
             prod: 'https://gbrds.gbif.org/', // This can publish to prod
-            uat: 'https://gbrds.gbif-uat.org/'
+            uat: 'https://gbrds.gbif-test.org/'
         },
         organizationFilePath: gbifCredentials.organizationFilePath,
         title: gbifCredentials?.title,
