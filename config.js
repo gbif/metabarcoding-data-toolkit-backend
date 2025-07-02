@@ -122,8 +122,8 @@ const config = {
         uatAuth: gbifCredentials.uatAuth,
         prodInstallationKey:  gbifCredentials?.prodInstallationKey,
         gbifGbrdsBaseUrl: {
-            prod: 'https://gbrds.gbif-uat.org/', // if the env is UAT, we do not publish to prod
-            uat: 'https://gbrds.gbif-test.org/'
+            prod: 'https://gbrds.gbif-test.org/', // if the env is UAT, we do not publish to prod
+            test: 'https://gbrds.gbif-test.org/'
         },
         organizationFilePath: gbifCredentials.organizationFilePath,
         title: gbifCredentials?.title,
