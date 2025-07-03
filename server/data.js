@@ -1,5 +1,5 @@
 import {getSamplesForGeoJson, getSamples, getSampleMetadataTypes, getSampleTaxonomy, getSampleIndicesForOtu, getSampleMetadataColumn, getTaxonomyForAllSamples, getMetrics} from "../metrics/index.js"
-import { fileAtPathExists, getCurrentDatasetVersion, readMetrics, writeMetricsToFile} from '../util/filesAndDirectories.js'
+import { fileAtPathExists, getCurrentDatasetVersion, readMetrics, writeMetricsToFile, getProcessingReport} from '../util/filesAndDirectories.js'
 import { filterAndValidateCoordinates } from "../validation/coordinates.js"
 import config from '../config.js'
 
@@ -122,10 +122,21 @@ export default  (app) => {
                   if(!version){
                       version = await getCurrentDatasetVersion(req.params.id)
                   } 
-                const data =  await getTaxonomyForAllSamples(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`)
+                  const report = await getProcessingReport(req.params.id, version);
+                 
+                try {
+                   const data = await getTaxonomyForAllSamples(`${config.dataStorage}${req.params.id}/${version}/data.biom.h5`, report?.summary)
             
                  // console.log(eml)data
-                  res.send(data) 
+                  res.send(data)  
+                } catch (error) {
+                    if(error.message.includes("Cardinality limit exceeded")){
+                        res.status(413).send({ error: error.message })
+                    } else {
+                        throw error;
+                    }
+                }  
+
               } catch (error) {
                   console.log(error)
                   res.sendStatus(500)

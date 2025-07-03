@@ -38,7 +38,7 @@ import axios from '../node_modules/axios/index.js';
  const q = queue(async (options) => {
     const {id, version} = options;
     console.log("Options "+ JSON.stringify(options) )
-    let job = runningJobs.get(id);
+    let job = runningJobs.get(`${id}:dwc`);
     job.summary = {};
     try {
         job.version = version;
@@ -77,7 +77,7 @@ import axios from '../node_modules/axios/index.js';
 }, 3)
 
 const pushJob = async (id, version, user) => {
-    runningJobs.set(id, { id: id, version, createdBy: user?.userName, steps: [{ status: 'queued', time: Date.now() }] })
+    runningJobs.set(`${id}:dwc`, { id: id, version, createdBy: user?.userName, steps: [{ status: 'queued', time: Date.now() }] })
     // remove previously generated files
     await wipeGeneratedDwcFiles(id, version)
     try {
@@ -85,14 +85,14 @@ const pushJob = async (id, version, user) => {
         q.push({ id: id, version }, async (error, result) => {
             if (error) {
                 console.log(error);
-                let job = runningJobs.get(id);
+                let job = runningJobs.get(`${id}:dwc`);
                 job.steps.push({ status: 'failed', message: error?.message, time: Date.now() })
-                runningJobs.delete(id)
+                runningJobs.delete(`${id}:dwc`)
                 //runningJobs.set(id, {...runningJobs.get(id), status: 'failed'} )
                // throw error
             } else {
                 try {
-                    let job = runningJobs.get(id);
+                    let job = runningJobs.get(`${id}:dwc`);
                 job.steps.push({ status: 'finished', time: Date.now() })
                 let report = await getProcessingReport(id, version);
                 let file = {
@@ -105,7 +105,7 @@ const pushJob = async (id, version, user) => {
                 report.filesAvailable = report.filesAvailable ?    [...report.filesAvailable.filter(f => f?.format !== "DWC"), file] :[file]
                 report.dwc = job;
                 await writeProcessingReport(id, version, report)
-                runningJobs.delete(id)
+                runningJobs.delete(`${id}:dwc`)
                 } catch (error) {
                     console.log(error)
                 }
@@ -131,7 +131,7 @@ const processDwc = async function (req, res) {
             } 
             console.log("Version "+version)
                 // Make sure a job is not already running
-                if(!runningJobs.has(req.params.id)){
+                if(!runningJobs.has(`${req.params.id}:dwc`)){
                     console.log("Push job")
                     pushJob(req.params.id, version, req.user );
                     res.sendStatus(201)
@@ -311,7 +311,7 @@ export const addNetwork = async (req, res) => {
 const getDwcProcess = async (req, res) => {
    
         // this will only find jobs that are being processed -will need
-        const job = runningJobs.get(req.params.id);
+        const job = runningJobs.get(`${req.params.id}:dwc`);
 
         try {
             let version = req.params?.version;

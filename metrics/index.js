@@ -1,6 +1,9 @@
 import _ from 'lodash'
 import { mean, std } from 'mathjs'
 import {getDataForDissimilarityPlot} from './ordination.js'
+
+export const CARDINALITY_LIMIT = 1000 * 70000; // 1000 samples, 70000 OTUs
+
 let h5wasm;
 
 
@@ -180,7 +183,12 @@ export const getSampleCompositions = async  (hdf5file) => {
 
 }
 
-export const getTaxonomyForAllSamples = async  (hdf5file) => {
+export const getTaxonomyForAllSamples = async  (hdf5file, summary) => {
+
+    if((summary?.sampleCount || 0) * (summary?.taxonCount || 0) > CARDINALITY_LIMIT){
+        // Handle cardinality limit exceeded
+        throw new Error(`Cardinality limit exceeded: ${CARDINALITY_LIMIT}`);
+    }
 
     if(!h5wasm){
         await init()
@@ -504,20 +512,41 @@ export const getSampleIds = (f) => {
 
 export const getMetrics = async (hdf5file, processFn = (progress, total, message, summary) => {}, skipSimiliarityPlots = false) => {
     try {
+        console.log(`Getting metrics for ${hdf5file}`)
         if(!h5wasm){
+            console.log(`Init h5wasm`)
             await init()
         }
+        console.log(`Waiting for h5wasm to be ready`)
         await h5wasm?.ready;
+         console.log(`h5wasm ready`)
+        console.log(`Opening file ${hdf5file}`)
         let f = new h5wasm.File(hdf5file, "r");
-        const sampleIds = getSampleIds(f);
-        const sparseMatrix = getSparseMatrix(f);
+        console.log(`File opened`)
+        let sampleIds;
+        let sparseMatrix;
         let jaccard;
         let brayCurtis;
         let temporalScope;
         let geographicScope;
         let taxonomicScope;
         if(!skipSimiliarityPlots){
-                try {
+            console.log("Generating similarity plots")
+              try {
+                sampleIds = getSampleIds(f);
+                console.log(`Sample ids: ${sampleIds.length}`)
+            } catch (error) {
+                console.log("Not able to get sample ids")
+                console.log(error)
+            }
+            try {
+                sparseMatrix = getSparseMatrix(f);
+                console.log(`Sparse matrix: ${sparseMatrix.length} rows`)
+            } catch (error) {
+                console.log("Not able to get sparse matrix")
+                console.log(error)
+            }
+            try {
                 jaccard = getDataForDissimilarityPlot(processFn, sparseMatrix, 'jaccard', sampleIds)
                     } catch (error) {
                         console.log("Not able to generate Jaccard index")
@@ -537,6 +566,7 @@ export const getMetrics = async (hdf5file, processFn = (progress, total, message
         
 
         try {
+            console.log("Generating temporal scope")
             temporalScope = getTemporalScope(f);
         } catch (error) {
             console.log("Not able to generate temporalScope")
@@ -544,6 +574,7 @@ export const getMetrics = async (hdf5file, processFn = (progress, total, message
         }
 
         try {
+            console.log("Generating geographic scope")
             geographicScope = getGeographicScope(f)
         } catch (error) {
             console.log("Not able to generate geographicScope")
@@ -551,22 +582,31 @@ export const getMetrics = async (hdf5file, processFn = (progress, total, message
         }
 
         try {
+            console.log("Generating taxonomic scope")
             taxonomicScope = getTaxonomicScope(f)
 
         } catch (error) {
             console.log("Not able to generate taxonomicScope")
             console.log(error)
         }
-
-
-
+        console.log("getTotalReads")
+        const totalReads= getTotalReads(f);
+        console.log("getOtuCountPrSample")
+        const otuCountPrSample = getOtuCountPrSample(f);
+         console.log("getReadSumPrSample")
+        const readSumPrSample = getReadSumPrSample(f);
+        console.log("getDNAsequenceLength")
+        const sequenceLength = getDNAsequenceLength(f);
+        console.log("getSampleCountPrOtu")
+        const sampleCountPrOtu = getSampleCountPrOtu(f);
+        console.log("Generating metrics onbject")
         const metrics =  {
            
-            totalReads: getTotalReads(f),
-            otuCountPrSample: getOtuCountPrSample(f),
-            readSumPrSample: getReadSumPrSample(f),
-            sequenceLength: getDNAsequenceLength(f),
-            sampleCountPrOtu: getSampleCountPrOtu(f)
+            totalReads,
+            otuCountPrSample,
+            readSumPrSample,
+            sequenceLength,
+            sampleCountPrOtu
         }
         if(metrics?.sampleCountPrOtu?.singletonsTotal){
             metrics.singletonsTotal = metrics?.sampleCountPrOtu?.singletonsTotal

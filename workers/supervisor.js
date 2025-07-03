@@ -193,14 +193,14 @@ export const createDwc = (id, version, job) => {
                 console.log("BEGIN STEP "+message?.payload)
                 
                 job.steps.push({ ...DWCSTEPS[message?.payload], status: 'processing', time: Date.now() })
-                runningJobs.set(id, { ...job });
+                runningJobs.set(`${id}:dwc`, { ...job });
             }
 
             if(message?.type === 'stepFinished' && message?.payload){
                 const finishedJob = job.steps.find(s => s.name === message?.payload);
                 finishedJob.status = 'finished'
                
-                runningJobs.set(id, { ...job });
+                runningJobs.set(`${id}:dwc`, { ...job });
                
             }
 
@@ -234,8 +234,8 @@ export const createDwc = (id, version, job) => {
                 if (message?.payload?.summary) {
                     job.summary = { ...job.summary, ...message?.payload?.summary }
                 }
-                runningJobs.set(id, { ...job });
-            } 
+                runningJobs.set(`${id}:dwc`, { ...job });
+            }
 
         })
 
@@ -251,15 +251,15 @@ export const createDwcDP = (id, version, job) => {
                 console.log("BEGIN STEP "+message?.payload)
                 
                 job.steps.push({ ...DWCDPSTEPS[message?.payload], status: 'processing', time: Date.now() })
-                runningJobs.set(id, { ...job });
+                runningJobs.set(`${id}:dwcdp`, { ...job });
             }
 
             if(message?.type === 'stepFinished' && message?.payload){
                 const finishedJob = job.steps.find(s => s.name === message?.payload);
                 finishedJob.status = 'finished'
-               
-                runningJobs.set(id, { ...job });
-               
+
+                runningJobs.set(`${id}:dwcdp`, { ...job });
+
             }
 
             if(message?.type === 'finishedJobSuccesssFully'){
@@ -284,8 +284,8 @@ export const createDwcDP = (id, version, job) => {
                 if (message?.payload?.summary) {
                     job.summary = { ...job.summary, ...message?.payload?.summary }
                 }
-                runningJobs.set(id, { ...job });
-            } 
+                runningJobs.set(`${id}:dwcdp`, { ...job });
+            }
 
         })
     })

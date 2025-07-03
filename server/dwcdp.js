@@ -12,7 +12,7 @@ import { createDwcDP} from '../workers/supervisor.js'
 
  const q = queue(async (options) => {
     const {id, version} = options;
-    let job = runningJobs.get(`${id}:DWCDP`);
+    let job = runningJobs.get(`${id}:dwcdp`);
     job.summary = {};
     try {
         job.version = version;
@@ -29,7 +29,7 @@ import { createDwcDP} from '../workers/supervisor.js'
 }, 3)
 
 const pushJob = async (id, version, user) => {
-    const dwcdpID = `${id}:DWCDP`
+    const dwcdpID = `${id}:dwcdp`
     runningJobs.set(dwcdpID, { id: id, version, createdBy: user?.userName, steps: [{ status: 'queued', time: Date.now() }] })
     // remove previously generated files
         await wipeGeneratedDwcDpFiles(id, version)
@@ -87,7 +87,7 @@ const processDwcDP = async function (req, res) {
             } 
             console.log("Version "+version)
                 // Make sure a job is not already running
-                if(!runningJobs.has(`${req.params.id}:DWCDP`)){
+                if(!runningJobs.has(`${req.params.id}:dwcdp`)){
                     console.log("Push job")
                     pushJob(req.params.id, version, req.user );
                     res.sendStatus(201)

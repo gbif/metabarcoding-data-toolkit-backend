@@ -5,6 +5,7 @@ import transform from "stream-transform";
 import util from "../util/index.js"
 import streamReader from '../util/streamReader.js';
 //const {streamReader} = util;
+import {once} from 'events';
 
 const DEFAULT_UNIT = "DNA sequence reads";
 const BASIS_OF_RECORD = "MATERIAL_SAMPLE";
@@ -225,25 +226,29 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
            processFn(cidx, biomData.columns.length, 'Writing DWC Ocurrences and DNA sequences')
   
         }) */
-           for (const [cidx, c] of biomData.columns.entries()) {
+           for await (const [cidx, c] of biomData.columns.entries()) {
             const rowData = biomData.getDataColumn(c.id);
         
-            for (const [i, r] of rowData.entries()) {
+            for await (const [i, r] of rowData.entries()) {
                 if (Number(r) > 0) {
                     // row = taxon, column = sample 
                     const row = biomData.rows[i];
                     const occurrenceId = `${c.id}:${row.id}`;
                     const sampleId = c.id;
         
-                    let occSampleData = getDataForTermfromSample(c, relevantOccTerms);         
-                    let occTaxonData = getDataForTermFromTaxon(row, relevantOccTerms);
+                    const occSampleData = getDataForTermfromSample(c, relevantOccTerms);         
+                    const occTaxonData = getDataForTermFromTaxon(row, relevantOccTerms);
         
-                    occStream.write(`${occurrenceId}\t${occSampleData ? `${occSampleData}\t` : ""}${occTaxonData ? `${occTaxonData}\t` : ""}${_.get(c, 'metadata.readCount','')}\t${DEFAULT_UNIT}\t${r}\t${DEFAULT_UNIT}\t${BASIS_OF_RECORD}\t${sampleId}\n`);
+                   if(!occStream.write(`${occurrenceId}\t${occSampleData ? `${occSampleData}\t` : ""}${occTaxonData ? `${occTaxonData}\t` : ""}${_.get(c, 'metadata.readCount','')}\t${DEFAULT_UNIT}\t${r}\t${DEFAULT_UNIT}\t${BASIS_OF_RECORD}\t${sampleId}\n`)){
+                    await once(occStream, 'drain');
+                   };
         
-                    let dnaSampleData = getDataForTermfromSample(c, relevantDnaTerms);         
-                    let dnaTaxonData = getDataForTermFromTaxon(row, relevantDnaTerms);
+                    const dnaSampleData = getDataForTermfromSample(c, relevantDnaTerms);         
+                    const dnaTaxonData = getDataForTermFromTaxon(row, relevantDnaTerms);
         
-                    dnaStream.write(`${occurrenceId}\t${dnaSampleData ? `${dnaSampleData}\t` : ""}${dnaTaxonData ? dnaTaxonData : ""}\n`);
+                    if(!dnaStream.write(`${occurrenceId}\t${dnaSampleData ? `${dnaSampleData}\t` : ""}${dnaTaxonData ? dnaTaxonData : ""}\n`)){
+                        await once(dnaStream, 'drain');
+                    };
         
                     if (hasEmof) {
                         await writeEmofForRow(emofStream, termMapping, c, occurrenceId);

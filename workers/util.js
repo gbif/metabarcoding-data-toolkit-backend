@@ -154,7 +154,7 @@ export const writeBiomFormats = async (biom, id, version) => {
 
 export const writeMetrics = async (id, version, skipSimiliarityPlots) => {
    // console.log('Generating metrics')
-   // console.log(`Generating metrics skipSimiliarityPlots? ${skipSimiliarityPlots}`)
+   console.log(`Generating metrics skipSimiliarityPlots? ${skipSimiliarityPlots}`)
     beginStep('generateMetrics')
     const metrics =  await getMetrics(`${config.dataStorage}${id}/${version}/data.biom.h5`, updateStatusOnCurrentStep, skipSimiliarityPlots);
     await writeMetricsToFile(id, version, metrics)

@@ -4,6 +4,7 @@ import parse from 'csv-parse';
 import transform from "stream-transform";
 import util from "../util/index.js"
 import emofToEventAssertion from '../enum/emofToEventAssertion.js';
+import {once} from 'events';
 
 const getEmofData = (evt, termMapping ) => {
     // eventAssertionStream.write(`${["assertionID", "eventID", "assertionValue", ...Object.keys(emofToEventAssertion).map(k => emofToEventAssertion[k])].join("\t")}\n`)
@@ -233,8 +234,22 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
         } catch (error) {
             console.log("Could not write datapackage.json at "+path)
         }
+for await (const [idx, d] of biomData.data.entries()) {
+   try {
+                const nucleotideAnalysisID = `${biomData.columns[d[1]].id}:${biomData.rows[d[0]].id}`;
+               if (!analysisStream.write(`${[nucleotideAnalysisID,  biomData.columns[d[1]].id, molecularProtocolID, biomData.rows[d[0]].id, d[2], biomData.columns[d[1]].metadata.readCount].join("\t")}\n`)) {
+                   await once(analysisStream, 'drain');
+               }
+                rowsWritten ++;
+                processFn(rowsWritten, rowTotal, 'Writing data')
 
-        biomData.data.forEach((d, idx) => {
+            } catch (e){
+                console.log(e)
+                console.log(`biomData.data idx ${idx}`)
+                console.log(d)
+            }
+}
+      /*   biomData.data.forEach((d, idx) => {
             try {
                 const nucleotideAnalysisID = `${biomData.columns[d[1]].id}:${biomData.rows[d[0]].id}`;
                 analysisStream.write(`${[nucleotideAnalysisID,  biomData.columns[d[1]].id, molecularProtocolID, biomData.rows[d[0]].id, d[2], biomData.columns[d[1]].metadata.readCount].join("\t")}\n`)
@@ -247,10 +262,27 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
                 console.log(d)
             }
 
-        })                 
+        })  */                
         analysisStream.close()
+for await (const [idx, r] of biomData.rows.entries()) {
+    try {
+                if(!sequenceStream.write(`${[r.id, r.metadata.DNA_sequence].join("\t")}\n`)){
+                    await once(sequenceStream, 'drain');
+                }
+                rowsWritten ++;
+                if(!identificationStream.write(`${[r.id, r.id, r.metadata?.[higherClassificationRank] || "", higherClassificationRank, ...identificationRelevantTaxonHeaders.map(h => r.metadata[h] || "" )].join("\t")}\n`)){
+                    await once(identificationStream, 'drain');
+                }
+                rowsWritten ++;
+                processFn(rowsWritten, rowTotal, 'Writing data')
 
-        biomData.rows.forEach((r, idx) => {
+            } catch (e){
+                console.log(e)
+                console.log(`biomData.rows idx ${idx}`)
+                console.log(d)
+            }
+}
+       /*  biomData.rows.forEach((r, idx) => {
             try {
                 sequenceStream.write(`${[r.id, r.metadata.DNA_sequence].join("\t")}\n`)
                 rowsWritten ++;
@@ -264,10 +296,27 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
                 console.log(d)
             }
 
-        }) 
+        })  */
         sequenceStream.close()
         identificationStream.close()
-        biomData.columns.forEach((c, idx) => {
+        for await (const [idx, c] of biomData.columns.entries()) {
+           try {
+                if(!eventStream.write(`${[c.id, ...eventRelevantSampleHeaders.map(h => c.metadata[h] || "") ].join("\t")}\n`)){
+                   await once(eventStream, 'drain');
+               }
+
+                if(hasEmof && !!eventAssertionStream){
+                    eventAssertionStream.write(getEmofData(c, termMapping))
+                }
+                rowsWritten ++;
+                processFn(rowsWritten, rowTotal, 'Writing data')
+            } catch (e) {
+                console.log(e)
+                console.log(`biomData.columns idx ${idx}`)
+                console.log(c) 
+            }
+        }
+      /*   biomData.columns.forEach((c, idx) => {
             try {
                 eventStream.write(`${[c.id, ...eventRelevantSampleHeaders.map(h => c.metadata[h] || "") ].join("\t")}\n`)
 
@@ -281,7 +330,7 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
                 console.log(`biomData.columns idx ${idx}`)
                 console.log(c) 
             }
-        })
+        }) */
         if(hasEmof && !!eventAssertionStream){
             eventAssertionStream.close()
         }
