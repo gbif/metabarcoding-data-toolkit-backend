@@ -371,10 +371,10 @@ export const wipeGeneratedFilesAndResetProccessing = async (id, version) => {
 
 }
 
-export const wipeGeneratedDwcFiles = async (id, version) => {
+export const wipeGeneratedDwcFiles = async (id, version, files = ['archive.zip', 'archive/dna.txt', 'archive/occurrence.txt','archive/emof.txt', 'archive/meta.xml']) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const files = ['archive.zip', 'archive/dna.txt', 'archive/occurrence.txt','archive/emof.txt', 'archive/meta.xml'];
+     // const files = ['archive.zip', 'archive/dna.txt', 'archive/occurrence.txt','archive/emof.txt', 'archive/meta.xml'];
       for (let f of files) {
         const exists = await fileExists(id, version, f)
         if(exists){
@@ -391,11 +391,11 @@ export const wipeGeneratedDwcFiles = async (id, version) => {
 
 }
 
-export const wipeGeneratedDwcDpFiles = async (id, version) => {
+export const wipeGeneratedDwcDpFiles = async (id, version, keepZip = false) => {
   return new Promise(async (resolve, reject) => {
     try {
         const exists = await fileExists(id, version, 'dwc-dp.zip')
-        if(exists){
+        if(exists && !keepZip){
           await deleteFile(id, version, 'dwc-dp.zip')
         }
         await fs.promises.rm(`${config.dataStorage}${id}/${version}/dwc-dp`, {recursive: true, force: true})

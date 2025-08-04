@@ -4,7 +4,7 @@ import { getYargs } from '../util/index.js';
 import config from '../config.js'
 
 import _ from 'lodash'
-import {  readBiom, zipDwcDatapackage, readMapping } from '../util/filesAndDirectories.js'
+import {  readBiom, zipDwcDatapackage, readMapping, wipeGeneratedDwcDpFiles } from '../util/filesAndDirectories.js'
 import {updateStatusOnCurrentStep, beginStep, stepFinished,  finishedJobSuccesssFully, finishedJobWithError } from "./util.js"
 
 
@@ -32,6 +32,12 @@ const createDwcDp = async (id, version) => {
 
         await zipDwcDatapackage(id, version)
         stepFinished('zipDataPackage')
+
+        beginStep('cleanUp')
+        console.log("Clean up files from worker")
+        await wipeGeneratedDwcDpFiles(id, version, true)
+        stepFinished('cleanUp')
+        
         finishedJobSuccesssFully('success')
 
     } catch (error) {

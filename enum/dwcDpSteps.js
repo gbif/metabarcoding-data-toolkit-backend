@@ -17,6 +17,12 @@ const STEPS = {
         "message": "Zipping files",
         "messagePending": "Zip files"
       },
+      "cleanUp": {
+        "name": "cleanUp",
+        "status": "pending",
+        "message": "Cleaning up files",
+        "messagePending": "Clean up files"
+      }
 
 }
 
