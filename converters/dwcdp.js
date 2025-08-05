@@ -7,7 +7,6 @@ import emofToEventAssertion from '../enum/emofToEventAssertion.js';
 import {once} from 'events';
 
 const getEmofData = (evt, termMapping ) => {
-    // eventAssertionStream.write(`${["assertionID", "eventID", "assertionValue", ...Object.keys(emofToEventAssertion).map(k => emofToEventAssertion[k])].join("\t")}\n`)
 
     try {
          let dataString = "";
@@ -20,6 +19,17 @@ const getEmofData = (evt, termMapping ) => {
         console.log(error)
         return ""
     }
+}
+
+const writeEmofData = async (evt, termMapping, eventAssertionStream) => {
+ 
+        const measurements = termMapping?.measurements || {};
+        for await (const [idx, m] of biomData.rows.entries()){
+            if(!eventAssertionStream.write(`${[evt.id+":"+idx, evt.id, (evt.metadata[m] || ""), ...Object.keys(emofToEventAssertion).map(k => measurements[m][k])].join("\t")}\n`)){
+                await once(eventAssertionStream, 'drain');
+            }
+              
+        } 
 }
 
 const getDpResources = async ({hasEmof, analysisHeaders, sequenceHeaders, identificationHeaders, eventHeaders, protocolHeaders, eventAssertionHeaders}) => {
@@ -249,20 +259,7 @@ for await (const [idx, d] of biomData.data.entries()) {
                 console.log(d)
             }
 }
-      /*   biomData.data.forEach((d, idx) => {
-            try {
-                const nucleotideAnalysisID = `${biomData.columns[d[1]].id}:${biomData.rows[d[0]].id}`;
-                analysisStream.write(`${[nucleotideAnalysisID,  biomData.columns[d[1]].id, molecularProtocolID, biomData.rows[d[0]].id, d[2], biomData.columns[d[1]].metadata.readCount].join("\t")}\n`)
-                rowsWritten ++;
-                processFn(rowsWritten, rowTotal, 'Writing data')
-
-            } catch (e){
-                console.log(e)
-                console.log(`biomData.data idx ${idx}`)
-                console.log(d)
-            }
-
-        })  */                
+                     
         analysisStream.close()
 for await (const [idx, r] of biomData.rows.entries()) {
     try {
@@ -282,21 +279,7 @@ for await (const [idx, r] of biomData.rows.entries()) {
                 console.log(d)
             }
 }
-       /*  biomData.rows.forEach((r, idx) => {
-            try {
-                sequenceStream.write(`${[r.id, r.metadata.DNA_sequence].join("\t")}\n`)
-                rowsWritten ++;
-                identificationStream.write(`${[r.id, r.id, r.metadata?.[higherClassificationRank] || "", higherClassificationRank, ...identificationRelevantTaxonHeaders.map(h => r.metadata[h] || "" )].join("\t")}\n`)
-                rowsWritten ++;
-                processFn(rowsWritten, rowTotal, 'Writing data')
-
-            } catch (e){
-                console.log(e)
-                console.log(`biomData.rows idx ${idx}`)
-                console.log(d)
-            }
-
-        })  */
+       
         sequenceStream.close()
         identificationStream.close()
         for await (const [idx, c] of biomData.columns.entries()) {
@@ -306,9 +289,10 @@ for await (const [idx, r] of biomData.rows.entries()) {
                }
 
                 if(hasEmof && !!eventAssertionStream){
-                  if(!eventAssertionStream.write(getEmofData(c, termMapping))){
+                  await writeEmofData(c, termMapping, eventAssertionStream)
+                  /* if(!eventAssertionStream.write(getEmofData(c, termMapping))){
                     await once(eventAssertionStream, 'drain');
-                  }
+                  } */
                     
                 }
                 rowsWritten ++;
