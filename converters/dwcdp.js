@@ -306,7 +306,10 @@ for await (const [idx, r] of biomData.rows.entries()) {
                }
 
                 if(hasEmof && !!eventAssertionStream){
-                    eventAssertionStream.write(getEmofData(c, termMapping))
+                  if(!eventAssertionStream.write(getEmofData(c, termMapping))){
+                    await once(eventAssertionStream, 'drain');
+                  }
+                    
                 }
                 rowsWritten ++;
                 processFn(rowsWritten, rowTotal, 'Writing data')
