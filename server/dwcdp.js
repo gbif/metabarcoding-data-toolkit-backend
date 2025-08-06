@@ -117,7 +117,7 @@ const processDwcDP = async function (req, res) {
 const getDwcDpProcess = async (req, res) => {
    
         // this will only find jobs that are being processed -will need
-        const dwcdpID = `${req.params.id}:DWCDP`
+        const dwcdpID = `${req.params.id}:dwcdp`
 
         const job = runningJobs.get(dwcdpID);
 
