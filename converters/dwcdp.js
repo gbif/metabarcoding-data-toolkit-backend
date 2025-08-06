@@ -234,6 +234,7 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
         } catch (error) {
             console.log("Could not write datapackage.json at "+path)
         }
+        let maxMemoryUsed = process.memoryUsage().heapUsed
 for await (const [idx, d] of biomData.data.entries()) {
    try {
                 const nucleotideAnalysisID = `${biomData.columns[d[1]].id}:${biomData.rows[d[0]].id}`;
@@ -241,7 +242,19 @@ for await (const [idx, d] of biomData.data.entries()) {
                    await once(analysisStream, 'drain');
                }
                 rowsWritten ++;
-                processFn(rowsWritten, rowTotal, 'Writing data')
+                if(rowsWritten % 1000 === 0){
+                    processFn(rowsWritten, rowTotal, 'Writing data')
+                    if(process.memoryUsage().heapUsed > maxMemoryUsed){
+                        maxMemoryUsed = process.memoryUsage().heapUsed;
+                        
+                    }
+                }
+                if(rowsWritten % 100000 === 0){
+                    console.log(`Rows written: ${rowsWritten} of ${rowTotal}`)
+                    console.log(`Current Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`)
+                    console.log(`Max Memory usage: ${Math.round(maxMemoryUsed / 1024 / 1024)} MB`)
+                }
+               // processFn(rowsWritten, rowTotal, 'Writing data')
 
             } catch (e){
                 console.log(e)
