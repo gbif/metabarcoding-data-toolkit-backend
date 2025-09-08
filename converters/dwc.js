@@ -75,16 +75,21 @@ const writeEmofForRow = async (emofStream, termMapping, sample, occurrenceId) =>
 
   return new Promise((resolve, reject) => {
     try {
+     
       let dataString = "";
     const measurements = termMapping?.measurements || {};
     Object.keys(measurements).forEach(m => { 
-      dataString += `${occurrenceId}\t${measurements[m]?.measurementType || ""}\t${sample?.metadata?.[m]}\t${otherEMOFfields.map(f => measurements[m]?.[f] || "").join("\t")}\n`
+      const hasValue = sample?.metadata?.[m] || sample?.metadata?.[m] === 0;
+
+      if (hasValue) {
+        dataString += `${occurrenceId}\t${measurements[m]?.measurementType || ""}\t${sample?.metadata?.[m]}\t${otherEMOFfields.map(f => measurements[m]?.[f] || "").join("\t")}\n`
+      }
+
     })
 
     if (!emofStream.write(dataString)) {
       emofStream.once('drain', resolve)
-    }
-    else {
+    } else {
       resolve()
     }
     } catch (error) {
