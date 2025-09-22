@@ -79,7 +79,7 @@ const writeEmofForRow = async (emofStream, termMapping, sample, occurrenceId) =>
       let dataString = "";
     const measurements = termMapping?.measurements || {};
     Object.keys(measurements).forEach(m => { 
-      const hasValue = sample?.metadata?.[m] || sample?.metadata?.[m] === 0;
+      const hasValue = (sample?.metadata?.[m] && !["null", "na","n/a"].includes(sample?.metadata?.[m]?.toString().toLowerCase())) || sample?.metadata?.[m] === 0;
 
       if (hasValue) {
         dataString += `${occurrenceId}\t${measurements[m]?.measurementType || ""}\t${sample?.metadata?.[m]}\t${otherEMOFfields.map(f => measurements[m]?.[f] || "").join("\t")}\n`
