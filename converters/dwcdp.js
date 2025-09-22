@@ -13,7 +13,10 @@ const getEmofData = (evt, termMapping ) => {
          let dataString = "";
         const measurements = termMapping?.measurements || {};
             Object.keys(measurements).forEach((m, idx) => {
-              dataString += `${[evt.id+":"+idx, evt.id, (evt.metadata[m] || ""), ...Object.keys(emofToEventAssertion).map(k => measurements[m][k])].join("\t")}\n`
+            const hasValue = (evt.metadata?.[m] && !["null", "na","n/a"].includes(evt.metadata?.[m]?.toString().toLowerCase())) || evt.metadata?.[m] === 0;
+              if (hasValue) {
+                dataString += `${[evt.id+":"+idx, evt.id, (evt.metadata[m] || ""), ...Object.keys(emofToEventAssertion).map(k => measurements[m][k])].join("\t")}\n`
+                }
         })
         return dataString;
     } catch (error) {
