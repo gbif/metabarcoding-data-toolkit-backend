@@ -36,6 +36,16 @@ export default ({hasEventAssertion = false, resources}) => (JSON.stringify({
   "name": "dwc-data-package",
   "title": "Darwin Core Data Package",
   "description": "A data package containing Darwin Core related tables for molecular data.",
-  "resources": !!resources ? resources : hasEventAssertion ? [...defaultResources, eventAssertionBlock] : defaultResources
+  "resources": !!resources ? resources : hasEventAssertion ? [...defaultResources, eventAssertionBlock] : defaultResources,
+  "dialect": {
+        "delimiter": "\t",
+        "quoteChar": "\"",
+        "lineTerminator": "\n",
+        "header": true,
+        "doubleQuote": true,
+        "skipInitialSpace": false,
+        "commentChar": "#",
+        "caseSensitiveHeader": false
+      }
 }, null, 2))
 
