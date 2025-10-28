@@ -3,7 +3,7 @@
 export default [
     {
         name: "coi",
-        database: "BOLD Public Database v2023-03-12"
+        database: "BOLD Public Database v2025-10-17"
     },
     {
        name:  "its",
@@ -23,7 +23,7 @@ export default [
     },
     {
         name: "12s",
-        database: "MitoFish v3.91"
+        database: "MitoFish v41"
     },
     {
         name: "18s",
