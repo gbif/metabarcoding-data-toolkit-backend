@@ -215,7 +215,7 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
         analysisStream.write(`${analysisHeaders.join("\t")}\n`)
         const sequenceHeaders = ["nucleotideSequenceID", "sequence"]
         sequenceStream.write(`${sequenceHeaders.join("\t")}\n`)
-        const identificationHeaders = ["identificationID", "nucleotideSequenceID", "higherClassificationName", "higherClassificationRank", ...identificationRelevantTaxonHeaders]
+        const identificationHeaders = ["identificationID", "nucleotideSequenceID", ...identificationRelevantTaxonHeaders]
         identificationStream.write(`${identificationHeaders.join("\t")}\n`)
         const eventHeaders = ["eventID", ...eventRelevantSampleHeaders]
         eventStream.write(`${eventHeaders.join("\t")}\n`)
@@ -287,7 +287,7 @@ for await (const [idx, r] of biomData.rows.entries()) {
                     await once(sequenceStream, 'drain');
                 }
                 rowsWritten ++;
-                if(!identificationStream.write(`${[r.id, r.id, r.metadata?.[higherClassificationRank] || "", higherClassificationRank, ...identificationRelevantTaxonHeaders.map(h => r.metadata[h] || "" )].join("\t")}\n`)){
+                if(!identificationStream.write(`${[r.id, r.id, ...identificationRelevantTaxonHeaders.map(h => r.metadata[h] || "" )].join("\t")}\n`)){
                     await once(identificationStream, 'drain');
                 }
                 rowsWritten ++;
