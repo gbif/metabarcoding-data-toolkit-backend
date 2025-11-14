@@ -213,9 +213,9 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
         // Write headers
         const analysisHeaders = ["nucleotideAnalysisID",  "eventID", "molecularProtocolID", "nucleotideSequenceID", "readCount", "totalReadCount"];
         analysisStream.write(`${analysisHeaders.join("\t")}\n`)
-        const sequenceHeaders = ["nucleotideSequenceID", "nucleotideSequence"]
+        const sequenceHeaders = ["nucleotideSequenceID", "sequence"]
         sequenceStream.write(`${sequenceHeaders.join("\t")}\n`)
-        const identificationHeaders = ["identificationID", "basedOnNucleotideSequenceID", "higherClassificationName", "higherClassificationRank", ...identificationRelevantTaxonHeaders]
+        const identificationHeaders = ["identificationID", "nucleotideSequenceID", "higherClassificationName", "higherClassificationRank", ...identificationRelevantTaxonHeaders]
         identificationStream.write(`${identificationHeaders.join("\t")}\n`)
         const eventHeaders = ["eventID", ...eventRelevantSampleHeaders]
         eventStream.write(`${eventHeaders.join("\t")}\n`)
@@ -282,6 +282,7 @@ for await (const [idx, d] of biomData.data.entries()) {
         analysisStream.close()
 for await (const [idx, r] of biomData.rows.entries()) {
     try {
+                
                 if(!sequenceStream.write(`${[r.id, r.metadata.DNA_sequence].join("\t")}\n`)){
                     await once(sequenceStream, 'drain');
                 }
