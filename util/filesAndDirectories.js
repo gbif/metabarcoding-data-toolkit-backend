@@ -196,8 +196,8 @@ export const zipDwcArchive = (id, version) => {
     });
   };
 
-  export const zipDwcDatapackage = (id, version) => {
-    return new Promise((resolve, reject) => {
+  export const zipDwcDatapackage = (id, version, format = "tsv") => {
+    return format === "tsv" ? new Promise((resolve, reject) => {
       child_process.exec(
         `zip -r ${config.dataStorage}${id}/${version}/dwc-dp.zip *`,
         {
@@ -211,7 +211,21 @@ export const zipDwcArchive = (id, version) => {
           }
         }
       );
-    });
+    }) : new Promise((resolve, reject) => {
+      child_process.exec(
+        `zip -r ${config.dataStorage}${id}/${version}/dwc-dp.parquet.zip *`,
+        {
+          cwd: `${config.dataStorage}${id}/${version}/parquet`,
+        },
+        function (err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        }
+      );
+    }); 
   };
 
 

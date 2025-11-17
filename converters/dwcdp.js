@@ -1,10 +1,9 @@
 import _ from 'lodash';
 import fs from 'fs';
-import parse from 'csv-parse';
-import transform from "stream-transform";
 import util from "../util/index.js"
 import emofToEventAssertion from '../enum/emofToEventAssertion.js';
 import {once} from 'events';
+
 
 const getEmofData = (evt, termMapping ) => {
     // eventAssertionStream.write(`${["assertionID", "eventID", "assertionValue", ...Object.keys(emofToEventAssertion).map(k => emofToEventAssertion[k])].join("\t")}\n`)
@@ -114,8 +113,7 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
         }
         const taxonHeaders = Object.keys(_.get(biomData, 'rows[0].metadata'));
         const sampleHeaders = Object.keys(_.get(biomData, 'columns[0].metadata'));
-        const sampleHeaderSet = new Set(sampleHeaders);
-        const taxonHeaderSet = new Set(taxonHeaders);
+        
 
         const eventTerms = await util.getDwcDPtermsFromSchema('event')
         const identificationTerms = await util.getDwcDPtermsFromSchema('identification')
@@ -153,6 +151,8 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
         let identificationStreamClosed = false;
         let protocolStreamClosed = false;
         let eventAssertionStreamClosed = !hasEmof;
+
+        
         const allStreamsClosed = () => {
             return dataPackageJsonWritten && analysisStreamClosed  && eventStreamClosed  && sequenceStreamClosed && identificationStreamClosed  && protocolStreamClosed && eventAssertionStreamClosed
         }
@@ -179,21 +179,21 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
           console.log("Sequence stream finished");
           sequenceStreamClosed = true;
           if (allStreamsClosed()) {
-            resolve();
+             resolve();
           }
         });
         identificationStream.on("finish", () => {
           console.log("Identification stream finished");
           identificationStreamClosed = true;
           if (allStreamsClosed()) {
-            resolve();
+             resolve();
           }
         });
         protocolStream.on("finish", () => {
           console.log("Protocol stream finished");
           protocolStreamClosed = true;
           if (allStreamsClosed()) {
-            resolve();
+             resolve();
           }
         });    
         if(hasEmof && !!eventAssertionStream){
@@ -201,13 +201,12 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
                 console.log("eventAssertion Stream finished");
                 eventAssertionStreamClosed = true;
                 if (allStreamsClosed()) {
-                  resolve();
+                   resolve();
                 }
               }); 
         }  
 
-        // TODO: We are not guaranteed a specific rank, we need to make a rule for a "good pick" for which higher taxon to use
-        const higherClassificationRank = "family"
+      
         // So far the MDT does not support multi-assay datasets, so there will be only one protocol
         const molecularProtocolID = 1;
         // Write headers

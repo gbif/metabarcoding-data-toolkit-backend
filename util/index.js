@@ -11,6 +11,7 @@ import dwcTerms, {getDwcDPtermsFromSchema, getDwcDPSchema} from './dwcTerms.js';
 import metaXml from './metaXml.js';
 import { fastaFileExtensions } from "../enum/validFileExtensions.js"
 import dataPackageJson from "./dataPackageJson.js"
+import {tsvToParquet} from "./tsvToParquet.js"
 
 export const sanitizeSequence = (sequence) => sequence.replace(/[^ACGTURYSWKMBDHVNacgturyswkmbdhvn]/g, '').toUpperCase();
 export const getAsvID = (sequence) => {
@@ -144,5 +145,6 @@ export default {
     partitionArray,
     isFastaFile,
     dataPackageJson,
-    getDwcDPSchema
+    getDwcDPSchema,
+    tsvToParquet
 }

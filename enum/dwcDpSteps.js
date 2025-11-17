@@ -11,6 +11,12 @@ const STEPS = {
         "message": "Writing DWC data package",
         "messagePending": "Write DWC data package"
       },
+      "parquetConversion": {
+        "name": "parquetConversion",
+        "status": "pending",
+        "message": "Write Parquet format",
+        "messagePending": "Write Parquet format"
+      },
       "zipDataPackage": {
         "name": "zipDataPackage",
         "status": "pending",

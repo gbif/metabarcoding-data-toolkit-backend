@@ -55,8 +55,15 @@ const pushJob = async (id, version, user) => {
                         size: getFileSize(`${config.dataStorage}${id}/${version}/dwc-dp.zip`), 
                         mimeType: 'application/zip'
                     }
+
+                    let parquetFile = {
+                        fileName:'dwc-dp.parquet.zip',
+                        format: "DWCDP_PARQUET",
+                        size: getFileSize(`${config.dataStorage}${id}/${version}/dwc-dp.parquet.zip`), 
+                        mimeType: 'application/zip'
+                    }
                     // Filter out previously generated DWC 
-                    report.filesAvailable = report.filesAvailable ?    [...report.filesAvailable.filter(f => f?.format !== "DWCDP"), file] :[file]
+                    report.filesAvailable = report.filesAvailable ?    [...report.filesAvailable.filter(f => !["DWCDP", "DWCDP_PARQUET"].includes(f?.format)), file, parquetFile] :[file, parquetFile]
                     report.dwcdp = job;
                 
                

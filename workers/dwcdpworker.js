@@ -1,4 +1,5 @@
 import { biomToDwcDp } from '../converters/dwcdp.js';
+import {dwcdpParquet} from '../converters/dwcdpparquet.js';
 import { getYargs } from '../util/index.js';
 
 import config from '../config.js'
@@ -26,11 +27,17 @@ const createDwcDp = async (id, version) => {
         await biomToDwcDp(biom,  mapping, `${config.dataStorage}${id}/${version}`, updateStatusOnCurrentStep)
         
         stepFinished('writeDwcDp')
+
+        beginStep('parquetConversion')
+        console.log("Begin parquet conversion from worker")
+        await dwcdpParquet( `${config.dataStorage}${id}/${version}`, mapping)
+        stepFinished('parquetConversion')
         
         beginStep('zipDataPackage')
         console.log("Begin zip archive from worker")
 
         await zipDwcDatapackage(id, version)
+        await zipDwcDatapackage(id, version, "parquet") // for parquet
         stepFinished('zipDataPackage')
 
         beginStep('cleanUp')
