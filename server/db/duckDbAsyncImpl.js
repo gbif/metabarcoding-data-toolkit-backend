@@ -3,7 +3,16 @@ import config from '../../config.js'
 import datasets from '../datasets.js';
 import { Database } from "duckdb-async";
 
-// const db = new duckdb.Database(config.duckdb);
+/* 
+This implementation uses 
+        "duckdb": "^0.10.2",
+        "duckdb-async": "^0.10.2",
+
+These are now deprecated packages.
+Use duckdb neo implementation instead, which uses the new official duckdb node api package:
+        "@duckdb/node-api": "^1.4.2-r.1",
+*/
+
 
 let db;   // = new duckdb.Database(':memory:');
 let con; // db.connect();
