@@ -51,12 +51,12 @@ const pushJob = async (id, version, user) => {
                 let report = await getProcessingReport(id, version);
                     let file = {
                         fileName:'dwc-dp.zip',
-                        format: "DWCDP",
+                        format: "DwC-DP",
                         size: getFileSize(`${config.dataStorage}${id}/${version}/dwc-dp.zip`), 
                         mimeType: 'application/zip'
                     }
                     // Filter out previously generated DWC 
-                    report.filesAvailable = report.filesAvailable ?    [...report.filesAvailable.filter(f => f?.format !== "DWCDP"), file] :[file]
+                    report.filesAvailable = report.filesAvailable ?    [...report.filesAvailable.filter(f => f?.format !== "DwC-DP"), file] :[file]
                     report.dwcdp = job;
                 
                
