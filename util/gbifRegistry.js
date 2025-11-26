@@ -143,13 +143,19 @@ export const deleteDatasetInGbifUAT = async (gbifUatKey, auth) => {
       authorization: auth
   },
     url: `${config.gbifBaseUrl.uat}dataset/${gbifUatKey}`,
-/*     headers: {
-        Authorization: auth
-    }, */
-  /*  auth: {
-        username,
-        password
-      } */
+
+  }); 
+};
+
+export const deleteDatasetInGbifPROD = async (gbifProdKey, auth) => {
+   console.log(`delete  ${config.gbifBaseUrl.prod}dataset/${gbifProdKey}`)
+  return axios({
+     method: 'delete',
+     headers: {
+      authorization: auth
+  },
+    url: `${config.gbifBaseUrl.prod}dataset/${gbifProdKey}`,
+
   }); 
 };
 

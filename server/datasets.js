@@ -4,7 +4,7 @@ import db from './db/index.js'
 import config from '../config.js';
 import { getDataset, getDatasetLog } from '../util/dataset.js';
 import {getCurrentDatasetVersion, getProcessingReport, writeProcessingReport, readMetrics} from '../util/filesAndDirectories.js'
-import {deleteDatasetInGbifUAT} from "../util/gbifRegistry.js"
+import {deleteDatasetInGbifUAT, deleteDatasetInGbifPROD} from "../util/gbifRegistry.js"
 
 
 export default  (app) => {
@@ -93,6 +93,19 @@ export default  (app) => {
                             console.log(error)
                         }
                     }
+
+
+                    if(report?.publishing?.gbifProdDatasetKey){
+                        try {
+                            console.log("delete at PROD")
+                            await deleteDatasetInGbifPROD(report?.publishing?.gbifProdDatasetKey, config.gbifUsername, config.gbifPassword)
+                            console.log("Successfully deleted at PROD")
+                        } catch (error) {
+                            console.log(`Could not delete dataset ${report?.publishing?.gbifProdDatasetKey} in the GBIF-PROD Registry`)
+                            console.log(error)
+                        }
+                    }
+
                     await writeProcessingReport(req.params.id, version, {...report, deletedAt: new Date().toISOString(), deletedBy: req?.user?.userName})
                     await db.deleteUserDataset(req?.user?.userName, req.params.id)
                     res.sendStatus(200)
