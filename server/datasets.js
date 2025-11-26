@@ -83,7 +83,7 @@ export default  (app) => {
                 const report = await getProcessingReport(req.params.id, version)
 
                 if(report/*  && report?.createdBy === req?.user?.userName */){
-                    if(report?.publishing?.gbifDatasetKey){
+                    if(report?.publishing?.gbifDatasetKey || report?.publishing?.gbifUatDatasetKey){
                         try {
                             console.log("delete at UAT")
                             await deleteDatasetInGbifUAT(report?.publishing?.gbifDatasetKey || report?.publishing?.gbifUatDatasetKey, config.gbifUsername, config.gbifPassword)
