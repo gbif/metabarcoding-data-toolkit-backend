@@ -13,9 +13,9 @@ const getItem = (e, frontendUrl) => {
     <!--  shows what changed in this version, or shows the resource description if change summary was empty  -->
     <description>${encode(e?.dataset_description)}</description>
     <author>${encode(e?.dataset_author || e?.user_name)}</author>
-    <${EDNA_NAMESPACE}:eml>${config.dwcPublicAccessUrl}${e?.dataset_id}/${e?.version}/archive/eml.xml</${EDNA_NAMESPACE}:eml>
-    <${EDNA_NAMESPACE}:dwca>${config.dwcPublicAccessUrl}${e?.dataset_id}/${e?.version}/archive.zip</${EDNA_NAMESPACE}:dwca>
-    <${EDNA_NAMESPACE}:biom>${config.dwcPublicAccessUrl}${e?.dataset_id}/${e?.version}/data.biom.h5</${EDNA_NAMESPACE}:biom>
+    <${EDNA_NAMESPACE}:eml>${config.dwcPublicAccessUrl}${e?.dataset_id}/${e?.current_version}/archive/eml.xml</${EDNA_NAMESPACE}:eml>
+    <${EDNA_NAMESPACE}:dwca>${config.dwcPublicAccessUrl}${e?.dataset_id}/${e?.current_version}/archive.zip</${EDNA_NAMESPACE}:dwca>
+    <${EDNA_NAMESPACE}:biom>${config.dwcPublicAccessUrl}${e?.dataset_id}/${e?.current_version}/data.biom.h5</${EDNA_NAMESPACE}:biom>
     <pubDate>${e.dwc_generated}</pubDate>
     <guid isPermaLink="false">${frontendUrl}/dataset/${e?.dataset_id}</guid>
     </item>

@@ -238,7 +238,6 @@ const getDatasetsOrderedByDwcCreated = async (limit, offset = 0) => {
     try {
         const reader = await con.runAndReadAll(getDatasetsOrderedByDwcCreatedStmt, {limit, offset})
         const res = reader.getRowObjectsJson();
-
         return res;
     } catch (error) {
         console.log("Error - getDatasetsOrderedByDwcCreated:")
