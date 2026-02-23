@@ -18,6 +18,7 @@ import gbifRegistry from './gbifRegistry.js';
 import mapping from './mapping.js';
 import files from './files.js';
 import data from './data.js';
+import explore from './explore.js';
 import rss from './rss.js'
 import cors from 'cors'
 import authController from './Auth/auth.controller.js'
@@ -78,6 +79,8 @@ mapping(app)
 files(app)
 // add routes for data display
 data(app)
+// add routes for parquet data exploration
+explore(app)
 // Add routes for datasets
 datasets(app)
 // Add routes for GBIF registry
