@@ -83,6 +83,49 @@ export default (app) => {
     });
 
     /**
+     * GET /dataset/:id/explore/resources
+     *
+     * Returns the names of resources whose parquet files are present on disk.
+     * Consumers should use this to avoid querying optional tables that may not
+     * exist for a given dataset (e.g. event-assertion).
+     */
+    app.get('/dataset/:id/explore/resources', async (req, res) => {
+        const datasetId = req.params.id;
+        if (!datasetId || !UUID_RE.test(datasetId)) {
+            return res.sendStatus(400);
+        }
+
+        const version = req.query.version || '1';
+        if (!VERSION_RE.test(version)) {
+            return res.sendStatus(400);
+        }
+
+        try {
+            const basePath = getParquetBasePath(datasetId, String(version));
+            const dpPath = path.join(basePath, 'datapackage.json');
+
+            if (!fs.existsSync(dpPath)) {
+                return res.sendStatus(404);
+            }
+
+            const datapackage = JSON.parse(fs.readFileSync(dpPath, 'utf8'));
+            const resolvedBase = path.resolve(basePath);
+
+            const available = datapackage.resources
+                .filter(r => {
+                    const resolved = path.resolve(path.join(basePath, r.path));
+                    return resolved.startsWith(resolvedBase) && fs.existsSync(resolved);
+                })
+                .map(r => r.name);
+
+            res.json({ resources: available });
+        } catch (error) {
+            console.log(error);
+            res.sendStatus(500);
+        }
+    });
+
+    /**
      * POST /dataset/:id/explore/query
      *
      * Body: { sql: "SELECT …", version: "1", maxRows: 50000 }
@@ -136,15 +179,20 @@ export default (app) => {
             const con = await db.connect();
 
             try {
-                // Register each parquet file as a named view
+                // Register each parquet file as a named view, skipping files that
+                // are listed in datapackage.json but not yet present on disk
+                // (some resources like event-assertion are optional).
+                const resolvedBase = path.resolve(basePath);
                 for (const resource of datapackage.resources) {
-                    const rawPath = path.join(basePath, resource.path);
-                    const resolvedPath = path.resolve(rawPath);
-                    const resolvedBase = path.resolve(basePath);
+                    const resolvedPath = path.resolve(path.join(basePath, resource.path));
 
                     // Guard against path-traversal in datapackage.json resource paths
                     if (!resolvedPath.startsWith(resolvedBase)) {
                         return res.status(422).json({ error: `Invalid resource path in datapackage: ${resource.path}` });
+                    }
+
+                    if (!fs.existsSync(resolvedPath)) {
+                        continue; // optional resource not present for this dataset
                     }
 
                     // Escape single quotes in the path (safe for DuckDB string literals)
