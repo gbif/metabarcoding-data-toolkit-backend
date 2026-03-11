@@ -94,7 +94,7 @@ export const registerStudyGbrds = async ({ednaDatasetID, auth, env, organisation
     primaryContactType: 'technical',
     ...primaryContact,
     serviceURLs: endpoint,
-    serviceTypes: 'DWC-ARCHIVE-OCCURRENCE'
+    serviceTypes: 'DWC-ARCHIVE-SAMPLING-EVENT'// 'DWC-ARCHIVE-OCCURRENCE'
    }) : 
    new URLSearchParams({
     organisationKey,
@@ -103,7 +103,7 @@ export const registerStudyGbrds = async ({ednaDatasetID, auth, env, organisation
     primaryContactType: 'technical',
     ...primaryContact,
     serviceURLs: endpoint,
-    serviceTypes: 'DWC-ARCHIVE-OCCURRENCE'
+    serviceTypes: 'DWC-ARCHIVE-SAMPLING-EVENT'// 'DWC-ARCHIVE-OCCURRENCE'
    })
 
    try {

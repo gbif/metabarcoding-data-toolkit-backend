@@ -1,6 +1,6 @@
 import {encode} from 'html-entities';
 import {otherEMOFfields} from '../converters/dwc.js';
-export default (occCore, dnaExt, hasEmof, ignoreHeaderLines = 0) => {
+const metaXml = (occCore, dnaExt, hasEmof, ignoreHeaderLines = 0) => {
 const coreTerms = occCore.filter(term => !term.default).map((term, idx) => `<field index="${idx+1}" term="${term.qualName}"/>`).join(`
 `);
 const coreDefaultValueTerms = occCore.filter(term => !!term.default).map((term, idx) => `<field default="${encode(term.default, {mode: 'nonAsciiPrintable', level: 'xml'})}" term="${term.qualName}"/>`).join(`
@@ -53,4 +53,74 @@ ${emof}
 </archive>
 `
 }
+
+export const metaXmlEventCore = (eventCore, occExt, dnaExt, hasEmof, ignoreHeaderLines = 0) => {
+const coreTerms = eventCore.filter(term => !term.default).map((term, idx) => `<field index="${idx+1}" term="${term.qualName}"/>`).join(`
+`);
+const coreDefaultValueTerms = eventCore.filter(term => !!term.default).map((term, idx) => `<field default="${encode(term.default, {mode: 'nonAsciiPrintable', level: 'xml'})}" term="${term.qualName}"/>`).join(`
+`);
+const dnaTerms = dnaExt.filter(term => !term.default).map((term, idx) => `<field index="${idx+2}" term="${term.qualName}"/>`).join(`
+`);
+const dnaDefaultValueTerms = dnaExt.filter(term => !!term.default).map((term, idx) => `<field default="${encode(term.default, {mode: 'nonAsciiPrintable', level: 'xml'})}" term="${term.qualName}"/>`).join(`
+`);
+const occTerms = occExt.filter(term => !term.default).map((term, idx) => `<field index="${idx+2}" term="${term.qualName}"/>`).join(`
+`);
+
+const occDefaultValueTerms = occExt.filter(term => !!term.default).map((term, idx) => `<field default="${encode(term.default, {mode: 'nonAsciiPrintable', level: 'xml'})}" term="${term.qualName}"/>`).join(`
+`);
+
+const emof = hasEmof ? `<extension encoding="UTF-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy='' ignoreHeaderLines="${ignoreHeaderLines}" rowType="http://rs.iobis.org/obis/terms/ExtendedMeasurementOrFact">
+<files>
+  <location>emof.txt</location>
+</files>
+<coreid index="0" />
+    <field index="1" term="http://rs.tdwg.org/dwc/terms/measurementType"/>
+    <field index="2" term="http://rs.tdwg.org/dwc/terms/measurementValue"/>
+    <field index="3" term="http://rs.tdwg.org/dwc/terms/measurementUnit"/>
+    <field index="4" term="http://rs.tdwg.org/dwc/terms/measurementAccuracy"/>
+    <field index="5" term="http://rs.tdwg.org/dwc/terms/measurementMethod"/>
+    <field index="6" term="http://rs.iobis.org/obis/terms/measurementTypeID"/>
+    <field index="7" term="http://rs.iobis.org/obis/terms/measurementUnitID"/>
+    <field index="8" term="http://rs.iobis.org/obis/terms/measurementValueID"/>
+    <field index="9" term="http://rs.tdwg.org/dwc/terms/measurementDeterminedDate"/>
+    <field index="10" term="http://rs.tdwg.org/dwc/terms/measurementDeterminedBy"/>
+    <field index="11" term="http://rs.tdwg.org/dwc/terms/measurementRemarks"/>
+
+</extension>` : "";
+
+return `<archive
+xmlns="http://rs.tdwg.org/dwc/text/" metadata="eml.xml">
+<core encoding="utf-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy="" ignoreHeaderLines="${ignoreHeaderLines}" rowType="http://rs.tdwg.org/dwc/terms/Event">
+    <files>
+        <location>event.txt</location>
+    </files>
+    <id index="0" />
+    <field index="0" term="http://rs.tdwg.org/dwc/terms/eventID"/>
+    ${coreTerms}
+    ${coreDefaultValueTerms}
+</core>
+<extension encoding="UTF-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy='' ignoreHeaderLines="${ignoreHeaderLines}" rowType="http://rs.tdwg.org/dwc/terms/Occurrence">
+<files>
+  <location>occurrence.txt</location>
+</files>
+<coreid index="0" />
+    <field index="1" term="http://rs.tdwg.org/dwc/terms/occurrenceID"/>
+    ${occTerms}
+    ${occDefaultValueTerms}
+</extension>
+<extension encoding="UTF-8" fieldsTerminatedBy="\\t" linesTerminatedBy="\\n" fieldsEnclosedBy='' ignoreHeaderLines="${ignoreHeaderLines}" rowType="http://rs.gbif.org/terms/1.0/DNADerivedData">
+<files>
+  <location>dna.txt</location>
+</files>
+<coreid index="0" />
+    <field index="1" term="http://rs.tdwg.org/dwc/terms/occurrenceID"/>
+    ${dnaTerms}
+    ${dnaDefaultValueTerms}
+</extension>
+${emof}
+</archive>
+`
+}
+
+export default metaXml;
 

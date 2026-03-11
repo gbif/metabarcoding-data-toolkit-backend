@@ -1,4 +1,6 @@
-import { biomToDwc } from '../converters/dwc.js';
+//  import { biomToDwc } from '../converters/dwc.js';
+import { biomToDwc } from '../converters/dwcEvent.js';
+
 import { getYargs } from '../util/index.js';
 
 import config from '../config.js'

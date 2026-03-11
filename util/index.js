@@ -8,7 +8,7 @@ export const md5 = (content) => {
 const metaXml = require('./metaXml')
 const streamReader = require('./streamReader') */
 import dwcTerms, {getDwcDPtermsFromSchema, getDwcDPSchema} from './dwcTerms.js';
-import metaXml from './metaXml.js';
+import metaXml, {metaXmlEventCore} from './metaXml.js';
 import { fastaFileExtensions } from "../enum/validFileExtensions.js"
 import dataPackageJson from "./dataPackageJson.js"
 import {tsvToParquet} from "./tsvToParquet.js"
@@ -135,6 +135,7 @@ export const isFastaFile = (fileName) => typeof fileName === "string" ?  fastaFi
 
 export default {
     metaXml,
+    metaXmlEventCore,
     dwcTerms,
     getDwcDPtermsFromSchema,
     objectSwap,
