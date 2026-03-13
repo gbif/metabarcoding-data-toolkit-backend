@@ -133,6 +133,11 @@ export const partitionArray = (array, isValid) => {
 
 export const isFastaFile = (fileName) => typeof fileName === "string" ?  fastaFileExtensions.includes(fileName.split('.').pop()) : false
 
+export const getValidParentEventsNotInOTUtable = (samples, sampleIdsWithNoRecordInOtuTable) => {
+    const validParentIds = new Set(Array.from(samples.values()).filter(s => !!s?.parentEventID).map(s => s?.parentEventID))
+    return sampleIdsWithNoRecordInOtuTable.filter(s => validParentIds.has(s))
+}
+
 export default {
     metaXml,
     metaXmlEventCore,
@@ -147,5 +152,6 @@ export default {
     isFastaFile,
     dataPackageJson,
     getDwcDPSchema,
-    tsvToParquet
+    tsvToParquet,
+    getValidParentEventsNotInOTUtable
 }

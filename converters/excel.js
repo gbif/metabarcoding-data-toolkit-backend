@@ -3,7 +3,7 @@ import fs from "fs";
 import fileNames from "../validation/filenames.js";
 import { Biom } from "biojs-io-biom";
 import config from "../config.js";
-import util, { getTaxonomyArray, getMetaDataRow } from "../util/index.js";
+import util, { getTaxonomyArray, getMetaDataRow , getValidParentEventsNotInOTUtable} from "../util/index.js";
 import { writeMapping } from "../util/filesAndDirectories.js";
 import { getGroupMetaDataAsJsonString } from "../validation/termMapper.js";
 import {getStreamAsArrayBuffer} from 'get-stream';
@@ -185,8 +185,11 @@ export const toBiom = async (
       sampleIdsWithNoRecordInOtuTable = [...sampleMap]
         .filter((e) => !otuTableColumnIds.has(e[0]))
         .map((e) => e[0]);
-      const cols = columns.filter((c) => {
-        if (sampleMap.has(c)) {
+
+      const validParentEventsNotInOTUtable = getValidParentEventsNotInOTUtable(sampleMap, sampleIdsWithNoRecordInOtuTable)  
+      console.log("validParentEventsNotInOTUtable "+ validParentEventsNotInOTUtable)
+      const cols = [...columns, ...validParentEventsNotInOTUtable].filter((c) => {
+        if (sampleMap.has(c) ) {
           return true;
         } else {
           sampleIdsWithNoRecordInSampleFile.push(c);

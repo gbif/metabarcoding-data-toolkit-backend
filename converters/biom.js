@@ -3,7 +3,7 @@ import fs from 'fs';
 import {Biom} from 'biojs-io-biom';
 import _ from 'lodash'
 import {getGroupMetaDataAsJsonString} from '../validation/termMapper.js'
-import {getMetaDataRow, getTaxonomyArray} from '../util/index.js'
+import {getMetaDataRow, getTaxonomyArray, getValidParentEventsNotInOTUtable} from '../util/index.js'
 import {readHDF5} from './hdf5.js'
 /* const getMetaDataRow = row => {
     if(!row?.id){
@@ -51,6 +51,8 @@ export const metaDataFileToMap = async (file, mapping, processFn = (progress, to
     return data;
 }
 
+
+
 // converts an otu table with sample and taxon metada files to BIOM format
 export const toBiom = async ({otuTableFile, samples, taxa, samplesAsColumns = false, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id}) => {
     console.log("SAMPLES AS COLUMNS: "+samplesAsColumns)
@@ -92,8 +94,11 @@ export const toBiom = async ({otuTableFile, samples, taxa, samplesAsColumns = fa
     const sampleIdsWithNoRecordInOtuTable = samplesAsColumns ? consistencyCheck.dimensionXidsWithNoRecordInOtuTable : consistencyCheck.dimensionYidsWithNoRecordInOtuTable;
     const taxonIdsWithNoRecordInOtuTable = samplesAsColumns ? consistencyCheck.dimensionYidsWithNoRecordInOtuTable : consistencyCheck.dimensionXidsWithNoRecordInOtuTable
     
-    const cols = columns.map(c => getMetaDataRow(dimensionXdataMap.get(c), !samplesAsColumns)) ;
-     const rws = rows.map(r => getMetaDataRow(dimensionYdataMap.get(r), samplesAsColumns)) ;
+    // sampleIdsWithNoRecordInOtuTable could contain valid parent events that should be kept in the BIOM file
+      
+    const validParentSamples = getValidParentEventsNotInOTUtable(samples, sampleIdsWithNoRecordInOtuTable)
+    const cols = (samplesAsColumns ? [...columns, ...validParentSamples] : [...columns]).map(c => getMetaDataRow(dimensionXdataMap.get(c), !samplesAsColumns));
+     const rws = (samplesAsColumns ? [...rows] : [...rows, ...validParentSamples]).map(r => getMetaDataRow(dimensionYdataMap.get(r), samplesAsColumns)) ;
     try {
       const b = await new Promise((resolve, reject) => {
           try {
@@ -138,16 +143,21 @@ export const fromHdf5ToBiom = async ({otuTableFile, samples, taxa, samplesAsColu
     try {
         const biomFromHdf5 = await readHDF5(otuTableFile?.path);
 
-        const cols = biomFromHdf5.columns.map(c => samples.has(c?.id) ? getMetaDataRow(samples.get(c?.id), false) : {id: c?.id, metdata: {}}) ;
-        const rws = biomFromHdf5.rows.map(r => taxa.has(r?.id) ? getMetaDataRow(taxa.get(r?.id), true) : {id: r?.id, metdata: {}}) ;
-
         const otuTableColIdSet = new Set(biomFromHdf5.columns.map(s => s?.id));
         const otuTableRowIdSet = new Set(biomFromHdf5.rows.map(s => s?.id));
-
         const sampleIdsWithNoRecordInSampleFile =  biomFromHdf5.columns.filter(s => !samples.has(s?.id)).map(s => s?.id);
         const taxonIdsWithNoRecordInTaxonFile = biomFromHdf5.rows.filter(s => !taxa.has(s?.id)).map(s => s?.id);
         const sampleIdsWithNoRecordInOtuTable = [...samples.keys()].filter(s => !otuTableColIdSet.has(s))
         const taxonIdsWithNoRecordInOtuTable = [...taxa.keys()].filter(s => !otuTableRowIdSet.has(s))
+
+        const validParentSamples = getValidParentEventsNotInOTUtable(samples, sampleIdsWithNoRecordInOtuTable)
+        const parentSampleSet = new Set(validParentSamples)
+        const cols = biomFromHdf5.columns.map(c => (samples.has(c?.id) || parentSampleSet.has(c?.id)) ? getMetaDataRow(samples.get(c?.id), false) : {id: c?.id, metdata: {}}) ;
+        const rws = biomFromHdf5.rows.map(r => taxa.has(r?.id) ? getMetaDataRow(taxa.get(r?.id), true) : {id: r?.id, metdata: {}}) ;
+
+        
+
+
         //, sampleIdsWithNoRecordInOtuTable, taxonIdsWithNoRecordInOtuTable
         const b = await new Promise((resolve, reject) => {
             try {
