@@ -187,7 +187,6 @@ export const toBiom = async (
         .map((e) => e[0]);
 
       const validParentEventsNotInOTUtable = getValidParentEventsNotInOTUtable(sampleMap, sampleIdsWithNoRecordInOtuTable)  
-      console.log("validParentEventsNotInOTUtable "+ validParentEventsNotInOTUtable)
       const cols = [...columns, ...validParentEventsNotInOTUtable].filter((c) => {
         if (sampleMap.has(c) ) {
           return true;
