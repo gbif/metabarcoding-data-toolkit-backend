@@ -6,7 +6,44 @@ import {readDefaultValues} from '../util/streamReader.js';
 import {writeMapping, readMapping, getProcessingReport} from '../util/filesAndDirectories.js'
 import {isFastaFile} from '../util/index.js'
 import validMimeTypes from '../enum/validMimeTypes.js';
+import XLSX from 'xlsx';
+import {getStreamAsArrayBuffer} from 'get-stream';
+import {FAIRE_COMPONENT_PREFIXES, FAIRE_SHEET_PREFIXES} from './filenames.js'
 const mimeTypesToBeRemoved = ['application/zip', 'application/octet-stream']
+
+
+const isFAIReFile = (fileName) => {
+    const lower = fileName.toLowerCase()
+    return FAIRE_COMPONENT_PREFIXES.some(prefix => lower.startsWith(prefix))
+}
+
+const isFAIReWorkbook = async (filePath) => {
+  try {
+    const stream = fs.createReadStream(filePath);
+    stream.on("error", (error) => {
+      throw error;
+    });
+
+    const buffer = await getStreamAsArrayBuffer(stream); //Buffer.concat(buffers);
+    // console.log(buffer)
+    const wb = XLSX.read(buffer, {
+      type: "array",
+      dense: true,
+      cellDates: true,
+    });
+    return wb.SheetNames.some((name) => {
+      console.log(name);
+      const lower = name.toLowerCase();
+      return FAIRE_SHEET_PREFIXES.some(
+        (p) => lower === p || lower.startsWith(p + "_"),
+      );
+    });
+  } catch (err) {
+    console.log("isFAIReWorkbook ERR:");
+    console.log(err);
+    return false;
+  }
+};
 
 export const getMimeFromPath = (filePath) => {
     const mimeType = execSync('file --mime-type -b "' + filePath + '"').toString();
@@ -75,15 +112,30 @@ const unzipIfNeeded = async (id, version = 1) => {
 
 const getfastaFile = (files) => files.find(f => isFastaFile(f.name))
 
-const determineFormat = (files) => {
-   
+const determineFormat = async (files, basePath = '') => {
+
     const fasta = getfastaFile(files);
+
+    // FAIRe flat-file detection (filename prefix — xlsx files are excluded; they are detected via sheet names below)
+    if (files.some(f => !f.name?.toLowerCase().endsWith('.xlsx') && isFAIReFile(f.name))) {
+        return 'FAIRe'
+    }
+
+    // FAIRe workbook detection (sheet names inside xlsx)
+    const xlsxFile = files.find(f =>
+        f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        f.name?.toLowerCase().endsWith('.xlsx')
+    )
+    if (xlsxFile && basePath && await isFAIReWorkbook(`${basePath}${xlsxFile.name}`)) {
+        return 'FAIRe'
+    }
+
     if(files.find(f => f?.mimeType === 'application/x-hdf5')){
         return 'BIOM_2_1'
     } else if(files.length === 1 && files[0].mimeType === 'application/json'){
         return 'BIOM_1'
     } else if(files.length < 3 && files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || f.name?.endsWith('.xlsx')) ){
-        
+
         return !!fasta ? 'XLSX_WITH_FASTA' : 'XLSX'
     } else if(files.filter(f => ['txt', 'tsv', 'csv'].includes(f?.name?.split(".").pop())).length>= 2) {
         return  !!fasta ? 'TSV_WITH_FASTA' : 'TSV'
@@ -128,7 +180,8 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
     })
         //console.log(JSON.stringify(files))
 
-        const format = determineFormat(files);
+        const basePath = `${config.dataStorage}${id}/${version}/original/`;
+        const format = await determineFormat(files, basePath);
 
         if(format.startsWith("TSV") || format.startsWith("BIOM_2_1")){
             const filePaths = await determineFileNames(id, version);

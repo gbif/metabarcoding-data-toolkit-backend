@@ -95,6 +95,35 @@ const getValidFileExtensions = async (req, res) => {
         } 
 }
 
+const selectAssayToProcess = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const assay = req.body?.assay;
+        if (!assay) {
+            return res.sendStatus(400);
+        }
+        let version = req?.query?.version;
+        if (!version) {
+            version = await getCurrentDatasetVersion(id);
+        }
+        let processingReport = await getProcessingReport(id, version);
+        if (!processingReport) {
+            return res.sendStatus(404);
+        }
+        processingReport = {
+            ...processingReport,
+            files: { ...(processingReport.files || {}), selectedAssay: assay }
+        };
+        await writeProcessingReport(id, version, processingReport);
+        await validate(id, req.user);
+        processingReport = await getProcessingReport(id, version);
+        res.json(processingReport);
+    } catch (error) {
+        console.log(error);
+        res.sendStatus(500);
+    }
+}
+
 export default  (app) => {
     app.delete("/dataset/:id/file/:filename", auth.userCanModifyDataset(),  deleteUploadedFile);
     app.get("/dataset/:id/file/:filename", (req, res) => downloadFile(req, res, false))
@@ -102,5 +131,6 @@ export default  (app) => {
     app.post("/dataset/:id/file-types", auth.userCanModifyDataset(), (req, res) => fileTypeMapping(req, res))
     app.get("/file-name-synonyms", getFileNameSynonyms)
     app.get("/valid-file-extensions", getValidFileExtensions)
+    app.post("/dataset/:id/assay", auth.userCanModifyDataset(),  selectAssayToProcess)
 
 }

@@ -20,12 +20,15 @@ const workers = {
     TSV_WITH_FASTA: 'tsvworker.js',
     XLSX: 'xlsxworker.js',
     XLSX_WITH_FASTA: 'xlsxworker.js',
-    BIOM_2_1: 'biomworker.js'
+    BIOM_2_1: 'biomworker.js',
+    FAIRe: 'faireworker.js'
 }
 
 const prepareForProcessing = async (id, version, job) => {
     job.steps.push({ ...STEPS.validating, status: 'processing', time: Date.now() })
         runningJobs.set(id, job);
+
+        const previousSelectedAssay = job.files?.selectedAssay ?? null;
 
         let files = await uploadedFilesAndTypes(id, version)
         const fileMap = _.keyBy(files.files, "type")
@@ -45,6 +48,10 @@ const prepareForProcessing = async (id, version, job) => {
         } else {
             job.files = files
             job.unzip = false;
+        }
+
+        if (previousSelectedAssay) {
+            job.files.selectedAssay = previousSelectedAssay;
         }
 
         if (files.format.startsWith('TSV')) {
@@ -295,6 +302,28 @@ export const validateXlSX = (id, version, userName) => {
 
     return new Promise(async (resolve, reject) => {
         const work = fork(__dirname + '/xlsxvalidationworker.js', [...process.argv, '--id', id, '--version', version, '--username', userName]);
+
+
+        work.on('message', (message) => {
+            
+            if(message?.type === 'finishedJobSuccesssFully'){
+                           
+                resolve()
+            }
+            if(message?.type === 'finishedJobWithError'){
+                reject(message?.payload)
+            }
+
+        })
+
+
+    })
+}
+
+export const validateFAIRe = (id, version, userName) => {
+
+    return new Promise(async (resolve, reject) => {
+        const work = fork(__dirname + '/fairevalidationworker.js', [...process.argv, '--id', id, '--version', version, '--username', userName]);
 
 
         work.on('message', (message) => {

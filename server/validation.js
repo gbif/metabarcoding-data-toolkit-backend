@@ -4,7 +4,7 @@ import {determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsC
 import {getArrayIntersection} from '../validation/misc.js'
 import {processWorkBookFromFile, readXlsxHeaders} from "../converters/excel.js"
 import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport, readMapping, writeMapping} from '../util/filesAndDirectories.js'
-import {validateXlSX} from "../workers/supervisor.js"
+import {validateXlSX, validateFAIRe} from "../workers/supervisor.js"
 import _ from "lodash"
 import mapping from './mapping.js';
 import validFileExtensions from '../enum/validFileExtensions.js';
@@ -240,6 +240,14 @@ export const validate = async (id, user) => {
       processingReport.metadata = metadata
     }
      return processingReport
+    } else if (files?.format === 'FAIRe') {
+      console.log("Validating FAIRe " + files)
+      await validateFAIRe(id, version, user?.userName)
+      processingReport = await getProcessingReport(id, version)
+      if (!!metadata) {
+        processingReport.metadata = metadata
+      }
+      return processingReport
     } else if(files.format === 'ZIP') {
       await unzip(req.params.id, files.files[0].name)
       const report = {...processingReport, unzip: true, files:{...files, id: id}}

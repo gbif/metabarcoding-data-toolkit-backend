@@ -24,11 +24,15 @@ export default {
         "name": "BIOM 2.1 format",
         "description": "A BIOM 2.1 file in HDF5 format. Must include metadata for both rows and columns, including the sequences for taxa/ASVs"
     },
+    "FAIRe": {
+        "name": "FAIRe format",
+        "description": "FAIRe-compliant eDNA dataset: projectMetadata, sampleMetadata, experimentRunMetadata, otuFinal, taxaFinal, and optional components, supplied as individual flat files and/or a single xlsx workbook."
+    },
     "INVALID": {
         "name": "Invalid format",
         "description": "The supplied files can not be processed."
     }
-    
+
  }
 
 /* {
