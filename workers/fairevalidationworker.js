@@ -1,4 +1,4 @@
-import { readFAIReWorkbook, readFAIReFlatFiles } from '../converters/faire.js'
+import { readFAIReWorkbook, readFAIReFlatFiles, readFAIReHybrid } from '../converters/faire.js'
 import { uploadedFilesAndTypes } from '../validation/files.js'
 import { getYargs } from '../util/index.js'
 import { readMapping, writeMapping, getProcessingReport, writeProcessingReport } from '../util/filesAndDirectories.js'
@@ -12,12 +12,20 @@ const processDataset = async (id, version, userName) => {
             processingReport = { id, createdBy: userName, createdAt: new Date().toISOString() }
         }
 
+        const FAIRE_PREFIXES = ['otufinal_', 'taxafinal_', 'samplemetadata_', 'experimentrunmetadata_', 'projectmetadata_', 'oturaw_', 'taxaraw_'];
+        // Hybrid mode: any file (xlsx or flat) carries a FAIRe prefix alongside a non-prefixed main workbook
+        const hasFAIRePrefixedFiles = files.files.some(f =>
+            FAIRE_PREFIXES.some(p => f.name.toLowerCase().startsWith(p))
+        );
         const xlsxFile = files.files.find(f =>
             f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             || f.name?.toLowerCase().endsWith('.xlsx'))
 
-        // Attach validation errors to the xlsx file (workbook mode) or first file (flat-file mode)
-        const faireFileRef = xlsxFile ?? files.files[0]
+        // Attach errors to the non-prefixed main workbook in hybrid mode; otherwise use the single xlsx or first file
+        const mainWorkbook = hasFAIRePrefixedFiles
+            ? files.files.find(f => (f.name.toLowerCase().endsWith('.xlsx') || f.name.toLowerCase().endsWith('.xls')) && !FAIRE_PREFIXES.some(p => f.name.toLowerCase().startsWith(p)))
+            : null;
+        const faireFileRef = mainWorkbook ?? xlsxFile ?? files.files[0]
 
         // Read user's assay selection if previously set
         const preferredAssay = processingReport?.files?.selectedAssay ?? null
@@ -27,7 +35,9 @@ const processDataset = async (id, version, userName) => {
 
         try {
             let result
-            if (xlsxFile) {
+            if (hasFAIRePrefixedFiles) {
+                result = await readFAIReHybrid(id, version, preferredAssay)
+            } else if (xlsxFile) {
                 result = await readFAIReWorkbook(id, xlsxFile.name, version, preferredAssay)
             } else {
                 result = await readFAIReFlatFiles(id, version, preferredAssay)

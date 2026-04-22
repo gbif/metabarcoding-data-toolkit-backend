@@ -384,6 +384,34 @@ export const readFastaAsMap = (path, progressFn = ()=>{},) => {
 })
 }
 
+/**
+ * Read an entire flat file (CSV/TSV/TXT) as a 2D array of strings.
+ * Unlike analyseCsv, there is no row limit — the whole file is read.
+ * Used by loadFAIReComponents to process flat FAIRe component files.
+ */
+export const readFlatFile2D = (path, delimiter = "\t") => {
+    return new Promise((resolve, reject) => {
+        const parser = parse({
+            delimiter: delimiter || "\t",
+            columns: false,
+            ltrim: true,
+            rtrim: true,
+            relax_column_count: true,
+            cast: false,
+        });
+        const rows = [];
+        parser.on('readable', function () {
+            let record;
+            while ((record = parser.read()) !== null) {
+                rows.push(record);
+            }
+        });
+        parser.on('error', (err) => reject(err));
+        parser.on('end', () => resolve(rows));
+        fs.createReadStream(path).pipe(parser);
+    });
+};
+
 export const readDefaultValues = (path, delimiter = "\t") => {
   return new Promise((resolve, reject) => {
     const parser = parse({
@@ -427,7 +455,8 @@ export default {
   readMetaData,
   readMetaDataAsMap,
   readFastaAsMap,
-  readDefaultValues
+  readDefaultValues,
+  readFlatFile2D
 }
 
 /* module.exports = {

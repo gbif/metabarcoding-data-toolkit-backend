@@ -4,6 +4,7 @@ import { Biom } from "biojs-io-biom";
 import config from "../config.js";
 import { getStreamAsArrayBuffer } from 'get-stream';
 import { analyseCsv } from '../validation/tsvformat.js';
+import { readFlatFile2D } from '../util/streamReader.js';
 import { getMetaDataRow } from '../util/index.js';
 import { getGroupMetaDataAsJsonString } from '../validation/termMapper.js';
 
@@ -41,35 +42,46 @@ export const parseFAIReComponents = (sheets, preferredAssay = null) => {
     const sampleMetadata = find('sampleMetadata');
     const experimentRunMetadata = find('experimentRunMetadata');
 
+    // Accept both suffixed (otuFinal_<assay>_<run>) and bare (otuFinal) sheet/file names
+    const bareotuFinal = find('otuFinal');
     const otuFinalSheets = filterPrefix('otuFinal_');
+    if (bareotuFinal) otuFinalSheets.unshift(bareotuFinal);
+
+    const baretaxaFinal = find('taxaFinal');
     const taxaFinalSheets = filterPrefix('taxaFinal_');
+    if (baretaxaFinal) taxaFinalSheets.unshift(baretaxaFinal);
 
     if (otuFinalSheets.length === 0) {
         throw 'No otuFinal sheet found in FAIRe dataset';
     }
 
-    // otuFinal_<assay>_<run> — assay is the second underscore-separated token
+    // otuFinal_<assay>_<run> — assay is the second underscore-separated token.
+    // Bare 'otuFinal' has no assay suffix; treat as a single implicit assay (null key).
     const getAssayFromName = (name) => {
         const parts = name.split('_');
         return parts.length >= 2 ? parts[1] : null;
     };
 
-    const assayNames = [...new Set(otuFinalSheets.map(s => getAssayFromName(s.name)).filter(Boolean))];
+    // For bare otuFinal the assay name is null — use a sentinel so it can be selected
+    const BARE_ASSAY = '__bare__';
+    const assayKeys = otuFinalSheets.map(s => getAssayFromName(s.name) ?? BARE_ASSAY);
+    const assayNames = [...new Set(assayKeys)].map(k => k === BARE_ASSAY ? null : k).filter(k => k !== undefined);
 
     const selectedAssay = (preferredAssay && assayNames.includes(preferredAssay))
         ? preferredAssay
-        : assayNames[0];
+        : assayNames[0] ?? null;
 
     let multipleAssaysWarning = null;
-    if (assayNames.length > 1) {
-        multipleAssaysWarning = `This dataset contains multiple assays: ${assayNames.join(', ')}. MDT can only process one assay at a time. Processing assay '${selectedAssay}' only.`;
+    if (assayNames.filter(Boolean).length > 1) {
+        multipleAssaysWarning = `This dataset contains multiple assays: ${assayNames.filter(Boolean).join(', ')}. MDT can only process one assay at a time. Processing assay '${selectedAssay}' only.`;
     }
-    const otuFinal = otuFinalSheets.find(s => getAssayFromName(s.name) === selectedAssay);
+
+    const otuFinal = otuFinalSheets.find(s => (getAssayFromName(s.name) ?? null) === selectedAssay);
 
     const otuParts = otuFinal.name.split('_');
     const seqRunId = otuParts.length >= 3 ? otuParts.slice(2).join('_') : null;
 
-    const taxaFinal = taxaFinalSheets.find(s => getAssayFromName(s.name) === selectedAssay) || taxaFinalSheets[0];
+    const taxaFinal = taxaFinalSheets.find(s => (getAssayFromName(s.name) ?? null) === selectedAssay) || taxaFinalSheets[0];
 
     const missingComponentErrors = [];
     if (!sampleMetadata) missingComponentErrors.push('Missing required component: sampleMetadata');
@@ -78,7 +90,10 @@ export const parseFAIReComponents = (sheets, preferredAssay = null) => {
 
     const projectMetadata = find('projectMetadata');
 
-    return { projectMetadata, sampleMetadata, experimentRunMetadata, otuFinal, taxaFinal, assayName: selectedAssay, assayNames, seqRunId, multipleAssaysWarning, missingComponentErrors };
+    // Only expose named assays in the UI picklist — bare (null) assay means single implicit assay, no picker needed
+    const namedAssayNames = assayNames.filter(Boolean);
+
+    return { projectMetadata, sampleMetadata, experimentRunMetadata, otuFinal, taxaFinal, assayName: selectedAssay, assayNames: namedAssayNames, seqRunId, multipleAssaysWarning, missingComponentErrors };
 };
 
 // Strip leading rows whose first cell starts with '#' (FAIRe comment rows)
@@ -139,7 +154,7 @@ const extractProjectMetadataDefaults = (data) => {
 };
 
 const buildSheetsWithCrossReferences = (components) => {
-    const { sampleMetadata, experimentRunMetadata, otuFinal, taxaFinal, multipleAssaysWarning, missingComponentErrors, assayName, assayNames, seqRunId } = components;
+    const { projectMetadata, sampleMetadata, experimentRunMetadata, otuFinal, taxaFinal, multipleAssaysWarning, missingComponentErrors, assayName, assayNames, seqRunId } = components;
 
     // Strip # comment rows from all sheets that may carry them before any checks or display
     const cleanedSampleMetadata = sampleMetadata
@@ -206,6 +221,23 @@ const buildSheetsWithCrossReferences = (components) => {
         }
     }
 
+    // Cross-reference: assay names from otuFinal sheet names <-> projectMetadata column headers
+    if (projectMetadata && assayNames?.length > 0) {
+        const cleanedPmData = stripCommentRows(projectMetadata.data);
+        const pmHeaders = (cleanedPmData[0] || []).map(h => String(h ?? '').trim());
+        const projectLevelIdx = pmHeaders.findIndex(h => h.toLowerCase() === 'project_level');
+        if (projectLevelIdx >= 0) {
+            const pmAssayCols = new Set(pmHeaders.slice(projectLevelIdx + 1).filter(Boolean));
+            const missingInPm = assayNames.filter(a => !pmAssayCols.has(a));
+            if (missingInPm.length > 0) {
+                sheetErrors.sampleMetadata.push(
+                    `Assay name(s) "${missingInPm.join('", "')}" from otuFinal sheet(s) not found as column(s) in projectMetadata. ` +
+                    `Found assay column(s): ${pmAssayCols.size > 0 ? [...pmAssayCols].join(', ') : '(none)'}.`
+                );
+            }
+        }
+    }
+
     const sheets = [
         otuFinal ? buildSheet(otuFinal, sheetErrors.otuFinal) : null,
         cleanedSampleMetadata ? buildSheet(cleanedSampleMetadata, sheetErrors.sampleMetadata) : null,
@@ -219,89 +251,162 @@ const buildSheetsWithCrossReferences = (components) => {
     return { sheets, headers: { sampleHeaders, taxonHeaders }, assayName, assayNames, seqRunId };
 };
 
+const FAIRE_PREFIXES = ['otufinal_', 'taxafinal_', 'samplemetadata_', 'experimentrunmetadata_', 'projectmetadata_', 'oturaw_', 'taxaraw_'];
+const hasFAIRePrefix = (name) => FAIRE_PREFIXES.some(p => name.toLowerCase().startsWith(p));
+
+// Flat-file naming:    otuFinal_<project_id>_<assay>_<seq_run_id>  (≥4 underscore-separated tokens)
+// Workbook convention: otuFinal_<assay>_<seq_run_id>               (3 tokens — project_id is the workbook filename)
+// Strip parts[1] (project_id) to normalise a flat-file name to workbook convention so
+// parseFAIReComponents can use the same parts[1]=assay logic for all sources.
+// Only strips when parts.length >= 3; bare names (e.g. 'otuFinal') are left unchanged.
+const normalizeFileToSheetName = (filename) => {
+    const noExt = filename.replace(/\.[^.]+$/, '');
+    const parts = noExt.split('_');
+    return parts.length >= 3 ? [parts[0], ...parts.slice(2)].join('_') : noExt;
+};
+
+/**
+ * Collect all FAIRe sheets from a directory, handling three file types:
+ *   - Non-prefixed xlsx (main workbooks): all sheets added by sheet name
+ *   - FAIRe-prefixed xlsx (e.g. taxaFinal_*.xlsx): first sheet, named after the file
+ *   - FAIRe-prefixed flat files (tsv/csv/txt): read via analyseCsv, named after the file
+ * Returns a unified array of { name, data } objects suitable for parseFAIReComponents.
+ */
+const collectAllSheets = async (basePath) => {
+    const fileList = fs.readdirSync(basePath).filter(f => !f.startsWith('.nfs') && !f.startsWith('.'));
+    const sheets = [];
+
+    for (const filename of fileList) {
+        const lowerName = filename.toLowerCase();
+        const filePath = `${basePath}${filename}`;
+
+        if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
+            const buffer = await getStreamAsArrayBuffer(fs.createReadStream(filePath));
+            const wb = xlsx.read(buffer, { type: 'array', dense: true, cellDates: true });
+
+            if (hasFAIRePrefix(filename)) {
+                // FAIRe-prefixed workbook: treat as a single sheet, normalised to workbook naming
+                const firstSheet = wb.SheetNames[0];
+                if (firstSheet) {
+                    sheets.push({
+                        name: normalizeFileToSheetName(filename),
+                        data: xlsx.utils.sheet_to_json(wb.Sheets[firstSheet], { header: 1 })
+                    });
+                }
+            } else {
+                // Non-prefixed workbook (main workbook): contribute all sheets by sheet name
+                for (const sheetName of wb.SheetNames) {
+                    sheets.push({
+                        name: sheetName,
+                        data: xlsx.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 })
+                    });
+                }
+            }
+        } else if (hasFAIRePrefix(filename)) {
+            // FAIRe-prefixed flat file — normalise name to workbook convention
+            const result = await analyseCsv(filePath);
+            if (result?.rows?.length > 0) {
+                sheets.push({
+                    name: normalizeFileToSheetName(filename),
+                    data: result.rows
+                });
+            }
+        }
+    }
+    return sheets;
+};
+
+/**
+ * Read a hybrid FAIRe dataset where components may be spread across multiple workbooks
+ * and/or flat files. Collects all sheets from all sources and parses them together.
+ */
+export const readFAIReHybrid = async (id, version, preferredAssay = null) => {
+    const basePath = `${config.dataStorage}${id}/${version}/original/`;
+    const allSheets = await collectAllSheets(basePath);
+
+    const components = parseFAIReComponents(allSheets, preferredAssay);
+    const projectMetadataDefaults = extractProjectMetadataDefaults(components.projectMetadata?.data);
+    const result = buildSheetsWithCrossReferences(components);
+
+    // Include non-component sheets for UI display (README tabs, dropdown lists, etc.)
+    const componentNames = new Set(result.sheets.map(s => s.name));
+    const extraSheets = allSheets
+        .filter(s => !componentNames.has(s.name))
+        .map(s => buildSheet(s, []));
+
+    return { ...result, projectMetadataDefaults, sheets: [...result.sheets, ...extraSheets] };
+};
+
 /**
  * Load the raw FAIRe component objects needed for BIOM conversion.
- * Handles both single-workbook mode and flat-file mode.
- * Returns { sampleMetadata, otuFinal, taxaFinal, experimentRunMetadata, assayName, seqRunId }
- * where each component is a { name, data } object (2D array, comment rows not yet stripped).
+ * Handles single-workbook, flat-file, and hybrid modes.
+ * Returns the result of parseFAIReComponents: { sampleMetadata, otuFinal, taxaFinal,
+ * experimentRunMetadata, assayName, seqRunId, assayNames, ... }
  */
 export const loadFAIReComponents = async (id, version, preferredAssay = null) => {
     const basePath = `${config.dataStorage}${id}/${version}/original/`;
-    const fileList = fs.readdirSync(basePath);
+    const fileList = fs.readdirSync(basePath).filter(f => !f.startsWith('.nfs') && !f.startsWith('.'));
 
-    const xlsxFile = fileList.find(f => /\.(xlsx|xls)$/i.test(f));
+    const hasFAIRePrefixedFiles = fileList.some(f => hasFAIRePrefix(f));
 
-    if (xlsxFile) {
-        const buffer = await getStreamAsArrayBuffer(fs.createReadStream(`${basePath}${xlsxFile}`));
-        const workbook = xlsx.read(buffer, { type: 'array', dense: true, cellDates: true });
-        const sheets = workbook.SheetNames.map(name => ({
-            name,
-            data: xlsx.utils.sheet_to_json(workbook.Sheets[name], { header: 1 })
-        }));
+    if (hasFAIRePrefixedFiles) {
+        // Hybrid or pure flat-file: build sheets directly, reading full file content.
+        // analyseCsv is only used to detect the delimiter (it limits to 100 rows for UI preview).
+        // readFlatFile2D reads the entire file without a row cap.
+        const sheets = [];
+        for (const filename of fileList) {
+            const lowerName = filename.toLowerCase();
+            const filePath = `${basePath}${filename}`;
+
+            if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
+                const buffer = await getStreamAsArrayBuffer(fs.createReadStream(filePath));
+                const wb = xlsx.read(buffer, { type: 'array', dense: true, cellDates: true });
+
+                if (hasFAIRePrefix(filename)) {
+                    // FAIRe-prefixed workbook: single sheet, normalised name
+                    const firstSheet = wb.SheetNames[0];
+                    if (firstSheet) {
+                        sheets.push({
+                            name: normalizeFileToSheetName(filename),
+                            data: xlsx.utils.sheet_to_json(wb.Sheets[firstSheet], { header: 1 })
+                        });
+                    }
+                } else {
+                    // Non-prefixed main workbook: all sheets by their sheet name
+                    for (const sheetName of wb.SheetNames) {
+                        sheets.push({
+                            name: sheetName,
+                            data: xlsx.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 })
+                        });
+                    }
+                }
+            } else if (hasFAIRePrefix(filename)) {
+                // FAIRe-prefixed flat file — detect delimiter then read full file
+                const preview = await analyseCsv(filePath);
+                const delimiter = preview?.delimiter ?? '\t';
+                const data = await readFlatFile2D(filePath, delimiter);
+                if (data.length > 0) {
+                    sheets.push({
+                        name: normalizeFileToSheetName(filename),
+                        data
+                    });
+                }
+            }
+        }
         return parseFAIReComponents(sheets, preferredAssay);
     }
 
-    // Flat-file mode
-    const findByPrefix = (prefix) => fileList.filter(f => f.toLowerCase().startsWith(prefix.toLowerCase()));
+    // Pure single-workbook mode
+    const xlsxFile = fileList.find(f => /\.(xlsx|xls)$/i.test(f));
+    if (!xlsxFile) throw 'No FAIRe files found in dataset';
 
-    const sampleMetadataFiles = findByPrefix('samplemetadata_');
-    const otuFinalFiles       = findByPrefix('otufinal_');
-    const taxaFinalFiles      = findByPrefix('taxafinal_');
-    const expRunFiles         = findByPrefix('experimentrunmetadata_');
-
-    if (otuFinalFiles.length === 0) throw 'No otuFinal file found in FAIRe dataset';
-
-    const getAssayFromFilename = (filename) => {
-        const noExt = filename.replace(/\.[^.]+$/, '');
-        const match = noExt.match(/^otufinal_[^_]+_([^_]+)/i);
-        return match ? match[1] : null;
-    };
-
-    const assayNames = [...new Set(otuFinalFiles.map(f => getAssayFromFilename(f)).filter(Boolean))];
-    const selectedAssay = (preferredAssay && assayNames.includes(preferredAssay))
-        ? preferredAssay
-        : assayNames[0];
-    const otuFinalFile  = otuFinalFiles.find(f => getAssayFromFilename(f) === selectedAssay);
-    const taxaFinalFile = taxaFinalFiles.find(f => {
-        const noExt = f.replace(/\.[^.]+$/, '');
-        const m = noExt.match(/^taxafinal_[^_]+_([^_]+)/i);
-        return m && m[1] === selectedAssay;
-    }) || taxaFinalFiles[0];
-
-    const getSeqRunFromFilename = (filename) => {
-        const noExt = filename.replace(/\.[^.]+$/, '');
-        const m = noExt.match(/^otufinal_[^_]+_[^_]+_(.+)/i);
-        return m ? m[1] : null;
-    };
-
-    const readFileAsEntity = async (filename, nameOverride) => {
-        if (!filename) return null;
-        const result = await analyseCsv(`${basePath}${filename}`);
-        if (!result) return null;
-        return { name: nameOverride || filename.replace(/\.[^.]+$/, ''), data: result.rows || [] };
-    };
-
-    const [sampleMetadata, otuFinal, taxaFinal, experimentRunMetadata] = await Promise.all([
-        readFileAsEntity(sampleMetadataFiles[0], 'sampleMetadata'),
-        readFileAsEntity(otuFinalFile,  otuFinalFile?.replace(/\.[^.]+$/, '')),
-        readFileAsEntity(taxaFinalFile, taxaFinalFile?.replace(/\.[^.]+$/, '')),
-        readFileAsEntity(expRunFiles[0], 'experimentRunMetadata')
-    ]);
-
-    if (!sampleMetadata) throw 'Failed to read sampleMetadata file';
-    if (!otuFinal)       throw 'Failed to read otuFinal file';
-    if (!taxaFinal)      throw 'Failed to read taxaFinal file';
-
-    return {
-        sampleMetadata,
-        experimentRunMetadata,
-        otuFinal,
-        taxaFinal,
-        assayName: selectedAssay,
-        seqRunId: otuFinalFile ? getSeqRunFromFilename(otuFinalFile) : null,
-        multipleAssaysWarning: null,
-        missingComponentErrors: []
-    };
+    const buffer = await getStreamAsArrayBuffer(fs.createReadStream(`${basePath}${xlsxFile}`));
+    const workbook = xlsx.read(buffer, { type: 'array', dense: true, cellDates: true });
+    const sheets = workbook.SheetNames.map(name => ({
+        name,
+        data: xlsx.utils.sheet_to_json(workbook.Sheets[name], { header: 1 })
+    }));
+    return parseFAIReComponents(sheets, preferredAssay);
 };
 
 export const readFAIReWorkbook = async (id, xlsxFileName, version, preferredAssay = null) => {
