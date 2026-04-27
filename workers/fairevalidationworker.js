@@ -1,8 +1,10 @@
-import { readFAIReWorkbook, readFAIReFlatFiles, readFAIReHybrid } from '../converters/faire.js'
+import { readFAIReWorkbook, readFAIReFlatFiles, readFAIReHybrid, extractEmlFromProjectMetadata } from '../converters/faire.js'
 import { uploadedFilesAndTypes } from '../validation/files.js'
 import { getYargs } from '../util/index.js'
-import { readMapping, writeMapping, getProcessingReport, writeProcessingReport } from '../util/filesAndDirectories.js'
+import { readMapping, writeMapping, getProcessingReport, writeProcessingReport, getMetadata, writeEmlJson, writeEmlXml } from '../util/filesAndDirectories.js'
 import { finishedJobSuccesssFully, finishedJobWithError } from './util.js'
+import { getEml } from '../util/Eml/index.js';
+
 
 const processDataset = async (id, version, userName) => {
     try {
@@ -43,7 +45,7 @@ const processDataset = async (id, version, userName) => {
                 result = await readFAIReFlatFiles(id, version, preferredAssay)
             }
 
-            const { headers, sheets, projectMetadataDefaults = {}, assayNames } = result
+            const { headers, sheets, projectMetadataDefaults = {}, projectMetadataComments = {}, assayNames } = result
             headers_ = headers
             sheets_ = sheets
 
@@ -66,7 +68,19 @@ const processDataset = async (id, version, userName) => {
                 : { samples: { id: 'samp_name' }, taxa: { id: 'seq_id' }, defaultValues: mergedDefaults }
             await writeMapping(id, version, newMapping)
 
-            const report = { ...processingReport, ...headers_, unzip: false, files: { ...files, selectedAssay: preferredAssay } }
+            // Generate eml.json from projectMetadata fields if one does not already exist
+            const existingEml = await getMetadata(id, version);
+            let eml;
+            if (!existingEml) {
+                eml = extractEmlFromProjectMetadata(projectMetadataDefaults, userName, projectMetadataComments)
+                if (eml) {
+                    await writeEmlJson(id, version, eml)
+                    const xml = getEml({...eml, id})
+                    await writeEmlXml(id, version, xml)
+                }
+            }
+
+            const report = { ...processingReport, metadata: eml || existingEml , ...headers_, unzip: false, files: { ...files, selectedAssay: preferredAssay } }
             await writeProcessingReport(id, version, report)
             finishedJobSuccesssFully('success')
 

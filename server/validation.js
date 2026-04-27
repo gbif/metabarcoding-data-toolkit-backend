@@ -271,6 +271,11 @@ export default (app) => {
             console.log(`Validating ${req.params.id}`)
             try {            
                 let report = await validate(req?.params?.id, req?.user)
+                // Strip server-side-only fields from metadata before sending to client
+                if (report?.metadata?.faire_description !== undefined) {
+                    const { faire_description, ...clientMetadata } = report.metadata;
+                    report = { ...report, metadata: clientMetadata };
+                }
                 res.json(report)
             } catch (error) {
                 if(error === 'not found'){

@@ -210,7 +210,7 @@ export const getProject = (project) => {
   
 }
 
-export const getEml = ({id, license, title, description, contact, creator, metadataProvider, associatedParty, methodSteps, doi, url, bibliographicReferences, keywords, keywordThesaurus, studyExtent, samplingDescription, geographicCoverage, temporalCoverage, taxonomicCoverage, project }) => {
+export const getEml = ({id, license, title, description, faire_description, contact, creator, metadataProvider, associatedParty, methodSteps, doi, url, bibliographicReferences, keywords, keywordThesaurus, studyExtent, samplingDescription, geographicCoverage, temporalCoverage, taxonomicCoverage, project }) => {
     if(!licenseEnum[license]){
         throw "invalid or missing license"
     }
@@ -236,6 +236,7 @@ export const getEml = ({id, license, title, description, contact, creator, metad
             <language>ENGLISH</language>
             <abstract>
             ${description ? `<para>${escapeHtml(description)}</para>` : "" }
+            ${faire_description ? faire_description : ""}
                 <para>[This dataset was processed using the GBIF Metabarcoding Data Toolkit.]</para>
             </abstract>
             ${getKeywords(keywords, keywordThesaurus)}

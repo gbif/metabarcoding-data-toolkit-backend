@@ -7,6 +7,7 @@ import { analyseCsv } from '../validation/tsvformat.js';
 import { readFlatFile2D } from '../util/streamReader.js';
 import { getMetaDataRow } from '../util/index.js';
 import { getGroupMetaDataAsJsonString } from '../validation/termMapper.js';
+import license from "../enum/license.js";
 
 const COLUMN_LIMIT = 100;
 const ROW_LIMIT = 100;
@@ -92,8 +93,9 @@ export const parseFAIReComponents = (sheets, preferredAssay = null) => {
 
     // Only expose named assays in the UI picklist — bare (null) assay means single implicit assay, no picker needed
     const namedAssayNames = assayNames.filter(Boolean);
+    const projectMetadataComments = projectMetadata?.termComments ?? {};
 
-    return { projectMetadata, sampleMetadata, experimentRunMetadata, otuFinal, taxaFinal, assayName: selectedAssay, assayNames: namedAssayNames, seqRunId, multipleAssaysWarning, missingComponentErrors };
+    return { projectMetadata, sampleMetadata, experimentRunMetadata, otuFinal, taxaFinal, assayName: selectedAssay, assayNames: namedAssayNames, seqRunId, multipleAssaysWarning, missingComponentErrors, projectMetadataComments };
 };
 
 // Strip leading rows whose first cell starts with '#' (FAIRe comment rows)
@@ -151,6 +153,86 @@ const extractProjectMetadataDefaults = (data) => {
         }
     }
     return defaults;
+};
+
+/**
+ * Build an eml.json object from the flat key→value map produced by extractProjectMetadataDefaults.
+ * Uses: recordedBy, recordedByID, project_contact, institution, project_name, project_id.
+ * Returns null if neither project_name nor project_id is present.
+ */
+const EML_DESCRIPTION_TERMS = [
+    'tax_class_id_cutoff',
+    'tax_class_query_cutoff',
+    'tax_class_collapse',
+    'tax_class_other',
+    'screen_contam_method',
+    'screen_geograph_method',
+    'screen_nontarget_method',
+    'screen_other',
+    'bioinfo_method_additional',
+];
+
+export const extractEmlFromProjectMetadata = (defaults, userName, comments = {}) => {
+    const { project_name, project_id, recordedBy, recordedByID, project_contact, institution } = defaults || {};
+
+    if (!project_name && !project_id) return null;
+
+    // Split "First Last" into givenName + surName
+    let givenName = null, surName = null;
+    if (recordedBy) {
+        const parts = String(recordedBy).trim().split(/\s+/);
+        givenName = parts[0] || null;
+        surName = parts.slice(1).join(' ') || null;
+    }
+
+    // Strip ORCID URL prefix (https://orcid.org/XXXX-... → XXXX-...)
+    let userId = null;
+    if (recordedByID) {
+        userId = String(recordedByID).replace(/^https?:\/\/orcid\.org\//i, '').trim() || null;
+    }
+
+    const person = {
+        ...(givenName ? { givenName } : {}),
+        ...(surName ? { surName } : {}),
+        ...(institution ? { organizationName: String(institution) } : {}),
+        ...(project_contact ? { electronicMailAddress: String(project_contact) } : {}),
+        ...(userId ? { userId } : {}),
+    };
+
+    const personnel = { ...person, role: 'AUTHOR' };
+    const title = project_name ? String(project_name) : null;
+    const identifier = project_id ? String(project_id) : null;
+
+    // Build DocBook XML description from selected bioinformatics/screening terms that have values.
+    const escapeXml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const descriptionItems = EML_DESCRIPTION_TERMS
+        .filter(term => defaults?.[term] != null && String(defaults[term]).trim() !== '')
+        .map(term => {
+            const value = escapeXml(String(defaults[term]).trim());
+            const desc = comments[term] ? `<para>${escapeXml(comments[term])}</para>` : '';
+            return `<listitem><para><emphasis>${term}</emphasis>: ${value}</para>${desc}</listitem>`;
+        });
+    const faire_description = descriptionItems.length > 0
+        ? `<para><itemizedlist>${descriptionItems.join('')}</itemizedlist></para>`
+        : null;
+
+    return {
+        ...(title ? { title } : {}),
+        ...(faire_description ? { faire_description } : {}),
+        contact: person,
+        creator: [person],
+        ...(title ? { projectTitle: title } : {}),
+        ...(identifier ? { projectIdentifier: identifier } : {}),
+        license: "CC0",
+        projectPersonnel: [personnel],
+        project: {
+            ...(title ? { title } : {}),
+            ...(identifier ? { identifier } : {}),
+            personnel: [personnel],
+        },
+        createdBy: userName || null,
+        createdAt: Date.now(),
+    };
 };
 
 const buildSheetsWithCrossReferences = (components) => {
@@ -266,6 +348,31 @@ const normalizeFileToSheetName = (filename) => {
 };
 
 /**
+ * Extract term descriptions from cell comments on the term_name column of a raw xlsx sheet
+ * (dense mode: ws['!data'][row][col]).  Returns { term_name → description_string }.
+ * The description is the text following "Description : " in the FAIRe comment format.
+ */
+const extractTermComments = (rawSheet) => {
+    const data = rawSheet?.['!data'];
+    if (!data || data.length === 0) return {};
+    const headerRow = data[0] || [];
+    const termNameCol = headerRow.findIndex(cell => String(cell?.v ?? '').toLowerCase().trim() === 'term_name');
+    if (termNameCol < 0) return {};
+    const comments = {};
+    for (let r = 1; r < data.length; r++) {
+        const cell = (data[r] || [])[termNameCol];
+        if (!cell?.v) continue;
+        const commentText = cell.c?.[0]?.t;
+        if (!commentText) continue;
+        const match = commentText.match(/^Description\s*:\s*(.+)$/m);
+        if (match) {
+            comments[String(cell.v).trim()] = match[1].trim();
+        }
+    }
+    return comments;
+};
+
+/**
  * Collect all FAIRe sheets from a directory, handling three file types:
  *   - Non-prefixed xlsx (main workbooks): all sheets added by sheet name
  *   - FAIRe-prefixed xlsx (e.g. taxaFinal_*.xlsx): first sheet, named after the file
@@ -288,9 +395,11 @@ const collectAllSheets = async (basePath) => {
                 // FAIRe-prefixed workbook: treat as a single sheet, normalised to workbook naming
                 const firstSheet = wb.SheetNames[0];
                 if (firstSheet) {
+                    const sheetName = normalizeFileToSheetName(filename);
                     sheets.push({
-                        name: normalizeFileToSheetName(filename),
-                        data: xlsx.utils.sheet_to_json(wb.Sheets[firstSheet], { header: 1 })
+                        name: sheetName,
+                        data: xlsx.utils.sheet_to_json(wb.Sheets[firstSheet], { header: 1 }),
+                        ...(sheetName === 'projectMetadata' ? { termComments: extractTermComments(wb.Sheets[firstSheet]) } : {})
                     });
                 }
             } else {
@@ -298,7 +407,8 @@ const collectAllSheets = async (basePath) => {
                 for (const sheetName of wb.SheetNames) {
                     sheets.push({
                         name: sheetName,
-                        data: xlsx.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 })
+                        data: xlsx.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 }),
+                        ...(sheetName === 'projectMetadata' ? { termComments: extractTermComments(wb.Sheets[sheetName]) } : {})
                     });
                 }
             }
@@ -326,6 +436,7 @@ export const readFAIReHybrid = async (id, version, preferredAssay = null) => {
 
     const components = parseFAIReComponents(allSheets, preferredAssay);
     const projectMetadataDefaults = extractProjectMetadataDefaults(components.projectMetadata?.data);
+    const projectMetadataComments = components.projectMetadataComments ?? {};
     const result = buildSheetsWithCrossReferences(components);
 
     // Include non-component sheets for UI display (README tabs, dropdown lists, etc.)
@@ -334,7 +445,7 @@ export const readFAIReHybrid = async (id, version, preferredAssay = null) => {
         .filter(s => !componentNames.has(s.name))
         .map(s => buildSheet(s, []));
 
-    return { ...result, projectMetadataDefaults, sheets: [...result.sheets, ...extraSheets] };
+    return { ...result, projectMetadataDefaults, projectMetadataComments, sheets: [...result.sheets, ...extraSheets] };
 };
 
 /**
@@ -417,11 +528,13 @@ export const readFAIReWorkbook = async (id, xlsxFileName, version, preferredAssa
 
     const allSheetData = workbook.SheetNames.map(name => ({
         name,
-        data: xlsx.utils.sheet_to_json(workbook.Sheets[name], { header: 1 })
+        data: xlsx.utils.sheet_to_json(workbook.Sheets[name], { header: 1 }),
+        ...(name === 'projectMetadata' ? { termComments: extractTermComments(workbook.Sheets[name]) } : {})
     }));
 
     const components = parseFAIReComponents(allSheetData, preferredAssay);
     const projectMetadataDefaults = extractProjectMetadataDefaults(components.projectMetadata?.data);
+    const projectMetadataComments = components.projectMetadataComments ?? {};
     const result = buildSheetsWithCrossReferences(components);
 
     // Add every workbook tab that is not already a recognised FAIRe component sheet,
@@ -431,7 +544,7 @@ export const readFAIReWorkbook = async (id, xlsxFileName, version, preferredAssa
         .filter(s => !componentNames.has(s.name))
         .map(s => buildSheet(s, []));
 
-    return { ...result, projectMetadataDefaults, sheets: [...result.sheets, ...extraSheets] };
+    return { ...result, projectMetadataDefaults, projectMetadataComments, sheets: [...result.sheets, ...extraSheets] };
 };
 
 export const readFAIReFlatFiles = async (id, version, preferredAssay = null) => {
@@ -519,7 +632,7 @@ export const readFAIReFlatFiles = async (id, version, preferredAssay = null) => 
         multipleAssaysWarning,
         missingComponentErrors
     });
-    return { ...result, projectMetadataDefaults };
+    return { ...result, projectMetadataDefaults, projectMetadataComments: {} };
 };
 
 /**
