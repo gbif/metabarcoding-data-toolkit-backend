@@ -1,7 +1,6 @@
 import { addReadCounts } from '../converters/biom.js';
 import {readXlsxHeaders, getMapFromMatrix, readWorkBookFromFile, toBiom } from "../converters/excel.js"
 import { uploadedFilesAndTypes, getMimeFromPath, getFileSize, unzip } from '../validation/files.js'
-import filenames from '../validation/filenames.js'
 import { getYargs } from '../util/index.js';
 import {getArrayIntersection} from '../validation/misc.js'
 import { readFastaAsMap } from '../util/streamReader.js';
@@ -27,30 +26,19 @@ const processDataset = async (id, version, userName) => {
         let sheets_ = {};
         try {
 
-          const {headers, sheets} = await readXlsxHeaders(id, xlsx?.name, version)
-          headers_ = headers 
-          sheets_ = sheets 
-          
-           
-    
+          // The study sheet is parsed by readXlsxHeaders - if it does not have the
+          // expected term/value columns it is disregarded, and defaultValueMapping
+          // is empty and defaultValueTerms undefined. The warning explaining that
+          // sits on the study sheet and is picked up by the reduce below.
+          const {headers, sheets, defaultValues: defaultValueMapping, defaultValueTerms} = await readXlsxHeaders(id, xlsx?.name, version)
+          headers_ = headers
+          sheets_ = sheets
+
+
+
            const xlsxErrors = sheets.reduce((acc, curr) => [...acc, ...(curr?.errors || []).map(e => ({message: e}))],[])
            xlsx.errors = xlsxErrors;
-           
-           let defaultValueTerms;
-           const defaultValueSheet = sheets.find(s => filenames.defaultValues.includes(s?.name?.toLowerCase()));
 
-           let defaultValueMapping = {}
-           if(defaultValueSheet?.rows?.length > 1){
-            defaultValueTerms =  defaultValueSheet?.rows.slice(1).map(i => i[0]).filter(i => !!i)
-            defaultValueMapping = defaultValueSheet?.rows.slice(1).reduce((acc, cur) => {
-              if(!!cur[0] && !!cur[1]){
-                acc[cur[0]] = cur[1]
-              }
-              return acc
-            }, {})
-          }
-    
-           
            // get the ID terms
            const sampleId = headers?.sampleHeaders?.[0]
            const taxonId = headers?.taxonHeaders?.[0]
@@ -58,7 +46,12 @@ const processDataset = async (id, version, userName) => {
            const sampleTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders.filter(s => s !== sampleId), headers?.taxonHeaders.filter(s => s !== taxonId));    
 
 
-           const newMapping = oldMapping ? {...oldMapping, samples: {...oldMapping.samples, id: sampleId}, taxa: {...oldMapping.taxa, id: taxonId}} : {samples: {id: sampleId}, taxa: {id: taxonId}, defaultValues: defaultValueMapping}
+           // Study sheet values form the base, anything the user set themselves wins.
+           // Without the merge a corrected study sheet would never be picked up on a
+           // re-validation, since a mapping already exists by then. Same as the TSV
+           // path in uploadedFilesAndTypes and the FAIRe worker.
+           const mergedDefaults = {...defaultValueMapping, ...(oldMapping?.defaultValues || {})}
+           const newMapping = oldMapping ? {...oldMapping, samples: {...oldMapping.samples, id: sampleId}, taxa: {...oldMapping.taxa, id: taxonId}, defaultValues: mergedDefaults} : {samples: {id: sampleId}, taxa: {id: taxonId}, defaultValues: mergedDefaults}
            await writeMapping(id, version, newMapping)
     
            if(sampleTaxonHeaderIntersection.filter(e => !!e).length > 0) {

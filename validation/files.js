@@ -9,6 +9,7 @@ import validMimeTypes from '../enum/validMimeTypes.js';
 import XLSX from 'xlsx';
 import {getStreamAsArrayBuffer} from 'get-stream';
 import {FAIRE_COMPONENT_PREFIXES, FAIRE_SHEET_PREFIXES} from './filenames.js'
+import {defaultValuesShapeWarning} from './defaultValues.js'
 const mimeTypesToBeRemoved = ['application/zip', 'application/octet-stream']
 
 
@@ -218,15 +219,22 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
             if(defaultValuesFile) {
                 const csvProperties = await analyseCsv(defaultValuesFile.path)
                 defaultValuesFile.properties =  csvProperties; // {delimiter : csvProperties.delimiter} ;
-                const defaultValues = await readDefaultValues(defaultValuesFile?.path, defaultValuesFile?.properties?.delimiter);
-                const mapping = await readMapping(id, version)
-                await writeMapping(id, version, 
-                    {
-                      samples: mapping?.samples || {},
-                      taxa: mapping?.taxa || {},
-                      measurements: mapping?.measurements || {},
-                      defaultValues: {...defaultValues, ...(mapping?.defaultValues || {})}
-                    })  
+                // Read positionally as term -> value, so anything but the two expected
+                // columns is disregarded rather than mapped onto the wrong columns
+                const shapeWarning = defaultValuesShapeWarning(csvProperties?.rows, defaultValuesFile?.name || 'study');
+                if(shapeWarning){
+                    defaultValuesFile.errors = [...(defaultValuesFile.errors || []), {file: defaultValuesFile.name, message: shapeWarning}]
+                } else {
+                    const defaultValues = await readDefaultValues(defaultValuesFile?.path, defaultValuesFile?.properties?.delimiter);
+                    const mapping = await readMapping(id, version)
+                    await writeMapping(id, version,
+                        {
+                          samples: mapping?.samples || {},
+                          taxa: mapping?.taxa || {},
+                          measurements: mapping?.measurements || {},
+                          defaultValues: {...defaultValues, ...(mapping?.defaultValues || {})}
+                        })
+                }
 
             }
 

@@ -4,7 +4,7 @@ import fileNames from "../validation/filenames.js";
 import { Biom } from "biojs-io-biom";
 import config from "../config.js";
 import util, { getTaxonomyArray, getMetaDataRow } from "../util/index.js";
-import { writeMapping } from "../util/filesAndDirectories.js";
+import { parseDefaultValues } from "../validation/defaultValues.js";
 import { getGroupMetaDataAsJsonString } from "../validation/termMapper.js";
 import {getStreamAsArrayBuffer} from 'get-stream';
 
@@ -429,20 +429,14 @@ export const readXlsxHeaders = async (id, fileName, version) => {
         );
         const otuColumnSet = new Set(otuTableColumns);
 
-        // If there are default values on a fourth sheet in the workbook, write a mapping
-        if (defaultValues) {
-          await writeMapping(id, version, {
-            samples: {},
-            taxa: {},
-            measurements: {},
-            defaultValues: defaultValues?.data
-              ?.slice(1)
-              .reduce((acc, curr) => {
-                acc[curr?.[0]] = curr?.[1];
-                return acc;
-              }, {}),
-          });
-        }
+        // Default values from the optional study sheet. Parsed here so the sheet
+        // shape is checked in one place, but not written to the mapping from here -
+        // that would wipe the mapping the user made in the term mapping step.
+        const parsedDefaultValues = parseDefaultValues(
+          defaultValues?.data,
+          defaultValues?.name || "Study"
+        );
+
         let headers = {
           sampleHeaders: samples?.data?.[0],
           taxonHeaders: taxa?.data?.[0],
@@ -513,6 +507,9 @@ export const readXlsxHeaders = async (id, fileName, version) => {
                 `No "id" column found in Taxonomy sheet! Using column "${taxonId}" instead. This can be changed in the mapping step.`
               );
             }
+            if (entity === defaultValues) {
+              errors.push(...parsedDefaultValues.warnings);
+            }
 
             return {
               name: entity?.name,
@@ -533,7 +530,13 @@ export const readXlsxHeaders = async (id, fileName, version) => {
             };
           });
 
-        resolve({ headers, sheets });
+        resolve({
+          headers,
+          sheets,
+          defaultValues: parsedDefaultValues.defaultValues,
+          defaultValueTerms: parsedDefaultValues.terms,
+          defaultValueWarnings: parsedDefaultValues.warnings,
+        });
       }
       } catch (error) {
         reject(error);

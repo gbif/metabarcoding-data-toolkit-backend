@@ -2,6 +2,7 @@ import {uploadedFilesAndTypes, unzip} from '../validation/files.js'
 import auth from './Auth/auth.js';
 import {determineFileNames, otuTableHasSamplesAsColumns, otuTableHasSequencesAsColumnHeaders, hasIdColumn} from '../validation/tsvformat.js'
 import {getArrayIntersection} from '../validation/misc.js'
+import {defaultValuesShapeWarning} from '../validation/defaultValues.js'
 import {processWorkBookFromFile, readXlsxHeaders} from "../converters/excel.js"
 import {getCurrentDatasetVersion, readTsvHeaders, getProcessingReport, getMetadata, writeProcessingReport, readMapping, writeMapping} from '../util/filesAndDirectories.js'
 import {validateXlSX, validateFAIRe} from "../workers/supervisor.js"
@@ -111,7 +112,9 @@ export const validate = async (id, user) => {
       
       }
 
-      if(fileMap?.defaultValues?.properties?.rows?.length > 1){
+      // A study/defaults file with an unexpected number of columns is disregarded
+      // in uploadedFilesAndTypes (which warns the user), so it has no terms either
+      if(fileMap?.defaultValues?.properties?.rows?.length > 1 && !defaultValuesShapeWarning(fileMap?.defaultValues?.properties?.rows, fileMap?.defaultValues?.name || 'study')){
         validationReport.defaultValueTerms =  fileMap?.defaultValues?.properties?.rows.slice(1).map(i => i[0]).filter(i => !!i)
        // console.log(validationReport.defaultValueTerms)
       }

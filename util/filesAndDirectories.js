@@ -62,8 +62,28 @@ export const getCurrentDatasetVersion = async id => {
     
 }
 
+// Writes to a unique temp file in the same directory and renames it into place.
+// fs.writeFile truncates before writing, so a concurrent reader can see a partial
+// file - rename(2) is atomic, so readers see either the old or the new content.
+// The temp name must be unique: several processes (parent + forked workers) write
+// the same report, and a shared temp path would just move the race one step back.
+const writeJsonAtomic = async (path, data) => {
+  const tmp = `${path}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}.tmp`;
+  try {
+    await fs.promises.writeFile(tmp, data);
+    await fs.promises.rename(tmp, path);
+  } catch (error) {
+    try {
+      await fs.promises.unlink(tmp)
+    } catch (unlinkError) {
+      // the temp file was never created, nothing to clean up
+    }
+    throw error
+  }
+}
+
 export const writeProcessingReport = async (id, version, json) => {
-    await fs.promises.writeFile(`${config.dataStorage}${id}/${version}/processing.json`, JSON.stringify(json, null, 2));
+    await writeJsonAtomic(`${config.dataStorage}${id}/${version}/processing.json`, JSON.stringify(json, null, 2));
 }
 
 export const getProcessingReport = async (id, version) => {

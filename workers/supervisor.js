@@ -298,46 +298,64 @@ export const createDwcDP = (id, version, job) => {
     })
 }
 
-export const validateXlSX = (id, version, userName) => {
+// Validations already in flight, keyed by worker + dataset version.
+// A validation request that arrives while one is running joins it instead of
+// forking a second worker: every fork re-parses the whole workbook, and they all
+// read-modify-write the same processing.json.
+const runningValidations = new Map();
 
-    return new Promise(async (resolve, reject) => {
-        const work = fork(__dirname + '/xlsxvalidationworker.js', [...process.argv, '--id', id, '--version', version, '--username', userName]);
+const runValidationWorker = (workerFile, id, version, userName) => {
 
+    const key = `${workerFile}:${id}:${version}`;
+    const inFlight = runningValidations.get(key);
+    if (inFlight) {
+        console.log(`Validation of dataset ${id} already running, joining it`)
+        return inFlight;
+    }
+
+    const validation = new Promise((resolve, reject) => {
+        const work = fork(__dirname + '/' + workerFile, [...process.argv, '--id', id, '--version', version, '--username', userName]);
+
+        let settled = false;
+        const settle = (fn, payload) => {
+            if (!settled) {
+                settled = true;
+                fn(payload)
+            }
+        }
 
         work.on('message', (message) => {
-            
+
             if(message?.type === 'finishedJobSuccesssFully'){
-                           
-                resolve()
+
+                settle(resolve)
             }
             if(message?.type === 'finishedJobWithError'){
-                reject(message?.payload)
+                settle(reject, message?.payload)
             }
 
         })
 
-
-    })
-}
-
-export const validateFAIRe = (id, version, userName) => {
-
-    return new Promise(async (resolve, reject) => {
-        const work = fork(__dirname + '/fairevalidationworker.js', [...process.argv, '--id', id, '--version', version, '--username', userName]);
-
-
-        work.on('message', (message) => {
-            
-            if(message?.type === 'finishedJobSuccesssFully'){
-                           
-                resolve()
-            }
-            if(message?.type === 'finishedJobWithError'){
-                reject(message?.payload)
-            }
-
+        // Without these the promise never settles when the worker dies without
+        // reporting back - an OOM kill sends no message - and the request that
+        // triggered the validation hangs until the client gives up
+        work.on('error', (error) => {
+            settle(reject, error?.message || error)
+        })
+        work.on('exit', (code, signal) => {
+            // give any message still queued from the worker a chance to be handled first
+            setImmediate(() => settle(reject, `Validation of dataset ${id} stopped unexpectedly (exit code ${code}, signal ${signal})`))
         })
 
-
     })
+
+    runningValidations.set(key, validation);
+    const done = () => runningValidations.delete(key);
+    validation.then(done, done);
+
+    return validation;
 }
+
+export const validateXlSX = (id, version, userName) => runValidationWorker('xlsxvalidationworker.js', id, version, userName)
+
+export const validateFAIRe = (id, version, userName) => runValidationWorker('fairevalidationworker.js', id, version, userName)
