@@ -82,7 +82,8 @@ const processDataset = async (id, version, userName) => {
 
             const report = { ...processingReport, metadata: eml || existingEml , ...headers_, unzip: false, files: { ...files, selectedAssay: preferredAssay } }
             await writeProcessingReport(id, version, report)
-            finishedJobSuccesssFully('success')
+            // hand the report back so the caller does not have to read it from disk again
+            finishedJobSuccesssFully(report)
 
         } catch (error) {
             faireFileRef.errors = [{ message: typeof error === 'string' ? error : error?.message }]

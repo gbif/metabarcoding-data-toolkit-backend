@@ -9,9 +9,59 @@ import _ from "lodash"
 import mapping from './mapping.js';
 import validFileExtensions from '../enum/validFileExtensions.js';
 import {readHDF5data} from '../converters/hdf5.js'
+// Validations of the same dataset run one at a time.
+//
+// validateDataset reads the processing report at the start and writes it back at the end, so
+// two overlapping runs lose each other's writes: the slower one is built on an older snapshot
+// and reverts the fields the faster one wrote. The upload flow triggers validation several
+// times (auto detection, again after the file types are saved, on delete, from /assay), and
+// when the run without typed files happens to finish last it wipes the headers a later run
+// had already written - so the report ends up reflecting whichever run finished last.
+//
+// They are queued, not deduplicated. A re-validation after the file types change is meant to
+// run again, it is not the same work as the run before it.
+const runningValidations = new Map();
+
+export const isValidationRunning = (id) => runningValidations.has(id);
+
+// The workbook validators write the report themselves and hand it back when they report
+// success. Re-reading it from disk used to be the only way to get it, but getProcessingReport
+// swallows every failure and returns null, so a failed read turned into a 200 with a null body
+// or a TypeError on the next line. Only fall back to the disk copy, and say so if that fails.
+const reportFromWorker = async (workerReport, id, version) => {
+
+  if (!!workerReport) {
+    return workerReport
+  }
+  const report = await getProcessingReport(id, version);
+  if (!report) {
+    throw `The validation of dataset ${id} finished but its report could not be read`
+  }
+  return report;
+}
+
 export const validate = async (id, user) => {
+
+  const previous = runningValidations.get(id) || Promise.resolve();
+  // run after the previous one whether it succeeded or failed
+  const run = previous.then(() => validateDataset(id, user), () => validateDataset(id, user));
+
+  // what is kept in the map must never reject - it is only used for ordering
+  const tail = run.catch(() => {});
+  runningValidations.set(id, tail);
+  tail.then(() => {
+    // only the last run in the chain clears the entry
+    if (runningValidations.get(id) === tail) {
+      runningValidations.delete(id)
+    }
+  });
+
+  return run;
+}
+
+const validateDataset = async (id, user) => {
   try {
-                
+
     let version = await getCurrentDatasetVersion(id)
     let processingReport = await getProcessingReport(id, version)
     let metadata = await getMetadata(id, version)
@@ -235,15 +285,15 @@ export const validate = async (id, user) => {
      await writeProcessingReport(id, version, report) */
      console.log("Validating XLSX "+ files )
      const validation = await validateXlSX(id, version, user?.userName)
-     processingReport = await getProcessingReport(id, version)
+     processingReport = await reportFromWorker(validation, id, version)
      if(!!metadata){
       processingReport.metadata = metadata
     }
      return processingReport
     } else if (files?.format === 'FAIRe') {
       console.log("Validating FAIRe " + files)
-      await validateFAIRe(id, version, user?.userName)
-      processingReport = await getProcessingReport(id, version)
+      const validation = await validateFAIRe(id, version, user?.userName)
+      processingReport = await reportFromWorker(validation, id, version)
       if (!!metadata) {
         processingReport.metadata = metadata
       }

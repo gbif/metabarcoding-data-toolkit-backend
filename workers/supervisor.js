@@ -307,8 +307,9 @@ export const validateXlSX = (id, version, userName) => {
         work.on('message', (message) => {
             
             if(message?.type === 'finishedJobSuccesssFully'){
-                           
-                resolve()
+                // the validators send back the report they wrote, so the caller does not
+                // have to read it from disk again
+                resolve(message?.payload)
             }
             if(message?.type === 'finishedJobWithError'){
                 reject(message?.payload)
@@ -329,8 +330,9 @@ export const validateFAIRe = (id, version, userName) => {
         work.on('message', (message) => {
             
             if(message?.type === 'finishedJobSuccesssFully'){
-                           
-                resolve()
+                // the validators send back the report they wrote, so the caller does not
+                // have to read it from disk again
+                resolve(message?.payload)
             }
             if(message?.type === 'finishedJobWithError'){
                 reject(message?.payload)

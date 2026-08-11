@@ -85,7 +85,8 @@ const processDataset = async (id, version, userName) => {
           }
          const report = {...processionReport, ...headers_, unzip: false, files:{...files}};
          await writeProcessingReport(id, version, report)
-         finishedJobSuccesssFully('success')
+         // hand the report back so the caller does not have to read it from disk again
+         finishedJobSuccesssFully(report)
     
         } catch (error) {
           if(typeof error === 'string'){
