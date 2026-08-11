@@ -7,7 +7,14 @@ import { DuckDBInstance as Database } from '@duckdb/node-api';
 // const db = new duckdb.Database(config.duckdb);
 
 let db;   // = new duckdb.Database(':memory:');
-let con; // db.connect();
+
+// The database is in memory and is rebuilt from every dataset on disk at startup, so there is
+// a window after the server starts listening where it is not there yet. initialize() replaces
+// this with the real connection - until then queries say what is wrong instead of failing with
+// "Cannot read properties of undefined (reading 'run')"
+const notInitialized = () => Promise.reject(new Error('The dataset database is still being built after startup, try again in a moment'));
+
+let con = { run: notInitialized, runAndReadAll: notInitialized, stream: notInitialized, prepare: notInitialized }; // db.connect();
 
 const insertDatasetVars = ["user_name", "dataset_id", "title", "created" , "sample_count", "taxon_count", "occurrence_count", "gbif_uat_key", "gbif_prod_key", "deleted", "node_key", "publishing_org_key", "dataset_description", "dataset_author", "dwc_generated", "current_version", "validation_id" ]
 const createUserDatasetStmt = `INSERT INTO UserDatasets VALUES (${insertDatasetVars.map(v => "$"+v).join(", ")})`;

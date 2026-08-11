@@ -29,6 +29,15 @@ import config from '../config.js';
 SegfaultHandler.registerHandler('crash.log'); */
 
 
+// Node exits the process on an unhandled rejection. That is far too blunt here: a promise
+// nobody awaited - a bookkeeping database update after a job finished, say - would take the
+// whole service down and drop every request and every running worker with it. Log it and
+// keep serving.
+process.on('unhandledRejection', (reason, promise) => {
+    console.log('Unhandled promise rejection - the service is still running, but this should be fixed:')
+    console.log(reason)
+})
+
 initDatabase()
 
 

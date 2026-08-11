@@ -161,8 +161,11 @@ export const processDataset = (id, version, job) => {
             } 
             if(message?.type === 'finishedJobSuccesssFully'){
                  if(job?.summary?.taxonCount && job?.summary?.sampleCount){
+                    // bookkeeping only - the dataset is processed either way, and an
+                    // unhandled rejection here would take the whole service down
                     db.updateCountsOnDataset(job.createdBy, id, job?.summary?.sampleCount, job?.summary?.taxonCount)
-                } 
+                        .catch(error => console.log(`Could not update counts on dataset ${id}: ${error?.message || error}`))
+                }
                 resolve()
             }
             if(message?.type === 'finishedJobWithError'){
@@ -212,16 +215,17 @@ export const createDwc = (id, version, job) => {
             }
 
             if(message?.type === 'finishedJobSuccesssFully'){
+                    // bookkeeping only - the archive is generated either way. A try/catch
+                    // around a call that is not awaited catches nothing, and the unhandled
+                    // rejection that got through took the whole service down
                     if(job?.summary?.occurrenceCount){
-                        
+
                        db.updateOccurrenceCountOnDataset(job.createdBy, id, job?.summary?.occurrenceCount)
-                   }  
-                   try {
-                    db.updateDwcGeneratedOnDataset(job.createdBy, id, new Date().toISOString())    
-                   } catch (error) {
-                    console.log(error)
-                   } 
-                     
+                            .catch(error => console.log(`Could not update occurrence count on dataset ${id}: ${error?.message || error}`))
+                   }
+                   db.updateDwcGeneratedOnDataset(job.createdBy, id, new Date().toISOString())
+                        .catch(error => console.log(`Could not update dwc generated timestamp on dataset ${id}: ${error?.message || error}`))
+
                 resolve()
             }
             if(message?.type === 'finishedJobWithError'){
