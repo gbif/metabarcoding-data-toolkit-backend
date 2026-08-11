@@ -5,7 +5,7 @@ import _ from 'lodash'
 import { getCurrentDatasetVersion, writeProcessingReport, wipeGeneratedFilesAndResetProccessing, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
 import { getDataset } from '../util/dataset.js';
 
-import {processDataset} from '../workers/supervisor.js'
+import {processDataset, awaitRunningValidation} from '../workers/supervisor.js'
 import queue from 'async/queue.js';
 import STEPS from '../enum/processingSteps.js'
 import runningJobs from '../workers/runningJobs.js';
@@ -44,15 +44,48 @@ const q = queue(async (options) => {
 }, 3)
 
 
+// The job was snapshotted from the report when it was created, so writing it back
+// as-is would discard everything written to the report while the job ran - a
+// validation finishing after the job started, a mapping saved from the UI. Merge
+// the job onto whatever is on disk now instead.
+const writeJobToReport = async (id, job) => {
+    let report;
+    try {
+        report = await getDataset(id, job.version)
+    } catch (error) {
+        // no readable report - the job is all we have
+    }
+    const merged = {...(report || {}), ...job};
+    // mapping and metadata have their own files and getDataset reads them fresh,
+    // while the job holds a copy from when it was created. If the user saved either
+    // one while the job ran, the job's copy is the stale one
+    if (report?.mapping) {
+        merged.mapping = report.mapping
+    }
+    if (report?.metadata) {
+        merged.metadata = report.metadata
+    }
+    await writeProcessingReport(id, job.version, merged)
+}
+
 const pushJob = async ({id, assignTaxonomy, user, skipSimiliarityPlots}) => {
     let version;
 
     let newJob = { id: id, processedBy: user?.userName, assignTaxonomy: assignTaxonomy, skipSimiliarityPlots: skipSimiliarityPlots, filesAvailable: [], steps: [{ status: 'queued', time: Date.now() }] }
+    // Register the job before anything is awaited. This function is not awaited by
+    // the route, so until the job is in runningJobs a status poll falls back to the
+    // report on disk - whose steps have just been wiped - and a second process
+    // request would start a parallel run
+    runningJobs.set(id, newJob)
     try {
         version = await getCurrentDatasetVersion(id);
+       // A validation started just before this may not have written the file headers
+       // to the report yet, and the job would then be created without them
+       await awaitRunningValidation(id, version);
        const existingReport = await getDataset(id, version);
        if(existingReport){
         newJob = {...existingReport, ...newJob}
+        runningJobs.set(id, newJob)
        }
        /* if(existingReport?.sampleHeaders){
         newJob.sampleHeaders = existingReport.sampleHeaders
@@ -81,7 +114,7 @@ const pushJob = async ({id, assignTaxonomy, user, skipSimiliarityPlots}) => {
                 console.log(error);
                 let job = runningJobs.get(id);
                 job.steps.push({ status: 'failed', message: 'unsupported format', time: Date.now() })
-                await writeProcessingReport(id, job.version, job)
+                await writeJobToReport(id, job)
                 runningJobs.delete(id)
 
                 //runningJobs.set(id, {...runningJobs.get(id), status: 'failed'} )
@@ -91,11 +124,13 @@ const pushJob = async ({id, assignTaxonomy, user, skipSimiliarityPlots}) => {
                 if(job?.steps?.[job?.steps?.length -1]?.status !== 'failed'){
                     job.steps.push({ status: 'finished', time: Date.now() })
                 }
-                await writeProcessingReport(id, job.version, job)
+                await writeJobToReport(id, job)
                 runningJobs.delete(id)
             }
         })
     } catch (error) {
+        // the job never made it onto the queue, do not leave it looking like it is running
+        runningJobs.delete(id)
         console.log(error)
         throw error
     }

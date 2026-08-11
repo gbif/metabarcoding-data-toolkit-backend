@@ -141,6 +141,16 @@ export const processDataset = (id, version, job) => {
             if(message?.type === 'consistencyCheck'){
                 job.processingErrors = { ...(job.processingErrors || {}), consistencyCheck: message?.payload }
             }
+            if(message?.type === 'dataHeaders'){
+                // Only formats that are not covered by prepareForProcessing send these
+                if(message?.payload?.sampleHeaders){
+                    job.sampleHeaders = message?.payload?.sampleHeaders
+                }
+                if(message?.payload?.taxonHeaders){
+                    job.taxonHeaders = message?.payload?.taxonHeaders
+                }
+                runningJobs.set(id, { ...job });
+            }
 
             
 
@@ -303,6 +313,22 @@ export const createDwcDP = (id, version, job) => {
 // forking a second worker: every fork re-parses the whole workbook, and they all
 // read-modify-write the same processing.json.
 const runningValidations = new Map();
+
+// Resolves once no validation is running for the dataset. Anything that reads the
+// processing report to act on it should wait for this first - the report has no
+// headers until the validation worker has written them.
+export const awaitRunningValidation = async (id, version) => {
+    const running = [...runningValidations.entries()]
+        .filter(([key]) => key.endsWith(`:${id}:${version}`))
+        .map(([, validation]) => validation);
+
+    if (running.length === 0) {
+        return
+    }
+    console.log(`Waiting for the validation of dataset ${id} to finish`)
+    // a failed validation is not this caller's problem, it only needs the report to settle
+    await Promise.allSettled(running)
+}
 
 const runValidationWorker = (workerFile, id, version, userName) => {
 

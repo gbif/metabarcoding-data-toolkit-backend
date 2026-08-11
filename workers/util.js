@@ -82,6 +82,23 @@ export const missingSampleRecords = errors => {
     }
 }
 
+// Reports the sample/taxon column names back to the supervisor. Formats that are
+// read straight from a workbook have them in hand once the data is read, and the
+// job cannot rely on the processing report having them - validation may still be
+// running when the job is created
+export const dataHeaders = ({sampleHeaders, taxonHeaders}) => {
+
+    if (typeof process?.send === 'function') {
+         process.send({
+            type: 'dataHeaders',
+            payload: {sampleHeaders, taxonHeaders}
+
+        }
+
+        )
+    }
+}
+
 export const consistencyCheckReport = data => {
 
     if (typeof process?.send === 'function') {

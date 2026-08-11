@@ -5,7 +5,7 @@ import { uploadedFilesAndTypes, getMimeFromPath, getFileSize, unzip } from '../v
 import { readFastaAsMap } from '../util/streamReader.js';
 import _ from 'lodash'
 import { mergeFastaMapIntoTaxonMap, readMapping } from '../util/filesAndDirectories.js'
-import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, consistencyCheckReport, writeMetrics} from "./util.js"
+import {updateStatusOnCurrentStep, beginStep, stepFinished, blastErrors, finishedJobSuccesssFully, finishedJobWithError, writeBiomFormats, consistencyCheckReport, writeMetrics, dataHeaders} from "./util.js"
 import { assignTaxonomy } from '../classifier/index.js';
 
 import config from '../config.js';
@@ -19,15 +19,14 @@ const processDataset = async (id, version, systemShouldAssignTaxonomy, skipSimil
 
     const xlsx = files.files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || f?.name?.endsWith('.xlsx'))
     const fasta = files.files.find(f => isFastaFile(f.name))
-   /*  if (filePaths?.samples) {
-        job.sampleHeaders = await readTsvHeaders(filePaths?.samples)
-    }
-    if (filePaths?.taxa) {
-        job.taxonHeaders = await readTsvHeaders(filePaths?.taxa)
-    } */
     beginStep('readData')
    // const biom = await toBiom(filePaths.otuTable, filePaths.samples, filePaths.taxa, samplesAsColumns,  updateStatusOnCurrentStep , mapping, id)
    const {samples, taxa, otuTable} = await readWorkBookFromFile(id, xlsx.name, version, mapping, updateStatusOnCurrentStep)
+
+   // The workbook is parsed here anyway, so report the headers to the supervisor
+   // instead of relying on the processing report - a validation that is still
+   // running may not have written them yet when the job was created
+   dataHeaders({sampleHeaders: samples?.data?.[0], taxonHeaders: taxa?.data?.[0]})
 
    const sampleMap = getMapFromMatrix(samples.data,  mapping.samples)
    const taxaMap = getMapFromMatrix(taxa.data, mapping.taxa, true)
