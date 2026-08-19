@@ -58,6 +58,15 @@ app.use(function (req, res, next) {
     // Request headers you wish to allow
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
 
+    // Everything under /dataset describes the live state of a dataset - the steps of a run in
+    // progress, the headers a validation has just written. Express sends no Cache-Control, so
+    // the Varnish cache in front of the service is free to keep a copy and hand it back for
+    // the next minute or so. A client polling for progress then sees the state from before
+    // its own request and stops, while the run it started completes unseen.
+    if (req.path.startsWith('/dataset') || req.path.startsWith('/validate')) {
+        res.setHeader('Cache-Control', 'no-store');
+    }
+
     // Pass to next layer of middleware
     next();
 });
