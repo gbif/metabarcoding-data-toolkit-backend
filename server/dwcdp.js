@@ -41,6 +41,17 @@ const pushJob = async (id, version, user) => {
                 console.log(error);
                 let job = runningJobs.get(dwcdpID);
                 job.steps.push({ status: 'failed', message: error?.message, time: Date.now() })
+                // see the same note in dwc.js - without this the failure never reaches any
+                // response and a client polling for a terminal state waits forever
+                try {
+                    const report = await getProcessingReport(id, version);
+                    if (report) {
+                        report.dwcdp = job;
+                        await writeProcessingReport(id, version, report)
+                    }
+                } catch (reportError) {
+                    console.log(reportError)
+                }
                 runningJobs.delete(dwcdpID)
                 //runningJobs.set(id, {...runningJobs.get(id), status: 'failed'} )
                // throw error

@@ -87,6 +87,19 @@ const pushJob = async (id, version, user) => {
                 console.log(error);
                 let job = runningJobs.get(`${id}:dwc`);
                 job.steps.push({ status: 'failed', message: error?.message, time: Date.now() })
+                // The failure has to reach the report. Once the job is dropped from
+                // runningJobs the only thing left to answer with is what is on disk, which
+                // still describes the previous run - so a client waiting for a terminal
+                // state would never see one.
+                try {
+                    const report = await getProcessingReport(id, version);
+                    if (report) {
+                        report.dwc = job;
+                        await writeProcessingReport(id, version, report)
+                    }
+                } catch (reportError) {
+                    console.log(reportError)
+                }
                 runningJobs.delete(`${id}:dwc`)
                 //runningJobs.set(id, {...runningJobs.get(id), status: 'failed'} )
                // throw error
