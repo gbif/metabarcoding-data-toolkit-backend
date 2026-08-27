@@ -31,6 +31,10 @@ const storage = multer.diskStorage({
   },
 })
 
+// A FAIRe dataset is legitimately many files - a project workbook plus an otuFinal and a
+// taxaFinal per assay per library - so this has to be well above a handful.
+const MAX_UPLOAD_FILES = 50;
+
 const upload = multer({
   storage: storage,
 })
@@ -42,11 +46,18 @@ const logMulterError = (error, req, res, next) => {
 const handleUploadError = (error, req, res, next) => {
   console.log(error.message)
   if(error.message === 'Unsupported file type'){
-  res.sendStatus(415)
+    res.sendStatus(415)
+  } else if(error?.code === 'LIMIT_UNEXPECTED_FILE' || error?.code === 'LIMIT_FILE_COUNT'){
+    res.status(413).send(`Too many files in one upload. At most ${MAX_UPLOAD_FILES} files can be uploaded at a time.`)
+  } else {
+    // Every path must answer. Multer aborts the request when it rejects a file, so anything
+    // left unanswered here holds the connection open and the browser waits forever instead of
+    // being told what went wrong.
+    res.status(500).send(error?.message || 'The upload could not be handled')
   }
 }
 export default  (app) => {
-  app.post('/dataset/upload', auth.appendUser(), upload.array('tables', 5), handleUploadError, /* logMulterError, */ async function (req, res, next) {
+  app.post('/dataset/upload', auth.appendUser(), upload.array('tables', MAX_UPLOAD_FILES), handleUploadError, /* logMulterError, */ async function (req, res, next) {
     try {
       const version = req?.query?.version ?? "1";
       if(req?.user){
@@ -72,7 +83,7 @@ export default  (app) => {
     
   })
   
-app.put('/dataset/:id/upload', auth.userCanModifyDataset(), upload.array('tables', 5), handleUploadError, async function (req, res, next) {
+app.put('/dataset/:id/upload', auth.userCanModifyDataset(), upload.array('tables', MAX_UPLOAD_FILES), handleUploadError, async function (req, res, next) {
   try {
     let version = req?.query?.version;
     const currentVersion = await getCurrentDatasetVersion(req.params.id)
