@@ -1,5 +1,7 @@
 import { getProcessingReport, writeProcessingReport, getMetadata, getCurrentDatasetVersion, wipeGeneratedDwcFiles, rsyncToPublicAccess, dwcArchiveExists} from '../util/filesAndDirectories.js'
 import {registerDatasetInGBIF, registerDatasetInGBIFusingGBRDS, registerBiomEndpoints} from '../util/gbifRegistry.js'
+import { withMetadataState } from '../util/dataset.js';
+import { metadataReadiness, metadataMissingMessage } from '../validation/readiness.js';
 import { biomToDwc } from '../converters/dwc.js';
 import {getMimeFromPath, getFileSize} from '../validation/files.js'
 import config from '../config.js'
@@ -86,7 +88,7 @@ const pushJob = async (id, version, user) => {
             if (error) {
                 console.log(error);
                 let job = runningJobs.get(`${id}:dwc`);
-                job.steps.push({ status: 'failed', message: error?.message, time: Date.now() })
+                job.steps.push({ status: 'failed', message: error?.message || error, time: Date.now() })
                 // The failure has to reach the report. Once the job is dropped from
                 // runningJobs the only thing left to answer with is what is on disk, which
                 // still describes the previous run - so a client waiting for a terminal
@@ -143,6 +145,14 @@ const processDwc = async function (req, res) {
                 version = await getCurrentDatasetVersion(req.params.id)
             } 
             console.log("Version "+version)
+                // meta.xml declares metadata="eml.xml" unconditionally, and eml.xml is only
+                // written when the metadata form is saved. Building an archive from a
+                // title-only eml.json produces a zip whose manifest points at a file that is
+                // not in it - refuse rather than hand the user something GBIF will reject.
+                const {ready, missing} = metadataReadiness(await getMetadata(req.params.id, version))
+                if(!ready){
+                    return res.status(400).json({message: metadataMissingMessage(missing), metadataMissing: missing})
+                }
                 // Make sure a job is not already running
                 if(!runningJobs.has(`${req.params.id}:dwc`)){
                     console.log("Push job")
@@ -175,6 +185,12 @@ const processDwc = async function (req, res) {
             } 
             const hasDwcArchive = await  dwcArchiveExists(req.params.id, version)
             const metadata = await getMetadata(req.params.id, version)   
+            // an archive generated before this guard existed may still be on disk without an
+            // eml.xml, so registering has to check the metadata itself rather than trust it
+            const {ready, missing} = metadataReadiness(metadata)
+            if(!ready){
+                return res.status(400).json({message: metadataMissingMessage(missing), metadataMissing: missing})
+            }
             let report = await getProcessingReport(req.params.id, version);
             report.publishing = report?.publishing || {} // {steps : []}
          
@@ -340,9 +356,9 @@ const getDwcProcess = async (req, res) => {
             if (job) {
                
                 let dwc = {...job, steps: addPendingSteps(job)};
-                return {...report, dwc: dwc};
+                return withMetadataState({...report, dwc: dwc});
             } else {        
-                return report
+                return withMetadataState(report)
            
         }
         } catch (error) {

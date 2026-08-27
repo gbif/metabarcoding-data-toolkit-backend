@@ -7,6 +7,7 @@ import {writeEmlJson, writeEmlXml, getCurrentDatasetVersion, getMetadata, dwcArc
 import auth from './Auth/auth.js';
 import db from './db/index.js'
 import { md5 } from '../util/index.js';
+import { metadataReadiness } from '../validation/readiness.js';
 import config from '../config.js';
 
 const processEml = async function (req, res) {
@@ -32,7 +33,10 @@ const processEml = async function (req, res) {
             if(!!req.body?.description){
                 await db.updateDescriptionOnDataset(req?.user?.userName, req.params.id, req.body?.description.substring(0, 300))
             }
-            res.send(req.body)
+            // hand the readiness back so the client can open the export and publish steps as
+            // soon as the metadata is complete, rather than waiting for the next poll
+            const {ready, missing} = metadataReadiness(toWrite);
+            res.json({...req.body, metadataReady: ready, metadataMissing: missing})
         } catch (error) {
             console.log(error)
             res.sendStatus(500)

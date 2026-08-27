@@ -2,8 +2,25 @@ import { getCurrentDatasetVersion, getMetadata, getProcessingReport, readMapping
 import { uploadedFilesAndTypes} from '../validation/files.js';
 import {getSamplesForGeoJson} from "../metrics/index.js"
 import { filterAndValidateCoordinates } from "../validation/coordinates.js"
+import { metadataReadiness } from '../validation/readiness.js';
 import config from '../config.js';
 import _ from "lodash";
+
+// Creating a dataset writes an eml.json holding nothing but the title, so the presence of
+// metadata is not a usable gate for the export and publish steps - they need to know whether
+// it is complete. Applied at each payload boundary rather than inside getDataset, because
+// pushJob spreads getDataset's result into the job and the job is written back as the report,
+// so a derived field added there would be persisted and go stale. Always overwrites, so a
+// value persisted by an older build is replaced rather than served.
+export const withMetadataState = (report) => {
+
+    if(!report){
+        return report
+    }
+    const {ready, missing} = metadataReadiness(report?.metadata);
+
+    return {...report, metadataReady: ready, metadataMissing: missing}
+}
 
 export const getDataset = async (id, version) =>  {
     try {

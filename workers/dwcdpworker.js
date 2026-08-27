@@ -50,7 +50,7 @@ const createDwcDp = async (id, version) => {
     } catch (error) {
        // console.log("#########")
         console.log(error)
-        finishedJobWithError(error)   
+        finishedJobWithError(error?.message || error)   
     }
     
 }

@@ -3,7 +3,7 @@ import * as url from 'url';
 import auth from './Auth/auth.js';
 import _ from 'lodash'
 import { getCurrentDatasetVersion, writeProcessingReport, wipeGeneratedFilesAndResetProccessing, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
-import { getDataset } from '../util/dataset.js';
+import { getDataset, withMetadataState } from '../util/dataset.js';
 
 import {processDataset} from '../workers/supervisor.js'
 import queue from 'async/queue.js';
@@ -121,12 +121,12 @@ const withMappingState = (report, id) => {
 
     const { ready, missing } = mappingReadiness(report);
 
-    return {
+    return withMetadataState({
         ...report,
         mappingReady: ready,
         mappingMissing: missing,
         validationRunning: isValidationRunning(id)
-    }
+    })
 }
 
 const getProcess = async (req, res) => {
