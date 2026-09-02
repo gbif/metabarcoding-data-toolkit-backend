@@ -12,11 +12,11 @@ const appendUser = () => {
             .then((user) => {
                 if (user) {
                     req.user = {...user, isAdmin: config.installationAdmins.includes(user.userName)};
+                    // A per-user credential the client adopts as its identity. The headers that
+                    // keep it out of a shared cache are set for every response in server/index.js
+                    // - they used to be set here, which meant userCanModifyDataset below sent the
+                    // same header with no cache directives at all.
                     res.setHeader('token', user?.token);
-
-                    res.setHeader("Surrogate-Control", "no-store");
-                    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-                    res.setHeader("Expires", "0");
                 } else {
                    // removeTokenCookie(res);
                     res.removeHeader('token');
