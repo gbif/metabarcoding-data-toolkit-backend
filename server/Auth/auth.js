@@ -11,7 +11,7 @@ const appendUser = () => {
             User.getFromToken(req?.headers?.authorization)
             .then((user) => {
                 if (user) {
-                    req.user = {...user, isAdmin: config.installationAdmins.includes(user.userName)};
+                    req.user = {...user};
                     // A per-user credential the client adopts as its identity. The headers that
                     // keep it out of a shared cache are set for every response in server/index.js
                     // - they used to be set here, which meant userCanModifyDataset below sent the
@@ -79,10 +79,10 @@ const userCanModifyDataset = () => {
 
 
 
-export const getOrganisationsForUser = async (userName) => {
+export const getOrganisationsForUser = async ({isAdmin, userName}  = {}) => {
     try {
         const admin = await readOrganizationFile();
-        if(config?.installationAdmins?.includes(userName)){
+        if(isAdmin){
             return Object.keys(admin?.organizations || {}).map(key => ({key, name: admin?.organizations?.[key]?.name}))
         } else {
             return Object.keys(admin?.organizations || {}).filter(key => admin?.organizations?.[key]?.users?.includes(userName) ).map(key => ({key, name: admin?.organizations?.[key]?.name}))

@@ -16,7 +16,7 @@ async function login(auth) {
     try {
         let response = await axios(loginRequest);
         const user = response?.data
-        return {...user, isAdmin: config.installationAdmins.includes(user?.userName)};
+        return {...user, isAdmin: config.installationAdmins.includes(user?.userName) || config.supportAdmins.includes(user.userName), isSupportAdmin: config.supportAdmins.includes(user.userName)};
     } catch (error) {
         console.log(error)
         throw error
@@ -50,7 +50,7 @@ async function getFromToken(auth) {
             if(!response?.headers?.token){
                 console.log(`No token from registry? Token: ${response?.headers?.token}`)
             }
-            return {...user,datasets: datasets, token: response?.headers?.token || '', isAdmin: config.installationAdmins.includes(user.userName)};
+            return {...user,datasets: datasets, token: response?.headers?.token || '', isAdmin: config.installationAdmins.includes(user.userName) || config.supportAdmins.includes(user.userName), isSupportAdmin: config.supportAdmins.includes(user.userName)};
         } else {
             throw "No user from that token, expired?"
         }

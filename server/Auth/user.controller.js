@@ -26,8 +26,7 @@ export default  (app) => {
     app.get('/user/organizations', auth.appendUser(), async (req, res) => {
 
         try {
-            const userName = req?.user?.userName;
-            const organizations = await auth.getOrganisationsForUser(userName)
+            const organizations = await auth.getOrganisationsForUser(req?.user)
             res.json(organizations)
         } catch (error) {
             console.log(error)
