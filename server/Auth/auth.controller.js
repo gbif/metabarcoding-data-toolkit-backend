@@ -27,14 +27,9 @@ const login = async (req, res) => {
 
 export default  (app) => {
     // POST, because the response body carries the user's JWT and the request is told apart
-    // from every other user's only by the Authorization header. As a GET it was a cacheable
-    // URL holding a credential, so a shared cache that does not vary on Authorization would
-    // serve one user's token to the next person who signed in.
+    // from every other user's only by the Authorization header. 
     app.post('/auth/login', login);
-    // Deprecated - kept only so a browser still running an older UI bundle can sign in.
-    // Remove once the UI change has been out long enough; the no-store headers in
-    // server/index.js are what make it safe in the meantime.
-    app.get('/auth/login', login);
+    
     
     app.post('/auth/whoami', async (req, res) => {
 

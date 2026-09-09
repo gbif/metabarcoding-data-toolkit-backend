@@ -185,7 +185,13 @@ export default (app) => {
                 if (!runningJobs.has(req.params.id)) {
                     let assignTaxonomy = req?.query?.assignTaxonomy && (req?.query?.assignTaxonomy === true || req?.query?.assignTaxonomy === "true" )
                     let skipSimiliarityPlots = req?.query?.skipSimiliarityPlots && (req?.query?.skipSimiliarityPlots === true || req?.query?.skipSimiliarityPlots === "true" )
-                    pushJob({id:req.params.id, assignTaxonomy, user:req?.user, skipSimiliarityPlots} );
+                    // Awaited, so the job is in runningJobs before the client is told to start
+                    // polling. Unawaited, the 201 went out while pushJob was still clearing the
+                    // previous run's files - and a poll arriving in that window found no running
+                    // job and was answered from the report on disk, which still held the old
+                    // steps. The client had just cleared them, so they reappeared.
+                    // pushJob resolves once the job is queued, not once processing is done.
+                    await pushJob({id:req.params.id, assignTaxonomy, user:req?.user, skipSimiliarityPlots} );
                     res.sendStatus(201)
                 } else {
                     res.sendStatus(302)

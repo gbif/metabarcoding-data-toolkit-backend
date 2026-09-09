@@ -599,7 +599,7 @@ export const getMetrics = async (hdf5file, processFn = (progress, total, message
         const sequenceLength = getDNAsequenceLength(f);
         console.log("getSampleCountPrOtu")
         const sampleCountPrOtu = getSampleCountPrOtu(f);
-        console.log("Generating metrics onbject")
+        console.log("Generating metrics object")
         const metrics =  {
            
             totalReads,
