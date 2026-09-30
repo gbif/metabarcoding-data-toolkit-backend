@@ -48,7 +48,7 @@ curl 'https://mdt.gbif.org/service/validate/<DATASET_KEY>' \
   -H 'Authorization: Bearer <AUTHORIZATION_TOKEN>'  | jq .files.format
 ````
 
-If your file names comply with the [naming convention](https://docs.gbif-uat.org/mdt-user-guide/en/#fitting-the-data-into-a-template), and you have `id` columns in the sample and taxonomy files, the validation should respond with one of the formats listed here: https://mdt.gbif.org/service/enum/format
+If your file names comply with the [naming convention](https://doi.org/10.35035/doc-wkpc-m352#fitting-the-data-into-a-template), and you have `id` columns in the sample and taxonomy files, the validation should respond with one of the formats listed here: https://mdt.gbif.org/service/enum/format
 If the response is `INVALID`, you will probably need to tell the API which file is the OTU table, taxonomy and sample file.
 
 You will do this by posting a simple mapping like the following:

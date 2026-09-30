@@ -132,8 +132,6 @@ const determineFormat = async (files, basePath = '') => {
 
     if(files.find(f => f?.mimeType === 'application/x-hdf5')){
         return 'BIOM_2_1'
-    } else if(files.length === 1 && files[0].mimeType === 'application/json'){
-        return 'BIOM_1'
     } else if(files.length < 3 && files.find(f => f.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || f.name?.endsWith('.xlsx')) ){
 
         return !!fasta ? 'XLSX_WITH_FASTA' : 'XLSX'

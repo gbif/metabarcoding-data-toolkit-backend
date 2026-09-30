@@ -138,8 +138,8 @@ export const fromHdf5ToBiom = async ({otuTableFile, samples, taxa, samplesAsColu
     try {
         const biomFromHdf5 = await readHDF5(otuTableFile?.path);
 
-        const cols = biomFromHdf5.columns.map(c => samples.has(c?.id) ? getMetaDataRow(samples.get(c?.id), false) : {id: c?.id, metdata: {}}) ;
-        const rws = biomFromHdf5.rows.map(r => taxa.has(r?.id) ? getMetaDataRow(taxa.get(r?.id), true) : {id: r?.id, metdata: {}}) ;
+        const cols = biomFromHdf5.columns.map(c => samples.has(c?.id) ? getMetaDataRow(samples.get(c?.id), false) : {id: c?.id, metadata: {}}) ;
+        const rws = biomFromHdf5.rows.map(r => taxa.has(r?.id) ? getMetaDataRow(taxa.get(r?.id), true) : {id: r?.id, metadata: {}}) ;
 
         const otuTableColIdSet = new Set(biomFromHdf5.columns.map(s => s?.id));
         const otuTableRowIdSet = new Set(biomFromHdf5.rows.map(s => s?.id));
