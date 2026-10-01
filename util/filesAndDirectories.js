@@ -405,16 +405,38 @@ export const wipeGeneratedDwcFiles = async (id, version, files = ['archive.zip',
 
 }
 
-export const wipeGeneratedDwcDpFiles = async (id, version, keepZip = false) => {
+/**
+ * Removes generated DwC-DP output.
+ *
+ * Two callers, with different intent, told apart by keepGeneratedOutput:
+ *
+ *  - false (server/dwcdp.js, before a run): wipe the *previous* generation completely. This has
+ *    to include parquet/ and dwc-dp.parquet.zip. A regeneration writes each table it produces,
+ *    but it does not delete files it no longer produces - so a table that is renamed or dropped
+ *    between schema versions would leave its old parquet behind, and server/explore.js queries
+ *    that directory. The dashboard would then read a mix of old and new columns.
+ *
+ *  - true (workers/dwcdpworker.js, after zipping): drop only the tsv working directory. The
+ *    zips and parquet/ are the artefacts just produced - parquet/ in particular is what
+ *    explore.js serves the dashboard from, so it must survive.
+ */
+export const wipeGeneratedDwcDpFiles = async (id, version, keepGeneratedOutput = false) => {
   return new Promise(async (resolve, reject) => {
     try {
-        const exists = await fileExists(id, version, 'dwc-dp.zip')
-        if(exists && !keepZip){
-          await deleteFile(id, version, 'dwc-dp.zip')
+        const base = `${config.dataStorage}${id}/${version}`;
+        // the tsv working directory is never kept - it only exists to be zipped
+        await fs.promises.rm(`${base}/dwc-dp`, {recursive: true, force: true})
+
+        if(!keepGeneratedOutput){
+          for (const zip of ['dwc-dp.zip', 'dwc-dp.parquet.zip']) {
+            const exists = await fileExists(id, version, zip)
+            if(exists){
+              await deleteFile(id, version, zip)
+            }
+          }
+          await fs.promises.rm(`${base}/parquet`, {recursive: true, force: true})
         }
-        await fs.promises.rm(`${config.dataStorage}${id}/${version}/dwc-dp`, {recursive: true, force: true})
-        
-      
+
       resolve(`Cleaned directories`)
     } catch (error) {
       reject(error)

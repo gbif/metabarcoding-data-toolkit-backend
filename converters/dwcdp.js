@@ -3,6 +3,7 @@ import fs from 'fs';
 import util from "../util/index.js"
 import emofToEventAssertion from '../enum/emofToEventAssertion.js';
 import {once} from 'events';
+import { getEml } from '../util/Eml/index.js';
 
 
 const getEmofData = (evt, termMapping ) => {
@@ -96,11 +97,28 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
           if (!fs.existsSync(`${path}/dwc-dp`)){
            await fs.promises.mkdir(`${path}/dwc-dp/data`, { recursive: true });
         }
+        // archive/eml.xml is written when the metadata form is saved (server/eml.js) and by the
+        // FAIRe validation worker - not by the archive builder and not here. So a dataset can
+        // reach this point without one: a copy restored without its archive directory, for
+        // instance. The data package has no reason to depend on the archive path, so build the
+        // eml from eml.json when the file is not there rather than shipping a package with no
+        // metadata in it.
         try {
-            await fs.promises.copyFile(`${path}/archive/eml.xml`, `${path}/dwc-dp/eml.xml`)
-            console.log('Eml copied successfully to datapackage');
+            const emlSource = `${path}/archive/eml.xml`;
+            if (fs.existsSync(emlSource)) {
+                await fs.promises.copyFile(emlSource, `${path}/dwc-dp/eml.xml`)
+                console.log('Eml copied successfully to datapackage');
+            } else {
+                const emlJson = JSON.parse(await fs.promises.readFile(`${path}/eml.json`, 'utf8'))
+                // the BIOM carries the dataset id, which getEml needs for packageId
+                await fs.promises.writeFile(`${path}/dwc-dp/eml.xml`, getEml({...emlJson, id: biomData?.id}))
+                console.log('No archive/eml.xml found - generated the datapackage eml from eml.json');
+            }
         } catch (err) {
-            console.error('Error copying eml to datapackage:', err);
+            // getEml throws on a missing or invalid license, and eml.json may not exist at all.
+            // Neither is worth failing the whole package for - the metadata guard on the route
+            // already refuses to generate when the metadata is incomplete.
+            console.error('Could not add eml to datapackage:', err?.message || err);
 
         }
         let defaultValues = {};
@@ -122,7 +140,23 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
       //  const otherTaxonHeaders = taxonHeaders.filter(h => !identificationTerms.has(h))
         const eventRelevantSampleHeaders = sampleHeaders.filter(h => eventTerms.has(h));
        // const otherSampleHeaders = = sampleHeaders.filter(h => !identificationTerms.has(h));
-       const protocolRelevantStudyHeaders = Object.keys(defaultValues?.sample || {}).filter(k => protocolTerms.has(k))
+       // Terms DwC-DP renamed, mapped from the name a user's study file may still use to the
+       // name the schema now declares. Without this the filter below silently drops the value:
+       // the old name is no longer a molecular-protocol field, so it simply stops matching.
+       // Keyed old -> new; only add entries where the meaning is unchanged and only the
+       // spelling moved.
+       const RENAMED_PROTOCOL_TERMS = {
+           samp_collec_device: 'samp_collect_device',
+           samp_collec_method: 'samp_collect_method',
+           DNA_sequence: 'sequence',
+       };
+       // Each entry is [column name to write, key to read from the study defaults]. They differ
+       // only for a renamed term, where the schema's new name heads the column but the value
+       // still comes from whatever the user called it.
+       const protocolStudyColumns = Object.keys(defaultValues?.sample || {})
+           .map(k => [RENAMED_PROTOCOL_TERMS[k] || k, k])
+           .filter(([schemaName]) => protocolTerms.has(schemaName));
+       const protocolRelevantStudyHeaders = protocolStudyColumns.map(([schemaName]) => schemaName)
        // console.log(biomData.data);
         const rowTotal = biomData.data.length + biomData.columns.length + biomData.rows.length;
         let rowsWritten = 0;
@@ -210,17 +244,29 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
         // So far the MDT does not support multi-assay datasets, so there will be only one protocol
         const molecularProtocolID = 1;
         // Write headers
-        const analysisHeaders = ["nucleotideAnalysisID",  "eventID", "molecularProtocolID", "nucleotideSequenceID", "readCount", "totalReadCount"];
+        // DwC-DP moved from natural keys to surrogate keys: the identifying column of each
+        // table is now <table>_pk, and a reference to another table is <table>_fk. The old
+        // *ID names survive only where they were primary keys - the foreign ones
+        // (eventID in nucleotide-analysis, for instance) no longer exist in the schema.
+        //
+        // The values are unchanged: <table>_pk carries exactly what <table>ID carried before,
+        // and each _fk the value of the column it replaces. That keeps record identity
+        // stable, so regenerating an already-published dataset does not create a second set
+        // of occurrences. The rows below are written positionally against these arrays, so
+        // renaming here is enough - the order and the count are the same as before.
+        const analysisHeaders = ["nucleotideAnalysis_pk",  "event_fk", "molecularProtocol_fk", "nucleotideSequence_fk", "readCount", "processedTotalReadCount"];
         analysisStream.write(`${analysisHeaders.join("\t")}\n`)
-        const sequenceHeaders = ["nucleotideSequenceID", "sequence"]
+        const sequenceHeaders = ["nucleotideSequence_pk", "sequence"]
         sequenceStream.write(`${sequenceHeaders.join("\t")}\n`)
-        const identificationHeaders = ["identificationID", "nucleotideSequenceID", ...identificationRelevantTaxonHeaders]
+        const identificationHeaders = ["identification_pk", "nucleotideSequence_fk", ...identificationRelevantTaxonHeaders]
         identificationStream.write(`${identificationHeaders.join("\t")}\n`)
-        const eventHeaders = ["eventID", ...eventRelevantSampleHeaders]
+        const eventHeaders = ["event_pk", ...eventRelevantSampleHeaders]
         eventStream.write(`${eventHeaders.join("\t")}\n`)
-        const protocolHeaders = ["molecularProtocolID", ...protocolRelevantStudyHeaders];
+        const protocolHeaders = ["molecularProtocol_pk", ...protocolRelevantStudyHeaders];
         protocolStream.write(`${protocolHeaders.join("\t")}\n`)
-        const eventAssertionHeaders = ["assertionID", "eventID", "assertionValue", ...Object.keys(emofToEventAssertion).map(k => emofToEventAssertion[k])];
+        // event-assertion declares no primaryKey upstream, and assertionID survives as an
+        // ordinary field, so only the reference to event moves
+        const eventAssertionHeaders = ["assertionID", "event_fk", "assertionValue", ...Object.keys(emofToEventAssertion).map(k => emofToEventAssertion[k])];
         if(hasEmof && !!eventAssertionStream){
             eventAssertionStream.write(`${eventAssertionHeaders.join("\t")}\n`)
         } 
@@ -355,7 +401,7 @@ for await (const [idx, r] of biomData.rows.entries()) {
             eventAssertionStream.close()
         }
         eventStream.close()
-        if(!protocolStream.write(`${[molecularProtocolID, ...protocolRelevantStudyHeaders.map(k => defaultValues.sample[k])].join("\t")}\n`)){
+        if(!protocolStream.write(`${[molecularProtocolID, ...protocolStudyColumns.map(([, studyKey]) => defaultValues.sample[studyKey])].join("\t")}\n`)){
             await once(protocolStream, 'drain');
         }
         protocolStream.close()

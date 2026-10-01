@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { DuckDBInstance } from '@duckdb/node-api'
 import config from '../config.js'
+import { dwcdpVersionFromDatapackage } from '../util/dwcdpVersion.js'
 
 const DEFAULT_MAX_ROWS = 10000;
 const ABSOLUTE_MAX_ROWS = 500000;
@@ -118,7 +119,11 @@ export default (app) => {
                 })
                 .map(r => r.name);
 
-            res.json({ resources: available });
+            // The dashboard has to know which schema generation this package was written
+            // against: the surrogate-key migration renamed the columns its SQL selects, and
+            // packages generated before it carry no version marker, so the generation is read
+            // off the declared field names. See util/dwcdpVersion.js.
+            res.json({ resources: available, dwcdpVersion: dwcdpVersionFromDatapackage(datapackage) });
         } catch (error) {
             console.log(error);
             res.sendStatus(500);
