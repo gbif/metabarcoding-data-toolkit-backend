@@ -2,6 +2,7 @@ import { readFAIReWorkbook, readFAIReFlatFiles, readFAIReHybrid, extractEmlFromP
 import { uploadedFilesAndTypes } from '../validation/files.js'
 import { getYargs } from '../util/index.js'
 import { readMapping, writeMapping, getProcessingReport, writeProcessingReport, getMetadata, writeEmlJson, writeEmlXml } from '../util/filesAndDirectories.js'
+import { normaliseTargetGene } from '../validation/targetGene.js'
 import { finishedJobSuccesssFully, finishedJobWithError } from './util.js'
 import { getEml } from '../util/Eml/index.js';
 
@@ -62,7 +63,13 @@ const processDataset = async (id, version, userName) => {
 
             const oldMapping = await readMapping(id, version)
             // projectMetadata defaults form the base; any previously user-set defaultValues win
-            const mergedDefaults = { ...projectMetadataDefaults, ...(oldMapping?.defaultValues || {}) }
+            const rawMergedDefaults = { ...projectMetadataDefaults, ...(oldMapping?.defaultValues || {}) }
+            // projectMetadata is the third route by which target_gene arrives without passing
+            // through the vocabulary-constrained picker
+            const {warning: geneWarning, defaultValues: mergedDefaults} = await normaliseTargetGene(rawMergedDefaults, faireFileRef?.name)
+            if (geneWarning) {
+                faireFileRef.errors = [...(faireFileRef.errors || []), geneWarning]
+            }
             const newMapping = oldMapping
                 ? { ...oldMapping, samples: { ...oldMapping.samples, id: 'samp_name' }, taxa: { ...oldMapping.taxa, id: 'seq_id' }, defaultValues: mergedDefaults }
                 : { samples: { id: 'samp_name' }, taxa: { id: 'seq_id' }, defaultValues: mergedDefaults }

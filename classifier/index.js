@@ -3,7 +3,7 @@ import fs from 'fs';
 import config from '../config.js'
 import axios from 'axios'
 import pLimit from 'p-limit';
-import supportedMarkers from '../enum/supportedMarkers.js'
+import supportedMarkers, { resolveSupportedMarker } from '../enum/supportedMarkers.js'
 import taxonomyFileHeaders from './taxonFileHeaders.js'
 const BLAST_CONCURRENCY = 4;
 const GBIF_TAXON_MATCH_CONCURRENCY = 25;
@@ -303,14 +303,19 @@ const blastAll = async (taxa, marker, processFn = (progress, total, message, sum
 export const assignTaxonomy = async (id, version, taxa, marker, processFn = (progress, total, message, summary) => {}) => {
     const taxonFilePath = `${config.dataStorage}${id}/${version}/taxonomy.tsv`
     try {
-        if(!supportedMarkers.map(m => m?.name).includes((marker || '').toLowerCase())){
+        // target_gene is now a GBIF vocabulary concept name, so a plain lowercase comparison
+        // against the short marker names would reject every current dataset. The resolver
+        // accepts both the concept and the legacy short form.
+        const supported = resolveSupportedMarker(marker)
+        if(!supported){
             throw 'unsupported marker'
         }
         const taxonomyStream = fs.createWriteStream(taxonFilePath, {
             flags: "a",
           });
         taxonomyStream.write(`${taxonomyFileHeaders.join("\t")}\n`)
-       const res = await blastAll(taxa, marker, processFn, taxonFilePath, taxonomyStream)
+       // the sequence ID service keys on the short marker name, not the vocabulary concept
+       const res = await blastAll(taxa, supported.name, processFn, taxonFilePath, taxonomyStream)
        taxonomyStream.end()
        return res;
         /* taxa.forEach((value, key) => {
