@@ -4,6 +4,7 @@ import { uploadedFilesAndTypes, getMimeFromPath, getFileSize, unzip } from '../v
 import filenames from '../validation/filenames.js'
 import { getYargs } from '../util/index.js';
 import {getArrayIntersection} from '../validation/misc.js'
+import {normaliseTargetGene} from '../validation/targetGene.js'
 import { readFastaAsMap } from '../util/streamReader.js';
 import _ from 'lodash'
 import {readMapping, writeMapping, getProcessingReport, getMetadata, writeProcessingReport,} from '../util/filesAndDirectories.js'
@@ -58,7 +59,18 @@ const processDataset = async (id, version, userName) => {
            const sampleTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders.filter(s => s !== sampleId), headers?.taxonHeaders.filter(s => s !== taxonId));    
 
 
-           const newMapping = oldMapping ? {...oldMapping, samples: {...oldMapping.samples, id: sampleId}, taxa: {...oldMapping.taxa, id: taxonId}} : {samples: {id: sampleId}, taxa: {id: taxonId}, defaultValues: defaultValueMapping}
+           // The Study sheet bypasses the vocabulary-constrained picker, so target_gene is checked
+           // here. Normalise the defaults that are actually written - not the sheet values alone -
+           // or on a re-validation the message would describe a change that never reached the
+           // mapping. The sheet is the base and anything the user set in the picker wins, which is
+           // what the TSV path in validation/files.js does.
+           const mergedDefaults = {...defaultValueMapping, ...(oldMapping?.defaultValues || {})}
+           const {warning: geneWarning, defaultValues: normalisedDefaults} = await normaliseTargetGene(mergedDefaults, xlsx?.name)
+           if(geneWarning){
+             xlsx.errors = [...(xlsx.errors || []), geneWarning]
+           }
+
+           const newMapping = oldMapping ? {...oldMapping, samples: {...oldMapping.samples, id: sampleId}, taxa: {...oldMapping.taxa, id: taxonId}, defaultValues: normalisedDefaults} : {samples: {id: sampleId}, taxa: {id: taxonId}, defaultValues: normalisedDefaults}
            await writeMapping(id, version, newMapping)
     
            if(sampleTaxonHeaderIntersection.filter(e => !!e).length > 0) {

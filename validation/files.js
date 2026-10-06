@@ -6,6 +6,7 @@ import {readDefaultValues} from '../util/streamReader.js';
 import {writeMapping, readMapping, getProcessingReport} from '../util/filesAndDirectories.js'
 import {isFastaFile} from '../util/index.js'
 import validMimeTypes from '../enum/validMimeTypes.js';
+import {normaliseTargetGene} from './targetGene.js';
 import XLSX from 'xlsx';
 import {getStreamAsArrayBuffer} from 'get-stream';
 import {FAIRE_COMPONENT_PREFIXES, FAIRE_SHEET_PREFIXES} from './filenames.js'
@@ -216,14 +217,25 @@ export const uploadedFilesAndTypes = async (id, version = 1) => {
             if(defaultValuesFile) {
                 const csvProperties = await analyseCsv(defaultValuesFile.path)
                 defaultValuesFile.properties =  csvProperties; // {delimiter : csvProperties.delimiter} ;
-                const defaultValues = await readDefaultValues(defaultValuesFile?.path, defaultValuesFile?.properties?.delimiter);
+                const rawDefaultValues = await readDefaultValues(defaultValuesFile?.path, defaultValuesFile?.properties?.delimiter);
                 const mapping = await readMapping(id, version)
+                // target_gene is vocabulary-constrained, but a study file bypasses the picker.
+                // A recognised value is stored as its concept name so the same marker is not
+                // recorded two different ways depending on how it was entered. The check runs on
+                // the merged object, because a value already in the mapping overrides the study
+                // file - normalising the study file alone would report a change that the write
+                // then discards.
+                const {warning: geneWarning, defaultValues} = await normaliseTargetGene(
+                    {...rawDefaultValues, ...(mapping?.defaultValues || {})}, defaultValuesFile?.name)
+                if(geneWarning){
+                    defaultValuesFile.errors = [...(defaultValuesFile.errors || []), geneWarning]
+                }
                 await writeMapping(id, version, 
                     {
                       samples: mapping?.samples || {},
                       taxa: mapping?.taxa || {},
                       measurements: mapping?.measurements || {},
-                      defaultValues: {...defaultValues, ...(mapping?.defaultValues || {})}
+                      defaultValues
                     })  
 
             }

@@ -25,6 +25,7 @@ import authController from './Auth/auth.controller.js'
 import userController from './Auth/user.controller.js'
 import {  initDatabase } from '../util/filesAndDirectories.js'
 import config from '../config.js';
+import { warmTargetGeneVocabulary } from '../util/targetGeneVocabulary.js';
 /* import SegfaultHandler from 'segfault-handler';
 SegfaultHandler.registerHandler('crash.log'); */
 
@@ -39,6 +40,11 @@ process.on('unhandledRejection', (reason, promise) => {
 })
 
 initDatabase()
+
+// Filling the target_gene vocabulary cache means ~86 requests for the alternative labels, so
+// start it now rather than on the first mapping-step load. Requests are served from the bundled
+// copy until it lands - see util/targetGeneVocabulary.js.
+warmTargetGeneVocabulary()
 
 
 app.use(cors({exposedHeaders: ['token']}))

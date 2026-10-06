@@ -7,9 +7,12 @@ export default [
     },
     {
         name: 'target_gene',
-        description: "The marker / target gene. Examples: ITS, 16S, 12S, COI",
+        description: "The marker / target gene, from the GBIF target_gene vocabulary. Search the list by the form you use: 12S, COI, ITS, rbcL.",
         defaultRequired: true,
-        vocabulary: ["COI", "ITS", "ITS1", "ITS2", "12S", "16S", "18S", "23S", "5S"],
+        // Constrained to the GBIF target_gene vocabulary, served from /enum/target-gene. It
+        // replaces a hardcoded list of nine strings ("COI", "16S", ...) that were not the terms
+        // GBIF indexes, and whose bare "16S" did not say which 16S region was targeted.
+        gbifVocabulary: 'target_gene',
         biomGroup: 'sample'
     } ,
     {

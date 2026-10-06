@@ -2,6 +2,7 @@ import util from "../util/index.js";
 import license from "../enum/license.js";
 import format from "../enum/format.js";
 import supportedMarkers from "../enum/supportedMarkers.js";
+import { getTargetGeneConcepts } from "../util/targetGeneVocabulary.js";
 import agentRole from "../enum/agentRole.js"
 import filenames from "../validation/filenames.js";
 import config from "../config.js"
@@ -49,6 +50,23 @@ export default  (app) => {
             res.sendStatus(500)
         }     
         
+    })
+
+    // The GBIF target_gene vocabulary, which the marker picker in the mapping step is
+    // constrained to. Served from here rather than fetched in the browser: GBIF answers with
+    // no-store, so a direct call would hit api.gbif.org for every user on every visit, and
+    // there would be nowhere to fall back to when it is unreachable.
+    app.get("/enum/target-gene", async (req, res) => {
+
+        try {
+            const { concepts, live } = await getTargetGeneConcepts()
+            // `live` lets the client say the list is a cached copy rather than pretend
+            res.json({ concepts, live })
+        } catch (error) {
+            console.log(error)
+            res.sendStatus(500)
+        }
+
     })
 
     app.get("/enum/supported-markers", async (req, res) => {
