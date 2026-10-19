@@ -1,0 +1,2 @@
+molecularProtocolID	project_name	associated_resource	target_gene	ampliconSize	pcr_primer_forward	pcr_primer_reverse	annealingTemp	lib_layout	otu_db	otu_seq_comp_appr
+1	eDNA marine vertebrates guadeloupe	https://ipt.gbif.fr/resource?r=edna_marine_vertebrates_guadeloupe	12S rRNA (SSU mitochondria)	99	TAGAACAGGCTCCTCTAG	TTAGATACCCCACTATGC	55	paired	EMBL nr;142, Genbank nr;258	blastn; WoRMs; Fishbase

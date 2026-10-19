@@ -1,0 +1,49 @@
+{
+  "title": "eDNA marine vertebrates guadeloupe",
+  "faire_description": "<para><itemizedlist><listitem><para><emphasis>tax_class_other</emphasis>: The taxonomic assignment of each MOTU was meticulously checked by hand, taking into account molecular, taxonomic and ecological characteristics.</para><para>Additional information on parameters and cutoffs used for taxonomic assignment, that have not been shared in the given record.</para></listitem><listitem><para><emphasis>screen_other</emphasis>: Data were checked for errors: 10% of MOTUs were randomly selected and checked by two people: taxonomic assignment was repeated and the number of reads per sample was confirmed. No errors were detected.</para><para>Description of other screening criteria and approaches</para></listitem><listitem><para><emphasis>bioinfo_method_additional</emphasis>: After bioinformatics processing by Obitools, the grouping of sequences into MOTUs was checked by hand to limit any residual sequencing errors.</para><para>Additional information on bioinformatics, that has not been shared in the given record.</para></listitem></itemizedlist></para>",
+  "contact": {
+    "givenName": "Rachel",
+    "surName": "Haderlé",
+    "organizationName": "Muséum National d'Histoire Naturelle",
+    "electronicMailAddress": "Rachel HaderlÃ© (rachel.haderle@mnhn.fr)",
+    "userId": "0009-0004-5752-3336"
+  },
+  "creator": [
+    {
+      "givenName": "Rachel",
+      "surName": "Haderlé",
+      "organizationName": "Muséum National d'Histoire Naturelle",
+      "electronicMailAddress": "Rachel HaderlÃ© (rachel.haderle@mnhn.fr)",
+      "userId": "0009-0004-5752-3336"
+    }
+  ],
+  "projectTitle": "eDNA marine vertebrates guadeloupe",
+  "projectIdentifier": "verte_quadeloupe",
+  "license": "CC0",
+  "projectPersonnel": [
+    {
+      "givenName": "Rachel",
+      "surName": "Haderlé",
+      "organizationName": "Muséum National d'Histoire Naturelle",
+      "electronicMailAddress": "Rachel HaderlÃ© (rachel.haderle@mnhn.fr)",
+      "userId": "0009-0004-5752-3336",
+      "role": "AUTHOR"
+    }
+  ],
+  "project": {
+    "title": "eDNA marine vertebrates guadeloupe",
+    "identifier": "verte_quadeloupe",
+    "personnel": [
+      {
+        "givenName": "Rachel",
+        "surName": "Haderlé",
+        "organizationName": "Muséum National d'Histoire Naturelle",
+        "electronicMailAddress": "Rachel HaderlÃ© (rachel.haderle@mnhn.fr)",
+        "userId": "0009-0004-5752-3336",
+        "role": "AUTHOR"
+      }
+    ]
+  },
+  "createdBy": "test-user",
+  "createdAt": "<BLANKED>"
+}

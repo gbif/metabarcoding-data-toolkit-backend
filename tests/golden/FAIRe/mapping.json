@@ -1,0 +1,50 @@
+{
+  "samples": {
+    "id": "samp_name"
+  },
+  "taxa": {
+    "id": "seq_id"
+  },
+  "measurements": {},
+  "defaultValues": {
+    "recordedBy": "Rachel Haderlé",
+    "recordedByID": "https://orcid.org/0009-0004-5752-3336",
+    "project_contact": "Rachel HaderlÃ© (rachel.haderle@mnhn.fr)",
+    "institution": "Muséum National d'Histoire Naturelle",
+    "institutionID": "https://ror.org/03wkt5x30",
+    "project_name": "eDNA marine vertebrates guadeloupe",
+    "project_id": "verte_quadeloupe",
+    "assay_type": "metabarcoding",
+    "sterilise_method": "The boat's work surface was cleaned with bleach and only single-use equipment was used.",
+    "neg_cont_0_1": "0",
+    "pos_cont_0_1": "0",
+    "checkls_ver": 1,
+    "mod_date": "2024-09-25T22:00:00.000Z",
+    "license": "http://creativecommons.org/licenses/by/4.0/legalcode",
+    "dataGeneralizations": "Transect coordinates generalised to the transect midpoint",
+    "bibliographicCitation": "https://doi.org/10.48579/PRO/EHR5AC",
+    "associated_resource": "https://ipt.gbif.fr/resource?r=edna_marine_vertebrates_guadeloupe",
+    "pcr_0_1": 1,
+    "assay_name": "vert01",
+    "targetTaxonomicAssay": "vertebrate",
+    "target_gene": "12S rRNA (SSU mitochondria)",
+    "ampliconSize": 99,
+    "pcr_primer_forward": "TAGAACAGGCTCCTCTAG",
+    "pcr_primer_reverse": "TTAGATACCCCACTATGC",
+    "pcr_primer_reference_forward": "https://doi.org/10.1093/oso/9780198767220.001.0001",
+    "pcr_primer_reference_reverse": "https://doi.org/10.1093/oso/9780198767220.001.0001",
+    "annealingTemp": 55,
+    "pcr_method_additional": "DNA amplifications were performed by a dedicated DNA laboratory by SPYGEN (www.spygen.com)",
+    "platform": "ILLUMINA",
+    "instrument": "MiSeq [OBI_0002003]",
+    "lib_layout": "paired",
+    "seq_method_additional": "DNA sequencing were performed by a dedicated DNA laboratory by SPYGEN (www.spygen.com)",
+    "sop_bioinformatics": "https://doi.org/10.1111/1755-0998.12428",
+    "otu_db": "EMBL nr;142, Genbank nr;258",
+    "tax_assign_cat": "other: sequence similarity, taxonomy and distribution",
+    "otu_seq_comp_appr": "blastn; WoRMs; Fishbase",
+    "tax_class_other": "The taxonomic assignment of each MOTU was meticulously checked by hand, taking into account molecular, taxonomic and ecological characteristics.",
+    "screen_other": "Data were checked for errors: 10% of MOTUs were randomly selected and checked by two people: taxonomic assignment was repeated and the number of reads per sample was confirmed. No errors were detected.",
+    "bioinfo_method_additional": "After bioinformatics processing by Obitools, the grouping of sequences into MOTUs was checked by hand to limit any residual sequencing errors."
+  }
+}

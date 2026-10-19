@@ -1,0 +1,276 @@
+{
+  "totalReads": 2426086,
+  "otuCountPrSample": {
+    "mean": 19,
+    "stdev": 4.242640687
+  },
+  "readSumPrSample": {
+    "mean": 1213043,
+    "stdev": 260748.453989664
+  },
+  "sequenceLength": {
+    "mean": 62.666666667,
+    "stdev": 1.08012345
+  },
+  "sampleCountPrOtu": {
+    "mostFrequent": [
+      {
+        "key": "2",
+        "val": 2,
+        "DNA_sequence": "CCCCAAAACCCCTAAAAAGACTAAATAAAACCATTAATCTAATAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Exocoetidae",
+        "genus": "-",
+        "id": "Gua_Boui_T_2021_6",
+        "kingdom": "Animalia",
+        "order": "Beloniformes",
+        "phylum": "Chordata",
+        "scientificName": "Exocoetidae"
+      },
+      {
+        "key": "3",
+        "val": 2,
+        "DNA_sequence": "CCCCAAAACCCCTAAAAAGACTAAATAAAACCCCTAACCTAATAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Exocoetidae",
+        "genus": "Cheilopogon",
+        "id": "Gua_Boui_T_2021_7",
+        "kingdom": "Animalia",
+        "order": "Beloniformes",
+        "phylum": "Chordata",
+        "scientificName": "Cheilopogon sp."
+      },
+      {
+        "key": "5",
+        "val": 2,
+        "DNA_sequence": "CCCCAAAACCTTAAAAAAGAGTAAATAAAACCATTAATCTAATAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Exocoetidae",
+        "genus": "-",
+        "id": "Gua_Boui_T_2021_10",
+        "kingdom": "Animalia",
+        "order": "Beloniformes",
+        "phylum": "Chordata",
+        "scientificName": "Exocoetidae"
+      },
+      {
+        "key": "7",
+        "val": 2,
+        "DNA_sequence": "CCCCAAAACCTTAAAAAAGAGTAAATAAAACCCCTAACCTAATAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Exocoetidae",
+        "genus": "Parexocoetus",
+        "id": "Gua_Boui_T_2021_16",
+        "kingdom": "Animalia",
+        "order": "Beloniformes",
+        "phylum": "Chordata",
+        "scientificName": "Parexocoetus sp."
+      },
+      {
+        "key": "14",
+        "val": 2,
+        "DNA_sequence": "CCCCGAAAAAAACTAAACAAGTAAATAAAACCCTAATCTCCACAGAGGGGAGGTAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Hemiramphidae",
+        "genus": "-",
+        "id": "Gua_Boui_T_2021_31",
+        "kingdom": "Animalia",
+        "order": "Beloniformes",
+        "phylum": "Chordata",
+        "scientificName": "Hemiramphidae"
+      },
+      {
+        "key": "0",
+        "val": 1,
+        "DNA_sequence": "CCCCGAGCTAAGACTTTAAAGTAAATAAATAACTATAACTGCAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Acanthuridae",
+        "genus": "Acanthurus",
+        "id": "Gua_Boui_T_2021_1",
+        "kingdom": "Animalia",
+        "order": "Acanthuriformes",
+        "phylum": "Chordata",
+        "scientificName": "Acanthurus coeruleus"
+      },
+      {
+        "key": "1",
+        "val": 1,
+        "DNA_sequence": "CCCCAAAATTGCCAAAGTTTTTCTATAAAAAAAGAAAAAATTAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Evermannellidae",
+        "genus": "Coccorella",
+        "id": "Gua_Boui_T_2021_2",
+        "kingdom": "Animalia",
+        "order": "Aulopiformes",
+        "phylum": "Chordata",
+        "scientificName": "Coccorella atlantica"
+      },
+      {
+        "key": "4",
+        "val": 1,
+        "DNA_sequence": "CCCCAAAACCTTAAAAAAGACTAAATAAAACCATTAATCTAATAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Exocoetidae",
+        "genus": "-",
+        "id": "Gua_Boui_T_2021_9",
+        "kingdom": "Animalia",
+        "order": "Beloniformes",
+        "phylum": "Chordata",
+        "scientificName": "Exocoetidae"
+      },
+      {
+        "key": "6",
+        "val": 1,
+        "DNA_sequence": "CCCCAAAACCTTAAAAAAGAGTAAATAAAACCCCAACCTAATAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Exocoetidae",
+        "genus": "Parexocoetus",
+        "id": "Gua_Boui_T_2021_11",
+        "kingdom": "Animalia",
+        "order": "Beloniformes",
+        "phylum": "Chordata",
+        "scientificName": "Parexocoetus sp."
+      },
+      {
+        "key": "8",
+        "val": 1,
+        "DNA_sequence": "CCCCAAAACCTTAAAAAGAGTAAATAAAACCCCTAACCTAATAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Exocoetidae",
+        "genus": "Parexocoetus",
+        "id": "Gua_Boui_T_2021_17",
+        "kingdom": "Animalia",
+        "order": "Beloniformes",
+        "phylum": "Chordata",
+        "scientificName": "Parexocoetus sp."
+      }
+    ],
+    "leastFrequent": [
+      {
+        "key": "2",
+        "val": 2,
+        "DNA_sequence": "CCCCAAAACCCCTAAAAAGACTAAATAAAACCATTAATCTAATAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Exocoetidae",
+        "genus": "-",
+        "id": "Gua_Boui_T_2021_6",
+        "kingdom": "Animalia",
+        "order": "Beloniformes",
+        "phylum": "Chordata",
+        "scientificName": "Exocoetidae"
+      },
+      {
+        "key": "3",
+        "val": 2,
+        "DNA_sequence": "CCCCAAAACCCCTAAAAAGACTAAATAAAACCCCTAACCTAATAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Exocoetidae",
+        "genus": "Cheilopogon",
+        "id": "Gua_Boui_T_2021_7",
+        "kingdom": "Animalia",
+        "order": "Beloniformes",
+        "phylum": "Chordata",
+        "scientificName": "Cheilopogon sp."
+      },
+      {
+        "key": "5",
+        "val": 2,
+        "DNA_sequence": "CCCCAAAACCTTAAAAAAGAGTAAATAAAACCATTAATCTAATAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Exocoetidae",
+        "genus": "-",
+        "id": "Gua_Boui_T_2021_10",
+        "kingdom": "Animalia",
+        "order": "Beloniformes",
+        "phylum": "Chordata",
+        "scientificName": "Exocoetidae"
+      },
+      {
+        "key": "7",
+        "val": 2,
+        "DNA_sequence": "CCCCAAAACCTTAAAAAAGAGTAAATAAAACCCCTAACCTAATAAAGGGGAGGCAAGTCGTAA",
+        "class": "Actinopterygii",
+        "family": "Exocoetidae",
+        "genus": "Parexocoetus",
+        "id": "Gua_Boui_T_2021_16",
+        "kingdom": "Animalia",
+        "order": "Beloniformes",
+        "phylum": "Chordata",
+        "scientificName": "Parexocoetus sp."
+      }
+    ],
+    "singletonsTotal": 28
+  },
+  "singletonsTotal": 28,
+  "jaccard": [
+    {
+      "Sample": "SPY224105_T",
+      "x": 0.075757576,
+      "y": 0
+    },
+    {
+      "Sample": "SPY224102_T",
+      "x": -0.075757576,
+      "y": 0
+    }
+  ],
+  "brayCurtis": [
+    {
+      "Sample": "SPY224105_T",
+      "x": 15.45781138,
+      "y": 0
+    },
+    {
+      "Sample": "SPY224102_T",
+      "x": -15.45781138,
+      "y": 0
+    }
+  ],
+  "geographicScope": {
+    "northBoundingCoordinate": 16.103,
+    "southBoundingCoordinate": 16.103,
+    "westBoundingCoordinate": -61.841,
+    "eastBoundingCoordinate": -61.841
+  },
+  "temporalScope": {
+    "from": "2021-06-05",
+    "to": "2021-06-08"
+  },
+  "taxonomicScope": {
+    "class": [
+      "Actinopterygii"
+    ],
+    "family": [
+      "Acanthuridae",
+      "Evermannellidae",
+      "Exocoetidae",
+      "Hemiramphidae",
+      "Carangidae",
+      "Istiophoridae",
+      "Labridae",
+      "Myctophidae",
+      "Bramidae",
+      "Nomeidae",
+      "Scombridae",
+      "Stomiidae",
+      "Pomacentridae"
+    ],
+    "kingdom": [
+      "Animalia"
+    ],
+    "order": [
+      "Acanthuriformes",
+      "Aulopiformes",
+      "Beloniformes",
+      "Carangiformes",
+      "Labriformes",
+      "Myctophiformes",
+      "Perciformes",
+      "Scombriformes",
+      "Stomiiformes"
+    ],
+    "phylum": [
+      "Chordata"
+    ]
+  }
+}

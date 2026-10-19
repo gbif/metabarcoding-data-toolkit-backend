@@ -1,0 +1,77 @@
+<archive
+xmlns="http://rs.tdwg.org/dwc/text/" metadata="eml.xml">
+<core encoding="utf-8" fieldsTerminatedBy="\t" linesTerminatedBy="\n" fieldsEnclosedBy="" ignoreHeaderLines="1" rowType="http://rs.tdwg.org/dwc/terms/Occurrence">
+    <files>
+        <location>occurrence.txt</location>
+    </files>
+    <id index="0" />
+    <field index="0" term="http://rs.tdwg.org/dwc/terms/occurrenceID"/>
+    <field index="1" term="http://rs.tdwg.org/dwc/terms/materialSampleID"/>
+<field index="2" term="http://rs.tdwg.org/dwc/terms/decimalLongitude"/>
+<field index="3" term="http://rs.tdwg.org/dwc/terms/decimalLatitude"/>
+<field index="4" term="http://rs.tdwg.org/dwc/terms/verbatimLongitude"/>
+<field index="5" term="http://rs.tdwg.org/dwc/terms/verbatimLatitude"/>
+<field index="6" term="http://rs.tdwg.org/dwc/terms/verbatimCoordinateSystem"/>
+<field index="7" term="http://rs.tdwg.org/dwc/terms/verbatimSRS"/>
+<field index="8" term="http://rs.tdwg.org/dwc/terms/eventDate"/>
+<field index="9" term="http://rs.tdwg.org/dwc/terms/verbatimEventDate"/>
+<field index="10" term="http://rs.tdwg.org/dwc/terms/minimumDepthInMeters"/>
+<field index="11" term="http://rs.tdwg.org/dwc/terms/maximumDepthInMeters"/>
+<field index="12" term="http://rs.tdwg.org/dwc/terms/kingdom"/>
+<field index="13" term="http://rs.tdwg.org/dwc/terms/phylum"/>
+<field index="14" term="http://rs.tdwg.org/dwc/terms/class"/>
+<field index="15" term="http://rs.tdwg.org/dwc/terms/order"/>
+<field index="16" term="http://rs.tdwg.org/dwc/terms/family"/>
+<field index="17" term="http://rs.tdwg.org/dwc/terms/genus"/>
+<field index="18" term="http://rs.tdwg.org/dwc/terms/specificEpithet"/>
+<field index="19" term="http://rs.tdwg.org/dwc/terms/scientificName"/>
+<field index="20" term="http://rs.tdwg.org/dwc/terms/scientificNameAuthorship"/>
+<field index="21" term="http://rs.tdwg.org/dwc/terms/taxonRank"/>
+<field index="22" term="http://rs.tdwg.org/dwc/terms/taxonID"/>
+<field index="23" term="http://rs.tdwg.org/dwc/terms/verbatimIdentification"/>
+<field index="24" term="http://rs.tdwg.org/dwc/terms/identificationRemarks"/>
+<field index="25" term="http://rs.tdwg.org/dwc/terms/sampleSizeValue"/>
+<field index="26" term="http://rs.tdwg.org/dwc/terms/sampleSizeUnit"/>
+<field index="27" term="http://rs.tdwg.org/dwc/terms/organismQuantity"/>
+<field index="28" term="http://rs.tdwg.org/dwc/terms/organismQuantityType"/>
+<field index="29" term="http://rs.tdwg.org/dwc/terms/basisOfRecord"/>
+<field index="30" term="http://rs.tdwg.org/dwc/terms/eventID"/>
+    <field default="Rachel Haderl&#233;" term="http://rs.tdwg.org/dwc/terms/recordedBy"/>
+<field default="https://orcid.org/0009-0004-5752-3336" term="http://rs.tdwg.org/dwc/terms/recordedByID"/>
+<field default="https://ror.org/03wkt5x30" term="http://rs.tdwg.org/dwc/terms/institutionID"/>
+<field default="http://creativecommons.org/licenses/by/4.0/legalcode" term="http://purl.org/dc/terms/license"/>
+<field default="Transect coordinates generalised to the transect midpoint" term="http://rs.tdwg.org/dwc/terms/dataGeneralizations"/>
+<field default="https://doi.org/10.48579/PRO/EHR5AC" term="http://purl.org/dc/terms/bibliographicCitation"/>
+</core>
+
+<extension encoding="UTF-8" fieldsTerminatedBy="\t" linesTerminatedBy="\n" fieldsEnclosedBy='' ignoreHeaderLines="1" rowType="http://rs.gbif.org/terms/1.0/DNADerivedData">
+<files>
+  <location>dna.txt</location>
+</files>
+<coreid index="0" />
+    <field index="1" term="https://w3id.org/mixs/0001107"/>
+<field index="2" term="https://w3id.org/mixs/0001321"/>
+<field index="3" term="https://w3id.org/mixs/0001322"/>
+<field index="4" term="https://w3id.org/mixs/0000012"/>
+<field index="5" term="https://w3id.org/mixs/0000013"/>
+<field index="6" term="https://w3id.org/mixs/0000014"/>
+<field index="7" term="https://w3id.org/mixs/0000001"/>
+<field index="8" term="https://w3id.org/mixs/0000016"/>
+<field index="9" term="https://w3id.org/mixs/0000017"/>
+<field index="10" term="https://w3id.org/mixs/0000111"/>
+<field index="11" term="https://w3id.org/mixs/0000037"/>
+<field index="12" term="http://data.ggbn.org/schemas/ggbn/terms/concentration"/>
+<field index="13" term="http://data.ggbn.org/schemas/ggbn/terms/ratioOfAbsorbance260_280"/>
+<field index="14" term="http://rs.gbif.org/terms/dna_sequence"/>
+    <field default="eDNA marine vertebrates guadeloupe" term="https://w3id.org/mixs/0000092"/>
+<field default="12S rRNA (SSU mitochondria)" term="https://w3id.org/mixs/0000044"/>
+<field default="99" term="http://rs.gbif.org/terms/miqe/ampliconSize"/>
+<field default="TAGAACAGGCTCCTCTAG" term="http://rs.gbif.org/terms/pcr_primer_forward"/>
+<field default="TTAGATACCCCACTATGC" term="http://rs.gbif.org/terms/pcr_primer_reverse"/>
+<field default="55" term="http://rs.gbif.org/terms/miqe/annealingTemp"/>
+<field default="paired" term="https://w3id.org/mixs/0000041"/>
+<field default="EMBL nr;142, Genbank nr;258" term="https://w3id.org/mixs/0000087"/>
+<field default="blastn; WoRMs; Fishbase" term="https://w3id.org/mixs/0000086"/>
+</extension>
+
+</archive>

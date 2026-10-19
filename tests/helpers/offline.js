@@ -13,6 +13,7 @@
  */
 import http from 'node:http';
 import https from 'node:https';
+import { EventEmitter } from 'node:events';
 
 const original = { http: http.request, https: https.request };
 let attempts = [];
@@ -25,12 +26,43 @@ const hostOf = (args) => {
     return first?.hostname || first?.host || '(unknown host)';
 };
 
+/**
+ * Refuses the request the way an unreachable host does: by returning a request object that emits
+ * an `error` event, rather than by throwing.
+ *
+ * Throwing synchronously from http.request is not a failure mode any client is written for. It
+ * escaped axios's promise chain entirely, and because util/targetGeneVocabulary.js refreshes the
+ * GBIF vocabulary in a deliberately non-awaited background task, the escaped rejection surfaced
+ * after the test had finished and failed it from the outside. Emitting an error instead means
+ * the caller's own error handling runs - which is both faithful to a real outage and lets that
+ * module fall back to enum/targetGeneFallback.js exactly as it does in production.
+ */
+const refusedRequest = (message) => {
+    const request = new EventEmitter();
+    Object.assign(request, {
+        end: () => request,
+        write: () => true,
+        abort: () => {},
+        destroy: () => request,
+        setTimeout: () => request,
+        setHeader: () => request,
+        getHeader: () => undefined,
+        removeHeader: () => {},
+        setNoDelay: () => {},
+        setSocketKeepAlive: () => {},
+        flushHeaders: () => {},
+    });
+    // next tick, so the caller has attached its listeners before the error arrives
+    process.nextTick(() => request.emit('error', new Error(message)));
+    return request;
+};
+
 export const blockNetwork = () => {
     attempts = [];
     const refuse = (scheme) => function (...args) {
         const host = hostOf(args);
         attempts.push(`${scheme}://${host}`);
-        throw new Error(
+        return refusedRequest(
             `Network access blocked in tests: ${scheme}://${host}. `
             + `Tests must not depend on a remote service - use a fixture or a bundled fallback.`
         );
