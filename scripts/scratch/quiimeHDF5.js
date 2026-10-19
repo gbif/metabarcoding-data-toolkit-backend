@@ -1,4 +1,4 @@
-import { readHDF5 } from "../converters/hdf5.js";
+import { readHDF5 } from "../../converters/hdf5.js";
 import {execSync, exec}  from 'child_process';
 
 

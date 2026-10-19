@@ -7,7 +7,7 @@ import { finishedJobSuccesssFully, finishedJobWithError } from './util.js'
 import { getEml } from '../util/Eml/index.js';
 
 
-const processDataset = async (id, version, userName) => {
+export const processDataset = async (id, version, userName) => {
     try {
         let files = await uploadedFilesAndTypes(id, version)
         let processingReport = await getProcessingReport(id, version)
@@ -109,7 +109,12 @@ const processDataset = async (id, version, userName) => {
 try {
     const yargs = getYargs()
     const { id, version, username } = yargs
-    processDataset(id, version, username)
+    // Only start a job when forked with --id. Importing this module - which the test suite does,
+    // to drive the pipeline in-process - must not kick off processing, and without the guard the
+    // call below runs with id undefined and fails on the first property access.
+    if(id){
+        processDataset(id, version, username)
+    }
 } catch (error) {
     console.log(error)
 }

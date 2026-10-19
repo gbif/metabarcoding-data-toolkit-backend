@@ -40,14 +40,23 @@ let gbifCredentials = {
 
 
 
+// MDT_CREDENTIALS and MDT_ORGANIZATIONFILE let the test suite supply these without putting
+// them on the command line: the test runner forks a process per test file and owns its argv,
+// but environment variables are inherited. The CLI flags still win, so running the server is
+// unchanged.
+const credentialsPath = () => {
+    const yargs = getYargs()
+    return yargs.credentials || process.env.MDT_CREDENTIALS || '../somefakepathfortesting/gbifCredentials.json'
+}
+
 try {
     console.log("Reading credentials from "+ process.argv)
     const yargs = getYargs()
-    const creds = fs.readFileSync(`${yargs.credentials || '../somefakepathfortesting/gbifCredentials.json'}`,
+    const creds = fs.readFileSync(credentialsPath(),
     { encoding: 'utf8', flag: 'r' });
      gbifCredentials = JSON.parse(creds)
      gbifCredentials.uatAuth = `Basic ${base64.encode(gbifCredentials.uatPublishingOrganizationKey + ":" + gbifCredentials.uatOrganizationToken)}`
-     gbifCredentials.organizationFilePath = yargs.organizationfile;
+     gbifCredentials.organizationFilePath = yargs.organizationfile || process.env.MDT_ORGANIZATIONFILE;
      if(!!yargs?.port){
         gbifCredentials.port = yargs?.port
      }
@@ -57,6 +66,16 @@ try {
 } catch (error) {
     console.log("No GBIF user credentials given")
     throw error
+}
+
+// Point the whole storage layer at another directory, which is how a test run gets an
+// isolated temp dir. util/filesAndDirectories.js reads config.dataStorage in 38 places and
+// always as `${config.dataStorage}${id}/...`, so the override is applied here once and the
+// trailing separator is enforced rather than left to the caller to remember.
+if (process.env.MDT_DATA_DIR) {
+    gbifCredentials.dataDirectory = process.env.MDT_DATA_DIR.endsWith('/')
+        ? process.env.MDT_DATA_DIR
+        : `${process.env.MDT_DATA_DIR}/`
 }
 
 

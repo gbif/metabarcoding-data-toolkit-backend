@@ -13,7 +13,7 @@ import {
     writeMetrics
 } from './util.js';
 
-const processDataset = async (id, version, skipSimilarityPlots) => {
+export const processDataset = async (id, version, skipSimilarityPlots) => {
     try {
         console.log(`Processing FAIRe dataset ${id} version ${version}`);
 
@@ -54,7 +54,12 @@ const processDataset = async (id, version, skipSimilarityPlots) => {
 try {
     const yargs = getYargs();
     const { id, version, skipsimiliarityplots } = yargs;
-    processDataset(id, version, skipsimiliarityplots);
+    // Only start a job when forked with --id. Importing this module - which the test suite does,
+    // to drive the pipeline in-process - must not kick off processing, and without the guard the
+    // call below runs with id undefined and fails on the first property access.
+    if(id){
+        processDataset(id, version, skipsimiliarityplots);
+    }
 } catch (error) {
     console.log(error);
 }

@@ -11,7 +11,7 @@ import { assignTaxonomy } from '../classifier/index.js';
 import config from '../config.js';
 
 
-const processDataset = async (id, version, systemShouldAssignTaxonomy, skipSimiliarityPlots) => {
+export const processDataset = async (id, version, systemShouldAssignTaxonomy, skipSimiliarityPlots) => {
     try {
         console.log("Processing dataset "+id + " version "+version)
     const  files = await uploadedFilesAndTypes(id, version)
@@ -73,7 +73,12 @@ try {
 const yargs = getYargs()
 const {id, version, assigntaxonomy, skipsimiliarityplots} = yargs;
 
-processDataset(id, version, assigntaxonomy, skipsimiliarityplots)
+ // Only start a job when forked with --id. Importing this module - which the test suite does,
+ // to drive the pipeline in-process - must not kick off processing, and without the guard the
+ // call below runs with id undefined and fails on the first property access.
+ if(id){
+     processDataset(id, version, assigntaxonomy, skipsimiliarityplots)
+ }
 } catch (error) {
     console.log(error)
 }

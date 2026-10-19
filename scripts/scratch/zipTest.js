@@ -1,4 +1,4 @@
-import { zipDwcArchive } from "../util/filesAndDirectories.js";
+import { zipDwcArchive } from "../../util/filesAndDirectories.js";
 
 
 const test = async  ( ) => {

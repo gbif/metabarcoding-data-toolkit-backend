@@ -1,5 +1,5 @@
-import { blast, assignTaxonomy } from "../classifier/index.js";
-import {metaDataFileToMap} from "../converters/biom.js"
+import { blast, assignTaxonomy } from "../../classifier/index.js";
+import {metaDataFileToMap} from "../../converters/biom.js"
 const datasetId = "2e01762b-2d70-42c6-985c-86d084468439"
 
 const file = '/Users/vgs417/edna-tool-backend/data/2e01762b-2d70-42c6-985c-86d084468439/1/original/taxa.tsv'

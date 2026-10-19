@@ -1,6 +1,6 @@
 import axios from "axios"
 import base64 from "base-64"
-import {getYargs} from '../util/index'
+import {getYargs} from '../../util/index'
 
 
 export const registerBiomEndpoints = async ({auth, datasetKey}) => {

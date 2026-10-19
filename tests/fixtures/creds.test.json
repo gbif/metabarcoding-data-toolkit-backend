@@ -1,0 +1,20 @@
+{
+    "_comment": "Dummy credentials for the test suite. Deliberately not valid anywhere - config.js only needs this file to parse, and no test is allowed to reach GBIF. dataDirectory is ignored: tests/helpers/env.js overrides it with a per-process temp directory via MDT_DATA_DIR.",
+    "dataDirectory": "/dev/null/never-used-by-tests/",
+    "uatPublishingOrganizationKey": "00000000-0000-0000-0000-000000000000",
+    "uatOrganizationToken": "not-a-real-token",
+    "uatInstallationKey": "00000000-0000-0000-0000-000000000000",
+    "prodInstallationKey": "00000000-0000-0000-0000-000000000000",
+    "prodPublishingEnabled": false,
+    "nodeKey": "00000000-0000-0000-0000-000000000000",
+    "installationAdmins": [],
+    "supportAdmins": [],
+    "installationContactEmail": "nobody@example.invalid",
+    "dwcPublicAccessUrl": "http://example.invalid/edna/",
+    "frontendUrl": "http://example.invalid/",
+    "backendProxyUrl": "http://example.invalid/service/",
+    "termsLink": "http://example.invalid/terms",
+    "title": "MDT test installation",
+    "description": "Fixture credentials used by the backend test suite.",
+    "port": 9999
+}

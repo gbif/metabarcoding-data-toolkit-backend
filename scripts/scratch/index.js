@@ -1,7 +1,7 @@
-import {toBiom, addReadCounts, writeBiom } from '../converters/biom.js';
-import {biomToDwc, otuTableToDWC} from '../converters/dwc.js';
-import {processWorkBookFromFile} from '../converters/excel.js'
-import {writeHDF5} from '../converters/hdf5.js';
+import {toBiom, addReadCounts, writeBiom } from '../../converters/biom.js';
+import {biomToDwc, otuTableToDWC} from '../../converters/dwc.js';
+import {processWorkBookFromFile} from '../../converters/excel.js'
+import {writeHDF5} from '../../converters/hdf5.js';
 import * as url from 'url';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));

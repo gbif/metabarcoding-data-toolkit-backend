@@ -1,7 +1,7 @@
-import {registerDatasetInGBIF} from '../util/gbifRegistry.js'
-import { registerStudyGbrds } from '../util/gbifRegistry.js'
-import {getMetadata} from '../util/filesAndDirectories.js'
-import config from '../config.js';
+import {registerDatasetInGBIF} from '../../util/gbifRegistry.js'
+import { registerStudyGbrds } from '../../util/gbifRegistry.js'
+import {getMetadata} from '../../util/filesAndDirectories.js'
+import config from '../../config.js';
 
 const datasetID = "70723436-2b4a-4054-b8c9-a28d61efcd77";
 

@@ -1,6 +1,6 @@
-// import db from "../server/db/index.js";
+// import db from "../../server/db/index.js";
 import { DuckDBInstance as Database } from '@duckdb/node-api';
-import { readDataStorage } from "../util/filesAndDirectories.js";
+import { readDataStorage } from "../../util/filesAndDirectories.js";
 
 const insertDatasetVars = ["user_name", "dataset_id", "title", "created" , "sample_count", "taxon_count", "occurrence_count", "gbif_uat_key", "gbif_prod_key", "deleted", "node_key", "publishing_org_key", "dataset_description", "dataset_author", "dwc_generated", "current_version", "validation_id" ]
 const createUserDatasetStmt = `INSERT INTO UserDatasets VALUES (${insertDatasetVars.map(v => "$"+v).join(", ")})`;

@@ -1,5 +1,5 @@
 
-import {processWorkBookFromFile} from '../converters/excel.js'
+import {processWorkBookFromFile} from '../../converters/excel.js'
 
 
 

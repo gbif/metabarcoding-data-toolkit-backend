@@ -1,4 +1,4 @@
-import {readFastaAsMap} from '../util/streamReader.js';
+import {readFastaAsMap} from '../../util/streamReader.js';
 
 
 const file = '/Users/vgs417/edna-tool-backend/testData/12s_coastal_fish/seq.fasta'
