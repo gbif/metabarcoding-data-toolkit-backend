@@ -530,6 +530,7 @@ export const getMetrics = async (hdf5file, processFn = (progress, total, message
         let temporalScope;
         let geographicScope;
         let taxonomicScope;
+        let sequenceLength;
         if(!skipSimiliarityPlots){
             console.log("Generating similarity plots")
               try {
@@ -595,8 +596,18 @@ export const getMetrics = async (hdf5file, processFn = (progress, total, message
         const otuCountPrSample = getOtuCountPrSample(f);
          console.log("getReadSumPrSample")
         const readSumPrSample = getReadSumPrSample(f);
-        console.log("getDNAsequenceLength")
-        const sequenceLength = getDNAsequenceLength(f);
+        // DNA_sequence is optional - a dataset can be an OTU table of named taxa with no
+        // sequences at all. getDNAsequenceLength rethrows when the column is absent, and
+        // unguarded that abandoned the whole metrics object, so such a dataset got no
+        // metrics.json while the job still reported success. Guarded the same way as the three
+        // scope metrics above: the key is simply omitted.
+        try {
+            console.log("getDNAsequenceLength")
+            sequenceLength = getDNAsequenceLength(f);
+        } catch (error) {
+            console.log("Not able to generate sequenceLength")
+            console.log(error)
+        }
         console.log("getSampleCountPrOtu")
         const sampleCountPrOtu = getSampleCountPrOtu(f);
         console.log("Generating metrics object")
