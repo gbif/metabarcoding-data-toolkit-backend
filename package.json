@@ -31,6 +31,7 @@
         "test:golden": "node --test --import=./tests/helpers/env.js \"tests/pipeline/*.test.js\"",
         "test:golden:update": "UPDATE_GOLDEN=1 node --test --import=./tests/helpers/env.js \"tests/pipeline/*.test.js\"",
         "test:slow": "MDT_SLOW=1 node --test --import=./tests/helpers/env.js \"tests/pipeline/*.test.js\"",
+        "test:contract": "node --test --import=./tests/helpers/env.js \"tests/contract/*.test.js\"",
         "test:coverage": "node --test --experimental-test-coverage --test-coverage-exclude=\"tests/**\" --import=./tests/helpers/env.js \"tests/**/*.test.js\""
     },
     "devDependencies": {
