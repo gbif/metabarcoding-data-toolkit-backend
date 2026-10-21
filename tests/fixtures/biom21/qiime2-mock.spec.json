@@ -1,0 +1,165 @@
+{
+    "_comment": [
+        "Specification for a mock QIIME2 BIOM 2.1 dataset, used by tests/pipeline/biom21.golden.test.js.",
+        "",
+        "Modelled on the HDF5 layout of a real table.biom produced by the NOAA AOML Tourmaline",
+        "pipeline on QIIME2 v2023.5 (134 observations x 29 samples, 555 non-zero entries). That file",
+        "cannot be redistributed, so its *structure* was inspected and reproduced here at a size that",
+        "can live in the repository. tests/helpers/biom21.js turns this spec into the .biom file at",
+        "test setup, so nothing binary is committed and the layout stays reviewable in a diff.",
+        "",
+        "Deliberately modelled on QIIME2's output rather than on MDT's own converters/hdf5.js writer,",
+        "which differs in ways that would make the test self-referential: MDT writes an extra",
+        "'format' root attribute QIIME2 does not, writes format-version/shape/nnz as int32 rather",
+        "than int64, sets type to 'OTU table' where QIIME2 leaves it empty, and populates the",
+        "metadata groups that QIIME2 leaves empty.",
+        "",
+        "Faithful properties carried over from the real file, each of which matters:",
+        "  - observation/metadata, sample/metadata and both group-metadata groups exist but are EMPTY.",
+        "    QIIME2 keeps taxonomy and sample metadata in separate files, so MDT's BIOM input is a",
+        "    quadruple: the .biom plus a samples file, a taxa file and a sequences fasta.",
+        "  - root 'type' attribute is the empty string, not 'OTU table'.",
+        "  - matrix data is float64 ('<d'); indices and indptr are int32 ('<i'); ids are fixed strings.",
+        "  - format-version, shape and nnz are int64 ('<q').",
+        "  - no 'format' root attribute.",
+        "  - feature ids are md5 hex digests of the sequence, as QIIME2/dada2 produces them. Verified:",
+        "    each id below is the md5 of its sequence in sequences.fasta.",
+        "  - taxon strings are semicolon-delimited with a trailing 'NA' for unresolved ranks.",
+        "  - one sample ('MOCK-S04') appears in the matrix but has NO row in the samples",
+        "    file, reproducing the 1-of-29 mismatch in the real dataset. This exercises the",
+        "    sampleIdsWithNoRecordInSampleFile path in converters/biom.js fromHdf5ToBiom."
+    ],
+    "root": {
+        "creation-date": "2024-01-01T00:00:00.000000",
+        "generated-by": "qiime2 2023.5.1",
+        "id": "No Table ID",
+        "type": ""
+    },
+    "observationIds": [
+        "d6d98a0ac6cfc0f590e660bce3d6d1ad",
+        "22a8d8a4758e856c39ff58d8a23afd21",
+        "d81c30968054c657e770154139dcbe6f",
+        "f2e5a49f3d0144e63ad9bf611e69ce1b",
+        "5d48a3b11e343a0ecf593772fdc7dc68",
+        "9d2cc13838d67119b2aa74d4d6e20822"
+    ],
+    "sampleIds": [
+        "MOCK-S01",
+        "MOCK-S02",
+        "MOCK-S03",
+        "MOCK-S04"
+    ],
+    "_matrixComment": "Dense observations x samples. The generator derives both the CSR (observation) and CSC (sample) representations from this, so the spec stays readable and the indptr arrays cannot drift out of step with the data.",
+    "matrix": [
+        [
+            120,
+            0,
+            40,
+            0
+        ],
+        [
+            0,
+            310,
+            0,
+            5
+        ],
+        [
+            78,
+            12,
+            0,
+            0
+        ],
+        [
+            0,
+            0,
+            900,
+            0
+        ],
+        [
+            1,
+            0,
+            0,
+            2
+        ],
+        [
+            0,
+            64,
+            0,
+            17
+        ]
+    ],
+    "sequences": [
+        "ACACCGCCCGTCACTCTCCTCGAGTAATACGGTAAGCGTAAGGAGAGGTACCCGAAGGTAACACAGGGTAATCAGGGTGCGC",
+        "ACACCGCCCGTCACCCTCCTCAAGCATTACGACAAGTGTTAATTCGAGAGGTTCCGAAGGTAACACAGGGTAATCAGGGTGC",
+        "ACACCGCCCGTCACTCTCCTCAAGTATTACGGCAAGTGTAAATTCGAGAGGTCCCGAAGGTAACACAGGGTAATCAGGGTGA",
+        "ACACCGCCCGTCGCTCTCACCGAGAAATACGGCAAGCGTAAATTCGAGAGGTTCCGAAGGTAACACAGGGTAATCAGGGTGC",
+        "ACACCGCCCGTCACTCTCCTCGAGTTATACGGCAAGCGTAAATTCGAGAGGTTCCGAAGGTAACACAGGGTAATCAGGGTAC",
+        "ACACCGCCCGTCACCCTCCTCGAGCAATACGGCAAGTGTAAATTCGAGAGGTCCCGAAGGTAACACAGGGTAATCAGGGTGC"
+    ],
+    "_taxonomyComment": "Mirrors the real taxonomy.tsv from taxonomy.qza: 'Feature ID', 'Taxon', 'Confidence'. 'feature id' is already a synonym for the taxon id term in validation/filenames.js.",
+    "taxonomy": [
+        [
+            "Eukaryota;Chordata;Actinopteri;Gadiformes;Gadidae;Gadus;Gadus morhua",
+            "0.9810"
+        ],
+        [
+            "Eukaryota;Chordata;Actinopteri",
+            "0.9990"
+        ],
+        [
+            "Eukaryota;Chordata;Actinopteri;Clupeiformes;Clupeidae;Clupea;Clupea harengus",
+            "0.9650"
+        ],
+        [
+            "Eukaryota;Chordata;Actinopteri;Pleuronectiformes;Pleuronectidae;Pleuronectes;NA",
+            "0.8700"
+        ],
+        [
+            "Eukaryota;NA",
+            "0.7010"
+        ],
+        [
+            "Eukaryota;Chordata;Actinopteri;Scombriformes;Scombridae;Scomber;NA",
+            "0.9330"
+        ]
+    ],
+    "_samplesComment": "Mirrors the real metadata.tsv: the id column is 'sample_name' (a synonym of the sample id term), dates arrive as 'YYYY-MM-DD HH:mm:ss', and coordinates are separate decimal columns. The fourth sample is absent on purpose - see the note above.",
+    "samples": [
+        {
+            "sample_name": "MOCK-S01",
+            "cruise_id": "MOCK-01",
+            "station": "ST1",
+            "collection_date": "2020-05-04 00:00:00",
+            "depth": "100",
+            "decimalLatitude": "56.5",
+            "decimalLongitude": "8.0",
+            "env_broad_scale": "marginal sea biome (ENVO:01000046)",
+            "env_local_scale": "photic zone (ENVO:00000209)",
+            "env_medium": "sea water (ENVO:00002149)"
+        },
+        {
+            "sample_name": "MOCK-S02",
+            "cruise_id": "MOCK-01",
+            "station": "ST2",
+            "collection_date": "2020-05-05 00:00:00",
+            "depth": "150",
+            "decimalLatitude": "56.75",
+            "decimalLongitude": "8.25",
+            "env_broad_scale": "marginal sea biome (ENVO:01000046)",
+            "env_local_scale": "photic zone (ENVO:00000209)",
+            "env_medium": "sea water (ENVO:00002149)"
+        },
+        {
+            "sample_name": "MOCK-S03",
+            "cruise_id": "MOCK-01",
+            "station": "ST3",
+            "collection_date": "2020-05-06 00:00:00",
+            "depth": "200",
+            "decimalLatitude": "57.0",
+            "decimalLongitude": "8.5",
+            "env_broad_scale": "marginal sea biome (ENVO:01000046)",
+            "env_local_scale": "photic zone (ENVO:00000209)",
+            "env_medium": "sea water (ENVO:00002149)"
+        }
+    ]
+}

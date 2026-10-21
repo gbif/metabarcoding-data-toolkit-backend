@@ -1,0 +1,94 @@
+{
+  "totalReads": 1549,
+  "otuCountPrSample": {
+    "mean": 2.75,
+    "stdev": 0.5
+  },
+  "readSumPrSample": {
+    "mean": 387.25,
+    "stdev": 397.040195278
+  },
+  "sequenceLength": {
+    "mean": 82,
+    "stdev": 0
+  },
+  "sampleCountPrOtu": {
+    "mostFrequent": [
+      {
+        "key": "0",
+        "val": 2,
+        "DNA_sequence": "ACACCGCCCGTCACTCTCCTCGAGTAATACGGTAAGCGTAAGGAGAGGTACCCGAAGGTAACACAGGGTAATCAGGGTGCGC",
+        "id": "d6d98a0ac6cfc0f590e660bce3d6d1ad"
+      },
+      {
+        "key": "1",
+        "val": 2,
+        "DNA_sequence": "ACACCGCCCGTCACCCTCCTCAAGCATTACGACAAGTGTTAATTCGAGAGGTTCCGAAGGTAACACAGGGTAATCAGGGTGC",
+        "id": "22a8d8a4758e856c39ff58d8a23afd21"
+      },
+      {
+        "key": "2",
+        "val": 2,
+        "DNA_sequence": "ACACCGCCCGTCACTCTCCTCAAGTATTACGGCAAGTGTAAATTCGAGAGGTCCCGAAGGTAACACAGGGTAATCAGGGTGA",
+        "id": "d81c30968054c657e770154139dcbe6f"
+      },
+      {
+        "key": "4",
+        "val": 2,
+        "DNA_sequence": "ACACCGCCCGTCACTCTCCTCGAGTTATACGGCAAGCGTAAATTCGAGAGGTTCCGAAGGTAACACAGGGTAATCAGGGTAC",
+        "id": "5d48a3b11e343a0ecf593772fdc7dc68"
+      },
+      {
+        "key": "5",
+        "val": 2,
+        "DNA_sequence": "ACACCGCCCGTCACCCTCCTCGAGCAATACGGCAAGTGTAAATTCGAGAGGTCCCGAAGGTAACACAGGGTAATCAGGGTGC",
+        "id": "9d2cc13838d67119b2aa74d4d6e20822"
+      },
+      {
+        "key": "3",
+        "val": 1,
+        "DNA_sequence": "ACACCGCCCGTCGCTCTCACCGAGAAATACGGCAAGCGTAAATTCGAGAGGTTCCGAAGGTAACACAGGGTAATCAGGGTGC",
+        "id": "f2e5a49f3d0144e63ad9bf611e69ce1b"
+      }
+    ],
+    "leastFrequent": [
+      {
+        "key": "0",
+        "val": 2,
+        "DNA_sequence": "ACACCGCCCGTCACTCTCCTCGAGTAATACGGTAAGCGTAAGGAGAGGTACCCGAAGGTAACACAGGGTAATCAGGGTGCGC",
+        "id": "d6d98a0ac6cfc0f590e660bce3d6d1ad"
+      },
+      {
+        "key": "1",
+        "val": 2,
+        "DNA_sequence": "ACACCGCCCGTCACCCTCCTCAAGCATTACGACAAGTGTTAATTCGAGAGGTTCCGAAGGTAACACAGGGTAATCAGGGTGC",
+        "id": "22a8d8a4758e856c39ff58d8a23afd21"
+      },
+      {
+        "key": "2",
+        "val": 2,
+        "DNA_sequence": "ACACCGCCCGTCACTCTCCTCAAGTATTACGGCAAGTGTAAATTCGAGAGGTCCCGAAGGTAACACAGGGTAATCAGGGTGA",
+        "id": "d81c30968054c657e770154139dcbe6f"
+      },
+      {
+        "key": "4",
+        "val": 2,
+        "DNA_sequence": "ACACCGCCCGTCACTCTCCTCGAGTTATACGGCAAGCGTAAATTCGAGAGGTTCCGAAGGTAACACAGGGTAATCAGGGTAC",
+        "id": "5d48a3b11e343a0ecf593772fdc7dc68"
+      }
+    ],
+    "singletonsTotal": 1
+  },
+  "singletonsTotal": 1,
+  "geographicScope": {
+    "northBoundingCoordinate": 57,
+    "southBoundingCoordinate": 0,
+    "westBoundingCoordinate": 0,
+    "eastBoundingCoordinate": 8.5
+  },
+  "temporalScope": {
+    "from": "",
+    "to": "2020-05-06 00:00:00"
+  },
+  "taxonomicScope": {}
+}

@@ -1,0 +1,422 @@
+{
+  "name": "dwc-data-package",
+  "title": "Darwin Core Data Package",
+  "description": "A data package containing Darwin Core related tables for molecular data.",
+  "resources": [
+    {
+      "name": "event",
+      "path": "data/event.tsv",
+      "schema": {
+        "identifier": "http://rs.tdwg.org/dwc/dwc-dp/event",
+        "url": "table-schemas/event.json",
+        "name": "event",
+        "title": "Event",
+        "description": "An action, process, or set of circumstances occurring at a dcterms:Location during a period of time.",
+        "comments": "",
+        "examples": "`a material collecting event`; `a bird observation`; `a camera trap image capture`; `an organism occurrence`; `a biotic survey`",
+        "namespace": "dwc",
+        "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/Event",
+        "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/Event-2023-09-18",
+        "rdfs:comment": "An action that occurs at some location during some time.",
+        "fields": [
+          {
+            "name": "eventID",
+            "title": "Event ID",
+            "description": "An identifier for a dwc:Event.",
+            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "examples": "`INBO:VIS:Ev:00009375`",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/eventID",
+            "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/eventID-2023-06-28",
+            "rdfs:comment": "An identifier for the set of information associated with a dwc:Event (something that occurs at a place and time). May be a global unique identifier or an identifier specific to the data set.",
+            "constraints": {
+              "required": true,
+              "unique": true
+            }
+          },
+          {
+            "name": "eventDate",
+            "title": "Event Date",
+            "description": "A date-time or time interval during which a dwc:Event occurred.",
+            "comments": "Recommended best practice is to use a date that conforms to ISO 8601-1:2019. Not suitable for a time in a geological context.",
+            "examples": "`1963-03-08T14:07-06:00` (8 Mar 1963 at or after 2:07pm and before 2:08pm in the time zone six hours earlier than UTC); `2009-02-20T08:40Z` (20 February 2009 at or after 8:40am and before 8:41 UTC); `2018-08-29T15:19` (29 August 2018 at or after 3:19pm and before 3:20pm local time); `1809-02-12` (within the day 12 February 1809); `1906-06` (in the month of June 1906); `1971` (in the year 1971); `2007-03-01T13:00:00Z/2008-05-11T15:30:00Z` (some time within the interval beginning 1 March 2007 at 1pm UTC and before 11 May 2008 at 3:30pm UTC); `1900/1909` (some time within the interval between the beginning of the year 1900 and before the year 1909); `2007-11-13/15` (some time in the interval between the beginning of 13 November 2007 and before 15 November 2007)",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/eventDate",
+            "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/eventDate-2025-06-12",
+            "rdfs:comment": "The date-time or interval during which a dwc:Event occurred. For occurrences, this is the date-time when the dwc:Event was recorded. Not suitable for a time in a geological context."
+          },
+          {
+            "name": "decimalLatitude",
+            "title": "Decimal Latitude",
+            "description": "A geographic latitude (in decimal degrees, using the spatial reference system given in dwc:geodeticDatum) of a dcterms:Location.",
+            "comments": "Positive values are north of the Equator, negative values are south of it. Valid values lie between -90 and 90, inclusive.",
+            "examples": "`-41.0983423`",
+            "type": "number",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/decimalLatitude",
+            "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/decimalLatitude-2023-06-28",
+            "rdfs:comment": "The geographic latitude (in decimal degrees, using the spatial reference system given in dwc:geodeticDatum) of the geographic center of a dcterms:Location. Positive values are north of the Equator, negative values are south of it. Legal values lie between -90 and 90, inclusive.",
+            "constraints": {
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          {
+            "name": "decimalLongitude",
+            "title": "Decimal Longitude",
+            "description": "A geographic longitude (in decimal degrees, using the spatial reference system given in dwc:geodeticDatum) of a dcterms:Location.",
+            "comments": "Positive values are east of the Greenwich Meridian, negative values are west of it. Valid values lie between -180 and 180, inclusive.",
+            "examples": "`-121.1761111`",
+            "type": "number",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/decimalLongitude",
+            "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/decimalLongitude-2023-06-28",
+            "rdfs:comment": "The geographic longitude (in decimal degrees, using the spatial reference system given in dwc:geodeticDatum) of the geographic center of a dcterms:Location. Positive values are east of the Greenwich Meridian, negative values are west of it. Legal values lie between -180 and 180, inclusive.",
+            "constraints": {
+              "minimum": -180,
+              "maximum": 180
+            }
+          }
+        ],
+        "primaryKey": "eventID",
+        "foreignKeys": []
+      }
+    },
+    {
+      "name": "identification",
+      "path": "data/identification.tsv",
+      "schema": {
+        "identifier": "http://rs.tdwg.org/dwc/dwc-dp/identification",
+        "url": "table-schemas/identification.json",
+        "name": "identification",
+        "title": "Identification",
+        "description": "A classification of a resource according to a classification scheme.",
+        "comments": "For biology, the assignment of a scientific name or taxon concept to a dwc:Organism.",
+        "examples": "`a subspecies determination of an organism`; `a nomenclatural act designating a specimen as a holotype`",
+        "namespace": "dwc",
+        "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/Identification",
+        "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/Identification-2023-09-18",
+        "rdfs:comment": "A taxonomic determination (e.g., the assignment to a dwc:Taxon).",
+        "fields": [
+          {
+            "name": "identificationID",
+            "title": "Identification ID",
+            "description": "An identifier for a dwc:Identification.",
+            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "examples": "`9992`",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/identificationID",
+            "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/identificationID-2023-06-28",
+            "rdfs:comment": "An identifier for the dwc:Identification (the body of information associated with the assignment of a scientific name). May be a global unique identifier or an identifier specific to the data set.",
+            "constraints": {
+              "required": true,
+              "unique": true
+            }
+          },
+          {
+            "name": "nucleotideSequenceID",
+            "title": "Nucleotide Sequence ID",
+            "description": "An identifier for a dwc:NucleotideSequence based on which a dwc:Identification was made.",
+            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "examples": "",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/nucleotideSequenceID",
+            "dcterms:references": "",
+            "rdfs:comment": "",
+            "constraints": {
+              "required": false,
+              "unique": false
+            }
+          },
+          {
+            "name": "verbatimIdentification",
+            "title": "Verbatim Identification",
+            "description": "A string representing the taxonomic identification as it appeared in the original record.",
+            "comments": "This term is meant to allow the capture of an unaltered original identification/determination, including identification qualifiers, hybrid formulas, uncertainties, etc. This term is meant to be used in addition to dwc:scientificName (and dwc:identificationQualifier etc.), not instead of it.",
+            "examples": "`Peromyscus sp.`; `Ministrymon sp. nov. 1`; `Anser anser × Branta canadensis`; `Pachyporidae?`; `Potentilla × pantotricha Soják`; `Aconitum pilipes × A. variegatum`; `Lepomis auritus x cyanellus`",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/verbatimIdentification",
+            "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/verbatimIdentification-2023-06-28",
+            "rdfs:comment": "A string representing the taxonomic identification as it appeared in the original record."
+          },
+          {
+            "name": "taxonID",
+            "title": "Taxon ID",
+            "description": "An identifier for a dwc:Taxon.",
+            "comments": "",
+            "examples": "`8fa58e08-08de-4ac1-b69c-1235340b7001`; `32567`; `https://www.gbif.org/species/212`",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/taxonID",
+            "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/taxonID-2023-06-28",
+            "rdfs:comment": "An identifier for the set of dwc:Taxon information. May be a global unique identifier or an identifier specific to the data set."
+          }
+        ],
+        "primaryKey": "identificationID",
+        "foreignKeys": [
+          {
+            "fields": "nucleotideSequenceID",
+            "predicate": "based on",
+            "reference": {
+              "resource": "nucleotide-sequence",
+              "fields": "nucleotideSequenceID"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "molecular-protocol",
+      "path": "data/molecular-protocol.tsv",
+      "schema": {
+        "identifier": "http://rs.tdwg.org/dwc/dwc-dp/molecular-protocol",
+        "url": "table-schemas/molecular-protocol.json",
+        "name": "molecular-protocol",
+        "title": "Molecular Protocol",
+        "description": "A protocol used to derive and identify a dwc:NucleotideSequence from an ac:MaterialEntity.",
+        "comments": "",
+        "examples": "`a standard DNA barcoding workflow using Sanger sequencing`; `a shotgun metagenomics pipeline for microbial community profiling`; `a high-throughput amplicon sequencing protocol targeting 16S rRNA`",
+        "namespace": "dwc",
+        "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/MolecularProtocol",
+        "dcterms:references": "",
+        "rdfs:comment": "A protocol used to derive and identify a nucleotide sequence from a dwc:MaterialEntity.",
+        "fields": [
+          {
+            "name": "molecularProtocolID",
+            "title": "Molecular Protocol ID",
+            "description": "An identifier for a dwc:MolecularProtocol.",
+            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "examples": "",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/molecularProtocolID",
+            "dcterms:references": "",
+            "rdfs:comment": "",
+            "constraints": {
+              "required": true,
+              "unique": true
+            }
+          }
+        ],
+        "primaryKey": "molecularProtocolID",
+        "foreignKeys": []
+      }
+    },
+    {
+      "name": "nucleotide-analysis",
+      "path": "data/nucleotide-analysis.tsv",
+      "schema": {
+        "identifier": "http://rs.tdwg.org/dwc/dwc-dp/nucleotide-analysis",
+        "url": "table-schemas/nucleotide-analysis.json",
+        "name": "nucleotide-analysis",
+        "title": "Nucleotide Analysis",
+        "description": "A link between a dwc:NucleotideSequence and a dwc:Event and a dwc:MaterialEntity from which it was derived, using a specified dwc:Protocol.",
+        "comments": "",
+        "examples": "",
+        "namespace": "dwc",
+        "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/NucleotideAnalysis",
+        "dcterms:references": "",
+        "rdfs:comment": "A link between a dwc:NucleotideSequence and a dwc:Event and a dwc:MaterialEntity from which it was derived, using a specified dwc:Protocol.",
+        "fields": [
+          {
+            "name": "nucleotideAnalysisID",
+            "title": "Nucleotide Analysis ID",
+            "description": "An identifier for a dwc:NucleotideAnalysis.",
+            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "examples": "",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/nucleotideAnalysisID",
+            "dcterms:references": "",
+            "rdfs:comment": "",
+            "constraints": {
+              "required": true,
+              "unique": true
+            }
+          },
+          {
+            "name": "eventID",
+            "title": "Event ID",
+            "description": "An identifier for a dwc:Event.",
+            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "examples": "",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/eventID",
+            "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/eventID-2023-06-28",
+            "rdfs:comment": "An identifier for the set of information associated with a dwc:Event (something that occurs at a place and time). May be a global unique identifier or an identifier specific to the data set.",
+            "constraints": {
+              "required": true,
+              "unique": false
+            }
+          },
+          {
+            "name": "molecularProtocolID",
+            "title": "Molecular Protocol ID",
+            "description": "An identifier for a dwc:MolecularProtocol.",
+            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "examples": "",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/molecularProtocolID",
+            "dcterms:references": "",
+            "rdfs:comment": "",
+            "constraints": {
+              "required": true,
+              "unique": false
+            }
+          },
+          {
+            "name": "nucleotideSequenceID",
+            "title": "Nucleotide Sequence ID",
+            "description": "An identifier for a dwc:NucleotideSequence.",
+            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "examples": "",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/nucleotideSequenceID",
+            "dcterms:references": "",
+            "rdfs:comment": "",
+            "constraints": {
+              "required": true,
+              "unique": false
+            }
+          },
+          {
+            "name": "readCount",
+            "title": "Read Count",
+            "description": "A number of reads for a dwc:NucleotideSequence in a dwc:NucleotideAnalysis.",
+            "comments": "",
+            "examples": "",
+            "type": "integer",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/readCount",
+            "dcterms:references": "",
+            "rdfs:comment": ""
+          },
+          {
+            "name": "totalReadCount",
+            "title": "Total Read Count",
+            "description": "A total number of reads in a dwc:NucleotideAnalysis.",
+            "comments": "",
+            "examples": "",
+            "type": "integer",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/totalReadCount",
+            "dcterms:references": "",
+            "rdfs:comment": ""
+          }
+        ],
+        "primaryKey": "nucleotideAnalysisID",
+        "foreignKeys": [
+          {
+            "fields": "eventID",
+            "predicate": "material collected during",
+            "reference": {
+              "resource": "event",
+              "fields": "eventID"
+            }
+          },
+          {
+            "fields": "molecularProtocolID",
+            "predicate": "followed",
+            "reference": {
+              "resource": "molecular-protocol",
+              "fields": "molecularProtocolID"
+            }
+          },
+          {
+            "fields": "nucleotideSequenceID",
+            "predicate": "produced",
+            "reference": {
+              "resource": "nucleotide-sequence",
+              "fields": "nucleotideSequenceID"
+            }
+          }
+        ],
+        "uniqueKeys": []
+      }
+    },
+    {
+      "name": "nucleotide-sequence",
+      "path": "data/nucleotide-sequence.tsv",
+      "schema": {
+        "identifier": "http://rs.tdwg.org/dwc/dwc-dp/nucleotide-sequence",
+        "url": "table-schemas/nucleotide-sequence.json",
+        "name": "nucleotide-sequence",
+        "title": "Nucleotide Sequence",
+        "description": "A digital representation of a nucleotide sequence.",
+        "comments": "",
+        "examples": "",
+        "namespace": "dwc",
+        "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/NucleotideSequence",
+        "dcterms:references": "",
+        "rdfs:comment": "A digital representation of a nucleotide sequence.",
+        "fields": [
+          {
+            "name": "nucleotideSequenceID",
+            "title": "Nucleotide Sequence ID",
+            "description": "An identifier for a dwc:NucleotideSequence.",
+            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "examples": "",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/nucleotideSequenceID",
+            "dcterms:references": "",
+            "rdfs:comment": "",
+            "constraints": {
+              "required": true,
+              "unique": true
+            }
+          },
+          {
+            "name": "sequence",
+            "title": "Sequence",
+            "description": "A string representing nucleotide base pairs.",
+            "comments": "",
+            "examples": "",
+            "type": "string",
+            "format": "default",
+            "namespace": "dwc",
+            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/sequence",
+            "dcterms:references": "",
+            "rdfs:comment": ""
+          }
+        ],
+        "primaryKey": "nucleotideSequenceID",
+        "foreignKeys": []
+      }
+    }
+  ],
+  "dialect": {
+    "delimiter": "\t",
+    "quoteChar": "\"",
+    "lineTerminator": "\n",
+    "header": true,
+    "doubleQuote": true,
+    "skipInitialSpace": false,
+    "commentChar": "#",
+    "caseSensitiveHeader": false
+  }
+}
