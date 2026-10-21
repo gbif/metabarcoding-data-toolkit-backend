@@ -231,10 +231,10 @@ test('XLSX with a separate fasta adds sequences to a dataset that has none', asy
     });
 
     await t.test('metrics are generated once sequences are present', async () => {
-        // The counterpart to the todo in xlsx.golden.test.js: without sequences,
-        // getDNAsequenceLength (metrics/index.js:492) rethrows and getMetrics abandons the whole
-        // metrics object. Supplying them removes the trigger, so the file appears. This is the
-        // evidence for that diagnosis, and it will keep holding after the guard is added.
+        // The counterpart to the sequence-less case in xlsx.golden.test.js. getDNAsequenceLength
+        // rethrows when the column is absent; that call is now guarded, so both datasets get
+        // metrics - this one with a sequenceLength, that one without. Asserting the exact mean
+        // here is what distinguishes "the metric was computed" from "the metric was skipped".
         assert.ok(artifactExists(dir, 'metrics.json'),
             'metrics.json should be written when the taxa have sequences');
 

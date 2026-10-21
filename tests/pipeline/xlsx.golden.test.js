@@ -17,13 +17,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { stageFixture, readArtifact, artifactExists, fixtureAvailable } from '../helpers/dataset.js';
-import { compareToGolden } from '../helpers/golden.js';
-import { sortedLines } from '../helpers/normalise.js';
+import { compareToGolden, compareJsonToGolden } from '../helpers/golden.js';
+import { sortedLines, roundNumbers } from '../helpers/normalise.js';
 import { blockNetwork, restoreNetwork } from '../helpers/offline.js';
 
 import { processDataset as validateWorkbook } from '../../workers/xlsxvalidationworker.js';
 import { processDataset as processWorkbook } from '../../workers/xlsxworker.js';
-import { readBiom, readMapping } from '../../util/filesAndDirectories.js';
+import { readBiom, readMapping, readMetrics } from '../../util/filesAndDirectories.js';
 import { biomToDwc } from '../../converters/dwc.js';
 import { biomToDwcDp } from '../../converters/dwcdp.js';
 
@@ -128,12 +128,25 @@ test(`XLSX path: ${FIXTURE}`, async (t) => {
             readArtifact(dir, 'dwc-dp/datapackage.json'));
     });
 
-    await t.test('metrics.json is produced', { todo: 'metrics/index.js:492 rethrows for a dataset with no DNA_sequence column, so getMetrics aborts and no metrics.json is written - while the job still reports success' }, () => {
-        // Marked todo rather than asserted-absent on purpose. Pinning "no metrics.json" as the
-        // expected result would turn a bug into a specification; this keeps it visible in every
-        // run until getDNAsequenceLength stops rethrowing, at which point the todo starts
-        // passing and can be promoted to a real assertion.
+    await t.test('metrics are produced even though the dataset has no sequences', async () => {
+        // This was a todo: getDNAsequenceLength rethrows when observation/metadata/DNA_sequence
+        // is absent, and getMetrics called it unguarded, so a dataset of named taxa without
+        // sequences got no metrics.json at all while the job still reported success. Fixed by
+        // guarding that call the way the three scope metrics beside it already were. The
+        // assertion is what stops it regressing.
         assert.ok(artifactExists(dir, 'metrics.json'),
-            'no metrics.json was written for a dataset without DNA sequences');
+            'a dataset without DNA sequences should still get metrics');
+
+        const metrics = await readMetrics(DATASET_ID, 1);
+
+        // The one metric that cannot be computed is omitted; everything else is still there.
+        assert.ok(!('sequenceLength' in metrics),
+            'sequenceLength should be absent rather than guessed at');
+        assert.ok(metrics.totalReads > 0, 'the metrics that do not need sequences are computed');
+
+        // geographicScope and temporalScope are absent too, for an unrelated and pre-existing
+        // reason: this workbook has latitude/longitude/year columns that are not mapped to the
+        // Darwin Core terms those metrics read. Pinned so the two causes stay distinguishable.
+        compareJsonToGolden(`${FIXTURE}/metrics.json`, roundNumbers(metrics, 9));
     });
 });
