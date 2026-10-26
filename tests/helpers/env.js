@@ -50,3 +50,21 @@ if (!process.env.MDT_DATA_DIR) {
 // network kill switch in node, so this is a marker the helpers assert against rather than an
 // enforced block - see tests/helpers/offline.js.
 process.env.MDT_TEST = '1';
+
+/**
+ * Pin the timezone.
+ *
+ * The FAIRe path reads workbook dates with the xlsx library's cellDates option, which produces
+ * a Date interpreted in the *local* zone, and then serialises it as a UTC instant. The output
+ * therefore depends on the machine's timezone: a workbook date of 2021-06-09 comes out as
+ * 2021-06-08T22:00:00.000Z at UTC+2 and 2021-06-09T07:00:00.000Z at UTC-7.
+ *
+ * Found the hard way - goldens recorded under one timezone failed verbatim once the machine
+ * moved to another. Pinning UTC is what makes the goldens reproducible on any machine and in
+ * CI. It does not fix the underlying behaviour, which remains timezone-dependent in production.
+ *
+ * Pinned unconditionally rather than only when TZ is unset, because a developer or CI runner
+ * with TZ exported would otherwise defeat the pin. MDT_TEST_TZ exists to exercise the timezone
+ * sensitivity deliberately.
+ */
+process.env.TZ = process.env.MDT_TEST_TZ || 'UTC';
