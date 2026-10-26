@@ -79,3 +79,46 @@ export const taxonIdsFromWorkbook = async (workbookPath, sheetName = 'taxa') => 
     const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
     return rows.slice(1).map(row => row?.[0]).filter(Boolean);
 };
+
+/**
+ * Rewrites a taxa-as-rows OTU table into the sequences-as-column-headers form.
+ *
+ * A third way of supplying sequences, and a distinct input shape: samples become the rows, the
+ * column headers are the sequences themselves, and there is no taxon file at all - identity
+ * comes from the sequence, which workers/tsvworker.js md5s into the taxon id. testData has a
+ * real example in biowide_bacteria (69,318 columns, 45 MB), far too large to commit, so this
+ * derives the same shape from a fixture that is already in the repository.
+ *
+ * Returns the table as text. The caller supplies the matching sample file unchanged.
+ */
+export const toSequenceHeaderTable = (otuTablePath, taxaPath, {
+    idColumn = 'id', sequenceColumn = 'DNA_sequence', delimiter = '\t',
+} = {}) => {
+    const read = (p) => fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n').split('\n')
+        .filter(line => line.length > 0);
+
+    const taxaLines = read(taxaPath);
+    const taxaHeader = taxaLines[0].split(delimiter);
+    const idIndex = taxaHeader.indexOf(idColumn);
+    const sequenceIndex = taxaHeader.indexOf(sequenceColumn);
+    const sequenceOf = new Map(taxaLines.slice(1)
+        .map(line => line.split(delimiter))
+        .map(cells => [cells[idIndex], cells[sequenceIndex]]));
+
+    const otuLines = read(otuTablePath);
+    const sampleIds = otuLines[0].split(delimiter).slice(1);
+    const taxonIds = otuLines.slice(1).map(line => line.split(delimiter)[0]);
+    const counts = otuLines.slice(1).map(line => line.split(delimiter).slice(1));
+
+    const missing = taxonIds.filter(id => !sequenceOf.has(id));
+    if (missing.length > 0) {
+        throw new Error(`No sequence for ${missing.length} taxon id(s), e.g. ${missing[0]}`);
+    }
+
+    // transposed: the leading header cell is empty, as in the real biowide_bacteria table
+    return [
+        ['', ...taxonIds.map(id => sequenceOf.get(id))].join(delimiter),
+        ...sampleIds.map((sample, column) =>
+            [sample, ...taxonIds.map((_, row) => counts[row][column])].join(delimiter)),
+    ].join('\n') + '\n';
+};
