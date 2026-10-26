@@ -146,7 +146,7 @@ const stripCommentRows = (data) => {
 };
 
 /**
- * Locate the projectMetadata column carrying values for one assay.
+ * The assay columns of a projectMetadata sheet, in sheet order.
  *
  * projectMetadata is laid out term-per-row, with one column per assay to the right of
  * project_level. The FAIRe template names those columns generically - assay1, assay2 - and records
@@ -157,38 +157,65 @@ const stripCommentRows = (data) => {
  *   target_gene                                  16S rRNA (SSU    18S rRNA (SSU
  *                                                prokaryote)      eukaryote)
  *
- * So the column cannot be identified from its header. This used to take the first one
- * unconditionally, which meant selecting any assay but the first silently inherited the first
- * assay's target_gene, primers and amplicon size - published as if they described the sequences.
+ * So an assay cannot be recognised from a column header, and the header is not the name to show a
+ * user either - 'assay1' tells them nothing. Both the defaults extractor and the assay
+ * cross-reference need the same reading of this, hence one function.
+ *
+ * Returns [{ index, header, assayName }] with assayName null when the assay_name row is absent, or
+ * null when the sheet has no project_level column at all and the layout cannot be read.
+ */
+const projectMetadataAssayColumns = (data) => {
+    const cleanData = stripCommentRows(data || []);
+    const headers = (cleanData[0] || []).map(h => String(h ?? '').trim());
+
+    const termNameIdx     = headers.findIndex(h => h.toLowerCase() === 'term_name');
+    const projectLevelIdx = headers.findIndex(h => h.toLowerCase() === 'project_level');
+    if (projectLevelIdx < 0) return null;
+
+    const assayNameRow = termNameIdx >= 0
+        ? cleanData.slice(1).find(r => String(r[termNameIdx] ?? '').trim().toLowerCase() === 'assay_name')
+        : null;
+
+    const columns = [];
+    for (let i = projectLevelIdx + 1; i < headers.length; i++) {
+        if (!headers[i]) continue;
+        const declared = assayNameRow ? String(assayNameRow[i] ?? '').trim() : '';
+        columns.push({ index: i, header: headers[i], assayName: declared || null });
+    }
+    return columns;
+};
+
+/** The name to show a user for an assay column: what it declares, else its header. */
+const assayColumnLabel = (column) => column.assayName || column.header;
+
+/**
+ * Locate the projectMetadata column carrying values for one assay.
+ *
+ * This used to take the first column unconditionally, which meant selecting any assay but the
+ * first silently inherited the first assay's target_gene, primers and amplicon size - published as
+ * if they described the sequences.
  *
  * Returns -1 when the assay cannot be placed and more than one column is a candidate. The caller
  * then falls back to project_level values alone: losing the assay-scoped defaults shows up in the
  * mapping form as terms left to fill in, whereas taking the wrong column does not show up at all.
  */
-const findAssayColumn = (rows, headers, termNameIdx, projectLevelIdx, selectedAssay) => {
-    const assayIdxs = [];
-    for (let i = projectLevelIdx + 1; i < headers.length; i++) {
-        if (headers[i]) assayIdxs.push(i);
-    }
-    if (assayIdxs.length === 0) return -1;
+const findAssayColumn = (columns, selectedAssay) => {
+    if (!columns?.length) return -1;
 
     // A bare otuFinal carries no assay name - one implicit assay, so a lone column is unambiguous.
-    if (!selectedAssay) return assayIdxs.length === 1 ? assayIdxs[0] : -1;
+    if (!selectedAssay) return columns.length === 1 ? columns[0].index : -1;
 
     const needle = String(selectedAssay).trim().toLowerCase();
 
-    const assayNameRow = rows.find(r => String(r[termNameIdx] ?? '').trim().toLowerCase() === 'assay_name');
-    if (assayNameRow) {
-        const match = assayIdxs.find(i => String(assayNameRow[i] ?? '').trim().toLowerCase() === needle);
-        if (match !== undefined) return match;
-    }
+    const byName = columns.find(c => c.assayName?.toLowerCase() === needle);
+    if (byName) return byName.index;
 
     // Some templates do name the column after the assay itself.
-    const byHeader = assayIdxs.find(i => headers[i] === needle);
-    if (byHeader !== undefined) return byHeader;
+    const byHeader = columns.find(c => c.header.toLowerCase() === needle);
+    if (byHeader) return byHeader.index;
 
     // One candidate whose name does not match is still the only thing it can be.
-    return assayIdxs.length === 1 ? assayIdxs[0] : -1;
+    return columns.length === 1 ? columns[0].index : -1;
 };
 
 /**
@@ -214,7 +241,7 @@ const extractProjectMetadataDefaults = (data, selectedAssay = null) => {
     if (termNameIdx < 0 || projectLevelIdx < 0) return {};
 
     const rows = cleanData.slice(1);
-    const assayIdx = findAssayColumn(rows, headers, termNameIdx, projectLevelIdx, selectedAssay);
+    const assayIdx = findAssayColumn(projectMetadataAssayColumns(data), selectedAssay);
 
     const isValidValue = (v) =>
         v != null && v !== '' && String(v).trim().toLowerCase() !== 'none';
@@ -388,18 +415,20 @@ const buildSheetsWithCrossReferences = (components) => {
         }
     }
 
-    // Cross-reference: assay names from otuFinal sheet names <-> projectMetadata column headers
+    // Cross-reference: assay names from otuFinal sheet names <-> assays declared in projectMetadata.
+    // The assays a projectMetadata declares are the values in its assay_name row, not its column
+    // headers: the template headers them assay1, assay2, so comparing against those reported every
+    // assay as missing and offered 'assay1, assay2' as the names it had found.
     if (projectMetadata && assayNames?.length > 0) {
-        const cleanedPmData = stripCommentRows(projectMetadata.data);
-        const pmHeaders = (cleanedPmData[0] || []).map(h => String(h ?? '').trim());
-        const projectLevelIdx = pmHeaders.findIndex(h => h.toLowerCase() === 'project_level');
-        if (projectLevelIdx >= 0) {
-            const pmAssayCols = new Set(pmHeaders.slice(projectLevelIdx + 1).filter(Boolean));
-            const missingInPm = assayNames.filter(a => !pmAssayCols.has(a));
+        const assayColumns = projectMetadataAssayColumns(projectMetadata.data);
+        if (assayColumns) {
+            const declared = assayColumns.map(assayColumnLabel);
+            const declaredSet = new Set(declared.map(d => d.toLowerCase()));
+            const missingInPm = assayNames.filter(a => !declaredSet.has(String(a).trim().toLowerCase()));
             if (missingInPm.length > 0) {
                 sheetErrors.sampleMetadata.push(
-                    `Assay name(s) "${missingInPm.join('", "')}" from otuFinal sheet(s) not found as column(s) in projectMetadata. ` +
-                    `Found assay column(s): ${pmAssayCols.size > 0 ? [...pmAssayCols].join(', ') : '(none)'}.`
+                    `Assay name(s) "${missingInPm.join('", "')}" from otuFinal sheet(s) not declared in projectMetadata. ` +
+                    `Found assay(s): ${declared.length > 0 ? declared.join(', ') : '(none)'}.`
                 );
             }
         }
