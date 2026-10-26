@@ -146,6 +146,52 @@ const stripCommentRows = (data) => {
 };
 
 /**
+ * Locate the projectMetadata column carrying values for one assay.
+ *
+ * projectMetadata is laid out term-per-row, with one column per assay to the right of
+ * project_level. The FAIRe template names those columns generically - assay1, assay2 - and records
+ * which assay each one describes in the assay_name row:
+ *
+ *   term_name    project_level                   assay1           assay2
+ *   assay_name   ssu16sv4v5-emp | ssu18sv9-emp   ssu16sv4v5-emp   ssu18sv9-emp
+ *   target_gene                                  16S rRNA (SSU    18S rRNA (SSU
+ *                                                prokaryote)      eukaryote)
+ *
+ * So the column cannot be identified from its header. This used to take the first one
+ * unconditionally, which meant selecting any assay but the first silently inherited the first
+ * assay's target_gene, primers and amplicon size - published as if they described the sequences.
+ *
+ * Returns -1 when the assay cannot be placed and more than one column is a candidate. The caller
+ * then falls back to project_level values alone: losing the assay-scoped defaults shows up in the
+ * mapping form as terms left to fill in, whereas taking the wrong column does not show up at all.
+ */
+const findAssayColumn = (rows, headers, termNameIdx, projectLevelIdx, selectedAssay) => {
+    const assayIdxs = [];
+    for (let i = projectLevelIdx + 1; i < headers.length; i++) {
+        if (headers[i]) assayIdxs.push(i);
+    }
+    if (assayIdxs.length === 0) return -1;
+
+    // A bare otuFinal carries no assay name - one implicit assay, so a lone column is unambiguous.
+    if (!selectedAssay) return assayIdxs.length === 1 ? assayIdxs[0] : -1;
+
+    const needle = String(selectedAssay).trim().toLowerCase();
+
+    const assayNameRow = rows.find(r => String(r[termNameIdx] ?? '').trim().toLowerCase() === 'assay_name');
+    if (assayNameRow) {
+        const match = assayIdxs.find(i => String(assayNameRow[i] ?? '').trim().toLowerCase() === needle);
+        if (match !== undefined) return match;
+    }
+
+    // Some templates do name the column after the assay itself.
+    const byHeader = assayIdxs.find(i => headers[i] === needle);
+    if (byHeader !== undefined) return byHeader;
+
+    // One candidate whose name does not match is still the only thing it can be.
+    return assayIdxs.length === 1 ? assayIdxs[0] : -1;
+};
+
+/**
  * Extract default values from the projectMetadata sheet.
  *
  * projectMetadata layout:
@@ -153,11 +199,11 @@ const stripCommentRows = (data) => {
  *   rows 1+: one row per FAIRe vocabulary term
  *
  * Result is a flat key→value map: term_name → value.
- * project_level values are written first; the first assay column then overrides them
+ * project_level values are written first; the column for the selected assay then overrides them
  * for assay-scoped terms (so assay-specific values win over project-wide values).
  * Blank and literal "None" values are skipped.
  */
-const extractProjectMetadataDefaults = (data) => {
+const extractProjectMetadataDefaults = (data, selectedAssay = null) => {
     if (!data || data.length < 2) return {};
 
     const cleanData = stripCommentRows(data);
@@ -167,14 +213,14 @@ const extractProjectMetadataDefaults = (data) => {
     const projectLevelIdx = headers.findIndex(h => h === 'project_level');
     if (termNameIdx < 0 || projectLevelIdx < 0) return {};
 
-    // First assay column is immediately to the right of project_level
-    const firstAssayIdx = projectLevelIdx + 1 < headers.length ? projectLevelIdx + 1 : -1;
+    const rows = cleanData.slice(1);
+    const assayIdx = findAssayColumn(rows, headers, termNameIdx, projectLevelIdx, selectedAssay);
 
     const isValidValue = (v) =>
         v != null && v !== '' && String(v).trim().toLowerCase() !== 'none';
 
     const defaults = {};
-    for (const row of cleanData.slice(1)) {
+    for (const row of rows) {
         const termName = row[termNameIdx];
         if (!termName) continue;
         const key = String(termName).trim();
@@ -184,8 +230,8 @@ const extractProjectMetadataDefaults = (data) => {
             defaults[key] = projectVal;
         }
 
-        if (firstAssayIdx >= 0) {
-            const assayVal = row[firstAssayIdx];
+        if (assayIdx >= 0) {
+            const assayVal = row[assayIdx];
             if (isValidValue(assayVal)) {
                 defaults[key] = assayVal; // assay-scoped value overrides project-level
             }
@@ -504,7 +550,7 @@ export const readFAIReHybrid = async (id, version, preferredAssay = null) => {
     const allSheets = await collectAllSheets(basePath);
 
     const components = parseFAIReComponents(allSheets, preferredAssay);
-    const projectMetadataDefaults = extractProjectMetadataDefaults(components.projectMetadata?.data);
+    const projectMetadataDefaults = extractProjectMetadataDefaults(components.projectMetadata?.data, components.assayName);
     const projectMetadataComments = components.projectMetadataComments ?? {};
     const result = buildSheetsWithCrossReferences(components);
 
@@ -598,7 +644,7 @@ export const readFAIReWorkbook = async (id, xlsxFileName, version, preferredAssa
     }));
 
     const components = parseFAIReComponents(allSheetData, preferredAssay);
-    const projectMetadataDefaults = extractProjectMetadataDefaults(components.projectMetadata?.data);
+    const projectMetadataDefaults = extractProjectMetadataDefaults(components.projectMetadata?.data, components.assayName);
     const projectMetadataComments = components.projectMetadataComments ?? {};
     const result = buildSheetsWithCrossReferences(components);
 
@@ -683,7 +729,7 @@ export const readFAIReFlatFiles = async (id, version, preferredAssay = null) => 
     if (!taxaFinal) missingComponentErrors.push('Missing required component: taxaFinal');
     if (!experimentRunMetadata) missingComponentErrors.push('Missing required component: experimentRunMetadata');
 
-    const projectMetadataDefaults = extractProjectMetadataDefaults(projectMetadata?.data);
+    const projectMetadataDefaults = extractProjectMetadataDefaults(projectMetadata?.data, selectedAssay);
 
     const result = buildSheetsWithCrossReferences({
         projectMetadata,
