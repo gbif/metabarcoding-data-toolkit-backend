@@ -412,10 +412,40 @@ const extractTermComments = (rawSheet) => {
 };
 
 /**
+ * Read a FAIRe flat component file (tsv/csv/txt) in full, as a 2D array.
+ *
+ * analyseCsv is a format sniffer for the upload preview. It tries each candidate delimiter and
+ * caps what it returns at 100 rows and 100 columns (validation/tsvformat.js testDelimiter:
+ * `to_line: 100` plus a slice to COLUMN_LIMIT). Those caps are correct for a preview and wrong
+ * for anything that reasons about the data: a 61730 x 469 otuFinal came back as its top-left
+ * 100 x 100 corner, and because the caller kept only `rows` - dropping `numColumns` and
+ * `columnLimit`, the two fields that record the crop - the cross-reference checks could not tell
+ * they were looking at one. Every sample and seq_id past the corner was reported missing.
+ *
+ * So: sniff the delimiter with analyseCsv, then read the whole file. Display truncation still
+ * happens, but in buildSheet, where it belongs.
+ */
+const readFlatComponent = async (filePath) => {
+    const preview = await analyseCsv(filePath);
+    // analyseCsv yields nothing when no candidate delimiter could parse the file at all. A
+    // FAIRe-prefixed xlsx arrives here that way, because readFAIReFlatFiles selects components by
+    // filename prefix without checking the extension. There is nothing to read as a flat file, and
+    // the caller already treats null as 'component absent' - so return quietly, as before.
+    if (!preview) return null;
+    try {
+        return await readFlatFile2D(filePath, preview?.delimiter ?? '\t');
+    } catch (error) {
+        console.log(`Could not read FAIRe component file ${filePath}`);
+        console.log(error);
+        return null;
+    }
+};
+
+/**
  * Collect all FAIRe sheets from a directory, handling three file types:
  *   - Non-prefixed xlsx (main workbooks): all sheets added by sheet name
  *   - FAIRe-prefixed xlsx (e.g. taxaFinal_*.xlsx): first sheet, named after the file
- *   - FAIRe-prefixed flat files (tsv/csv/txt): read via analyseCsv, named after the file
+ *   - FAIRe-prefixed flat files (tsv/csv/txt): read in full, named after the file
  * Returns a unified array of { name, data } objects suitable for parseFAIReComponents.
  */
 const collectAllSheets = async (basePath) => {
@@ -453,11 +483,11 @@ const collectAllSheets = async (basePath) => {
             }
         } else if (hasFAIRePrefix(filename)) {
             // FAIRe-prefixed flat file — normalise name to workbook convention
-            const result = await analyseCsv(filePath);
-            if (result?.rows?.length > 0) {
+            const data = await readFlatComponent(filePath);
+            if (data?.length > 0) {
                 sheets.push({
                     name: normalizeFileToSheetName(filename),
-                    data: result.rows
+                    data
                 });
             }
         }
@@ -501,8 +531,6 @@ export const loadFAIReComponents = async (id, version, preferredAssay = null) =>
 
     if (hasFAIRePrefixedFiles) {
         // Hybrid or pure flat-file: build sheets directly, reading full file content.
-        // analyseCsv is only used to detect the delimiter (it limits to 100 rows for UI preview).
-        // readFlatFile2D reads the entire file without a row cap.
         const sheets = [];
         for (const filename of fileList) {
             const lowerName = filename.toLowerCase();
@@ -531,11 +559,9 @@ export const loadFAIReComponents = async (id, version, preferredAssay = null) =>
                     }
                 }
             } else if (hasFAIRePrefix(filename)) {
-                // FAIRe-prefixed flat file — detect delimiter then read full file
-                const preview = await analyseCsv(filePath);
-                const delimiter = preview?.delimiter ?? '\t';
-                const data = await readFlatFile2D(filePath, delimiter);
-                if (data.length > 0) {
+                // FAIRe-prefixed flat file
+                const data = await readFlatComponent(filePath);
+                if (data?.length > 0) {
                     sheets.push({
                         name: normalizeFileToSheetName(filename),
                         data
@@ -638,9 +664,9 @@ export const readFAIReFlatFiles = async (id, version, preferredAssay = null) => 
 
     const readFileAsEntity = async (filename, nameOverride) => {
         if (!filename) return null;
-        const result = await analyseCsv(`${basePath}${filename}`);
-        if (!result) return null;
-        return { name: nameOverride || filename.replace(/\.[^.]+$/, ''), data: result.rows || [] };
+        const data = await readFlatComponent(`${basePath}${filename}`);
+        if (!data) return null;
+        return { name: nameOverride || filename.replace(/\.[^.]+$/, ''), data };
     };
 
     const [projectMetadata, sampleMetadata, otuFinal, taxaFinal, experimentRunMetadata] = await Promise.all([
