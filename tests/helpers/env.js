@@ -54,17 +54,16 @@ process.env.MDT_TEST = '1';
 /**
  * Pin the timezone.
  *
- * The FAIRe path reads workbook dates with the xlsx library's cellDates option, which produces
- * a Date interpreted in the *local* zone, and then serialises it as a UTC instant. The output
- * therefore depends on the machine's timezone: a workbook date of 2021-06-09 comes out as
- * 2021-06-08T22:00:00.000Z at UTC+2 and 2021-06-09T07:00:00.000Z at UTC-7.
+ * Found the hard way: goldens recorded under one timezone failed verbatim once the machine
+ * moved to another. The cause was the FAIRe path letting the xlsx library's cellDates Date
+ * objects reach JSON.stringify, which serialised local midnight as a UTC instant and baked the
+ * host's timezone into published eventDates. That is fixed - converters/faire.js now reads date
+ * cells as calendar dates - and MDT_TEST_TZ confirms the FAIRe output is identical in every
+ * zone.
  *
- * Found the hard way - goldens recorded under one timezone failed verbatim once the machine
- * moved to another. Pinning UTC is what makes the goldens reproducible on any machine and in
- * CI. It does not fix the underlying behaviour, which remains timezone-dependent in production.
- *
- * Pinned unconditionally rather than only when TZ is unset, because a developer or CI runner
- * with TZ exported would otherwise defeat the pin. MDT_TEST_TZ exists to exercise the timezone
- * sensitivity deliberately.
+ * The pin stays regardless, for two reasons: converters/excel.js still reads dates the same way
+ * on the XLSX path, and a golden suite should not depend on the clock settings of the machine
+ * running it. Pinned unconditionally rather than only when TZ is unset, because a developer or
+ * CI runner with TZ exported would otherwise defeat it. MDT_TEST_TZ overrides it deliberately.
  */
 process.env.TZ = process.env.MDT_TEST_TZ || 'UTC';

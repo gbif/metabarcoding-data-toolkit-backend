@@ -99,6 +99,45 @@ export const parseFAIReComponents = (sheets, preferredAssay = null) => {
 };
 
 // Strip leading rows whose first cell starts with '#' (FAIRe comment rows)
+/**
+ * Reads a sheet to rows, converting date cells to calendar dates.
+ *
+ * A date in a spreadsheet is a calendar date, not an instant. The xlsx library's cellDates
+ * option returns a Date set to *local* midnight - for a workbook cell of 2024-09-26 it builds
+ * `Thu Sep 26 2024 00:00:00` in whatever zone the process is running in - so the local
+ * components are the date the author wrote. Letting such a value reach JSON.stringify, as the
+ * BIOM writer does, serialises it with toISOString() and bakes the server's timezone into the
+ * published data: that same cell became 2024-09-25T22:00:00.000Z on a UTC+2 host and
+ * 2024-09-26T07:00:00.000Z on a UTC-7 one, so an installation east of UTC published every
+ * eventDate a day early.
+ *
+ * Reading the local components and formatting them as a plain date string keeps the author's
+ * date and removes the timezone from the output entirely. A time of day, if the cell has one,
+ * is preserved without an offset, which is what Darwin Core asks for when none is known.
+ *
+ * Datasets processed before this change keep the shifted values: reprocessing them was
+ * considered and rejected as too invasive, since it would rewrite published archives under
+ * existing endpoints. So two datasets can legitimately disagree about the same calendar date
+ * depending on when and where they were processed, and an old dataset reprocessed for any other
+ * reason will have its eventDates move by a day. That is expected, not a regression.
+ */
+const pad = (n, width = 2) => `${n}`.padStart(width, '0');
+
+export const toCalendarDate = (value) => {
+    if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+        return value;
+    }
+    const date = `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+    const hasTime = value.getHours() || value.getMinutes() || value.getSeconds() || value.getMilliseconds();
+    if (!hasTime) {
+        return date;
+    }
+    return `${date}T${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}`;
+};
+
+const sheetRows = (sheet) => xlsx.utils.sheet_to_json(sheet, { header: 1 })
+    .map(row => (Array.isArray(row) ? row.map(toCalendarDate) : row));
+
 const stripCommentRows = (data) => {
     if (!data || data.length === 0) return data;
     let i = 0;
@@ -398,7 +437,7 @@ const collectAllSheets = async (basePath) => {
                     const sheetName = normalizeFileToSheetName(filename);
                     sheets.push({
                         name: sheetName,
-                        data: xlsx.utils.sheet_to_json(wb.Sheets[firstSheet], { header: 1 }),
+                        data: sheetRows(wb.Sheets[firstSheet]),
                         ...(sheetName === 'projectMetadata' ? { termComments: extractTermComments(wb.Sheets[firstSheet]) } : {})
                     });
                 }
@@ -407,7 +446,7 @@ const collectAllSheets = async (basePath) => {
                 for (const sheetName of wb.SheetNames) {
                     sheets.push({
                         name: sheetName,
-                        data: xlsx.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 }),
+                        data: sheetRows(wb.Sheets[sheetName]),
                         ...(sheetName === 'projectMetadata' ? { termComments: extractTermComments(wb.Sheets[sheetName]) } : {})
                     });
                 }
@@ -479,7 +518,7 @@ export const loadFAIReComponents = async (id, version, preferredAssay = null) =>
                     if (firstSheet) {
                         sheets.push({
                             name: normalizeFileToSheetName(filename),
-                            data: xlsx.utils.sheet_to_json(wb.Sheets[firstSheet], { header: 1 })
+                            data: sheetRows(wb.Sheets[firstSheet])
                         });
                     }
                 } else {
@@ -487,7 +526,7 @@ export const loadFAIReComponents = async (id, version, preferredAssay = null) =>
                     for (const sheetName of wb.SheetNames) {
                         sheets.push({
                             name: sheetName,
-                            data: xlsx.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 })
+                            data: sheetRows(wb.Sheets[sheetName])
                         });
                     }
                 }
@@ -515,7 +554,7 @@ export const loadFAIReComponents = async (id, version, preferredAssay = null) =>
     const workbook = xlsx.read(buffer, { type: 'array', dense: true, cellDates: true });
     const sheets = workbook.SheetNames.map(name => ({
         name,
-        data: xlsx.utils.sheet_to_json(workbook.Sheets[name], { header: 1 })
+        data: sheetRows(workbook.Sheets[name])
     }));
     return parseFAIReComponents(sheets, preferredAssay);
 };
@@ -528,7 +567,7 @@ export const readFAIReWorkbook = async (id, xlsxFileName, version, preferredAssa
 
     const allSheetData = workbook.SheetNames.map(name => ({
         name,
-        data: xlsx.utils.sheet_to_json(workbook.Sheets[name], { header: 1 }),
+        data: sheetRows(workbook.Sheets[name]),
         ...(name === 'projectMetadata' ? { termComments: extractTermComments(workbook.Sheets[name]) } : {})
     }));
 
