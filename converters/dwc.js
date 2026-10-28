@@ -9,6 +9,10 @@ import {once} from 'events';
 
 const DEFAULT_UNIT = "DNA sequence reads";
 const BASIS_OF_RECORD = "MATERIAL_SAMPLE";
+// Schema groups whose terms belong to the organism and to how it was identified, rather than to
+// the place the sample came from. For an eDNA dataset an identification is made per sequence, so
+// both of these are properties of the taxon table.
+const TAXON_OWNED_GROUPS = new Set(['Taxon', 'Identification']);
 export const otherEMOFfields = ["measurementUnit", "measurementAccuracy", "measurementMethod", "measurementTypeID","measurementUnitID", "measurementValueID", "measurementDeterminedDate", "measurementDeterminedBy", "measurementRemarks"]
 
 const writeMetaXml = async (hasEmof, occCore, dnaExt, path, ignoreHeaderLines ) =>  await fs.promises.writeFile(`${path}/archive/meta.xml`, util.metaXml(occCore, dnaExt, hasEmof, ignoreHeaderLines))
@@ -123,14 +127,15 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
     // Make a set of sampleHeaders to avoid terms exist in both taxon and sample 
       const sampleHeaderSet = new Set(sampleHeaders)
       const taxonHeaderSet = new Set(taxonHeaders)
-      // A term the schema puts in the Taxon group describes the organism, so when the same name
-      // is present in both tables the taxon table is the one that means it - its value comes from
-      // the classifier, per ASV, whereas a sample column of that name is usually leftover voucher
+      // When the same term name is present in both tables and the schema puts it in one of the
+      // taxon-owned groups, the taxon table is the one that means it - its value comes from the
+      // classifier, per ASV, whereas a sample column of that name is usually leftover voucher
       // provenance. Without this, a sampleMetadata 'phylum' of "Unknown" replaced a 94%-populated
       // per-ASV phylum in every occurrence, while kingdom and class still came from the taxon
       // table, so a single record contradicted itself. Terms in every other group keep the
-      // previous behaviour, where the sample column wins.
-      const taxonOwnedTerm = (key) => occTerms.get(key)?.group === 'Taxon' && taxonHeaderSet.has(key)
+      // previous behaviour, where the sample column wins. Only flip when the taxon table really
+      // carries the term, so that a sample-only column is still written rather than dropped.
+      const taxonOwnedTerm = (key) => TAXON_OWNED_GROUPS.has(occTerms.get(key)?.group) && taxonHeaderSet.has(key)
       const relevantOccTerms  = [...sampleHeaders.filter(key => occTerms.has(key) && !defaults.keySet.has(key) && !taxonOwnedTerm(key)).map(key => occTerms.get(key)),
           ...taxonHeaders.filter(key => (!sampleHeaderSet.has(key) || taxonOwnedTerm(key)) && occTerms.has(key)  && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
          /*  ...defaults.occDefaultTerms */
