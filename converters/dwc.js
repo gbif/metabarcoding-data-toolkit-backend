@@ -122,8 +122,17 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
       const defaults = getDefaultTermsForMetaXml(biomData, dnaTerms, occTerms)
     // Make a set of sampleHeaders to avoid terms exist in both taxon and sample 
       const sampleHeaderSet = new Set(sampleHeaders)
-      const relevantOccTerms  = [...sampleHeaders.filter(key => occTerms.has(key) && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
-          ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && occTerms.has(key)  && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
+      const taxonHeaderSet = new Set(taxonHeaders)
+      // A term the schema puts in the Taxon group describes the organism, so when the same name
+      // is present in both tables the taxon table is the one that means it - its value comes from
+      // the classifier, per ASV, whereas a sample column of that name is usually leftover voucher
+      // provenance. Without this, a sampleMetadata 'phylum' of "Unknown" replaced a 94%-populated
+      // per-ASV phylum in every occurrence, while kingdom and class still came from the taxon
+      // table, so a single record contradicted itself. Terms in every other group keep the
+      // previous behaviour, where the sample column wins.
+      const taxonOwnedTerm = (key) => occTerms.get(key)?.group === 'Taxon' && taxonHeaderSet.has(key)
+      const relevantOccTerms  = [...sampleHeaders.filter(key => occTerms.has(key) && !defaults.keySet.has(key) && !taxonOwnedTerm(key)).map(key => occTerms.get(key)),
+          ...taxonHeaders.filter(key => (!sampleHeaderSet.has(key) || taxonOwnedTerm(key)) && occTerms.has(key)  && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
          /*  ...defaults.occDefaultTerms */
         ];
       const relevantDnaTerms = [...sampleHeaders.filter(key => dnaTerms.has(key) && !defaults.keySet.has(key)).map(key => dnaTerms.get(key)),
@@ -202,8 +211,10 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
         reject(err)
       })
 
-      const getDataForTermfromSample = (sample, terms) => terms.filter(term => term.name in sample.metadata).map(term => sample.metadata[term.name] || "").join("\t");
-      const getDataForTermFromTaxon = (taxon, terms) => terms.filter(term => !sampleHeaderSet.has(term.name) && term.name in taxon.metadata).map(term => taxon.metadata[term.name] || "").join("\t"); 
+      // These two must partition the term list exactly as it was built above, in the same order,
+      // or the values stop lining up with the header written to meta.xml.
+      const getDataForTermfromSample = (sample, terms) => terms.filter(term => !taxonOwnedTerm(term.name) && term.name in sample.metadata).map(term => sample.metadata[term.name] || "").join("\t");
+      const getDataForTermFromTaxon = (taxon, terms) => terms.filter(term => (!sampleHeaderSet.has(term.name) || taxonOwnedTerm(term.name)) && term.name in taxon.metadata).map(term => taxon.metadata[term.name] || "").join("\t");
        
 /*       biomData.columns.forEach((c, cidx) => {
            const rowData = biomData.getDataColumn(c.id);
