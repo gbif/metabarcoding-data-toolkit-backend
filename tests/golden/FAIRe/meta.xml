@@ -65,9 +65,9 @@ xmlns="http://rs.tdwg.org/dwc/text/" metadata="eml.xml">
 <field index="14" term="http://rs.gbif.org/terms/dna_sequence"/>
     <field default="eDNA marine vertebrates guadeloupe" term="https://w3id.org/mixs/0000092"/>
 <field default="12S rRNA (SSU mitochondria)" term="https://w3id.org/mixs/0000044"/>
-<field default="99" term="http://rs.gbif.org/terms/miqe/ampliconSize"/>
-<field default="TAGAACAGGCTCCTCTAG" term="http://rs.gbif.org/terms/pcr_primer_forward"/>
-<field default="TTAGATACCCCACTATGC" term="http://rs.gbif.org/terms/pcr_primer_reverse"/>
+<field default="62" term="http://rs.gbif.org/terms/miqe/ampliconSize"/>
+<field default="ACACCGCCCGTCACTCT" term="http://rs.gbif.org/terms/pcr_primer_forward"/>
+<field default="CTTCCGGTACTACCATG" term="http://rs.gbif.org/terms/pcr_primer_reverse"/>
 <field default="55" term="http://rs.gbif.org/terms/miqe/annealingTemp"/>
 <field default="paired" term="https://w3id.org/mixs/0000041"/>
 <field default="EMBL nr;142, Genbank nr;258" term="https://w3id.org/mixs/0000087"/>
