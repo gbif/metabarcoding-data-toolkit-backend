@@ -133,6 +133,39 @@ export const partitionArray = (array, isValid) => {
 
 export const isFastaFile = (fileName) => typeof fileName === "string" ?  fastaFileExtensions.includes(fileName.split('.').pop()) : false
 
+// Which of the sample table's columns identifies a sample: the one whose values label the OTU
+// table's columns. For use where neither a mapping nor an "id" header names it. Preferable to
+// taking the first column, because a wrong choice matches no OTU header at all, and the rule that
+// separates taxonomy from counts then has to treat every column as taxonomy.
+// columns is [{header, values}], values being that column's cells.
+export const sampleIdHeaderByOtuOverlap = (columns = [], otuTableHeaders = []) => {
+    const otuHeaderSet = new Set((otuTableHeaders || []).map(h => `${h ?? ''}`.trim()))
+    let best = { header: undefined, matches: 0 }
+    for (const { header, values } of (columns || [])) {
+        if (!header) continue
+        const matches = new Set(
+            (values || []).map(v => `${v ?? ''}`.trim()).filter(v => v !== '' && otuHeaderSet.has(v))
+        ).size
+        if (matches > best.matches) best = { header, matches }
+    }
+    return best.header
+}
+
+// An OTU table column whose header is not a sample id carries taxonomy rather than counts: a
+// two-table dataset keeps the taxon fields beside the counts instead of in a file of their own.
+// Index 0 is the row id, which belongs to both halves, so it is always among these.
+export const embeddedTaxonColumnIndices = (otuTableHeaders = [], sampleIdSet = new Set()) =>
+    (otuTableHeaders || []).reduce((acc, header, idx) => {
+        if (!sampleIdSet.has(header)) acc.push(idx)
+        return acc
+    }, [])
+
+// Whether those indices describe a taxonomy worth extracting. One index is the row id alone, so
+// there is nothing but counts; all of them means no sample id was recognised, and splitting on
+// that would leave the OTU table with only its first column.
+export const hasEmbeddedTaxonColumns = (indices, otuTableHeaders = []) =>
+    indices?.length > 1 && indices.length < (otuTableHeaders || []).length
+
 const eventIdValue = (column) => `${column?.metadata?.eventID ?? ''}`.trim()
 
 // An eventID the sample table supplies is the better event key than one derived from the sample
@@ -165,6 +198,9 @@ export const duplicateSampleEventIds = (columns = []) => {
 
 export default {
     metaXml,
+    sampleIdHeaderByOtuOverlap,
+    embeddedTaxonColumnIndices,
+    hasEmbeddedTaxonColumns,
     sampleEventIdIsUsable,
     duplicateSampleEventIds,
     eventIdForSample,

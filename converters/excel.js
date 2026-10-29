@@ -3,7 +3,7 @@ import fs from "fs";
 import fileNames from "../validation/filenames.js";
 import { Biom } from "biojs-io-biom";
 import config from "../config.js";
-import util, { getTaxonomyArray, getMetaDataRow } from "../util/index.js";
+import util, { getTaxonomyArray, getMetaDataRow, embeddedTaxonColumnIndices, sampleIdHeaderByOtuOverlap } from "../util/index.js";
 import { writeMapping, readMapping } from "../util/filesAndDirectories.js";
 import { getGroupMetaDataAsJsonString } from "../validation/termMapper.js";
 import {getStreamAsArrayBuffer} from 'get-stream';
@@ -40,26 +40,17 @@ const extractTaxaFromOTUtable = (otuTable, samples, termMapping) => {
   };
 };
 
-// The sample id column is the one whose values label the OTU table's columns, so when neither the
-// mapping nor an "id" header names it, the column that matches the most OTU table headers is it.
-// This runs before the mapping step exists, so without it a workbook whose sample id column is
-// named anything else could not be split at all. Falling back to the first column, as the id
-// checks elsewhere do, is not safe here: a wrong column matches no header, which would hand every
-// column in the OTU table to the taxonomy.
-const findSampleIdHeaderByOtuOverlap = (sampleHeaders, sampleRows, otuTableHeaders) => {
-  const otuHeaderSet = new Set(otuTableHeaders.map((h) => `${h ?? ""}`.trim()));
-  let best = { header: undefined, matches: 0 };
-  sampleHeaders.forEach((header, idx) => {
-    if (!header) return;
-    const matches = new Set(
-      sampleRows
-        .map((r) => `${r?.[idx] ?? ""}`.trim())
-        .filter((v) => v !== "" && otuHeaderSet.has(v))
-    ).size;
-    if (matches > best.matches) best = { header, matches };
-  });
-  return best.header;
-};
+// Sheets hold their rows as arrays, so put the columns in the shape the shared rule expects. This
+// runs before the mapping step exists, so without it a workbook whose sample id column is named
+// anything but "id" could not be split at all.
+const findSampleIdHeaderByOtuOverlap = (sampleHeaders, sampleRows, otuTableHeaders) =>
+  sampleIdHeaderByOtuOverlap(
+    (sampleHeaders || []).map((header, idx) => ({
+      header,
+      values: (sampleRows || []).map((r) => r?.[idx]),
+    })),
+    otuTableHeaders
+  );
 
 const getTaxonHeaderIndicesFromOtuTable = (otuTable, samples, termMapping) => {
   const sampleHeaders = samples?.data?.[0] || [];
@@ -81,12 +72,10 @@ const getTaxonHeaderIndicesFromOtuTable = (otuTable, samples, termMapping) => {
   const sampleIdSet = new Set(sampleRows.map((s) => s[sampleIdIndex]));
 
   // Find all headers that are not a sample id
-  const notSamplIdHeaderIndices = otuTableHeaders.reduce((acc, curr, idx) => {
-    if (!sampleIdSet.has(curr)) {
-      acc.push(idx);
-    }
-    return acc;
-  }, []);
+  const notSamplIdHeaderIndices = embeddedTaxonColumnIndices(
+    otuTableHeaders,
+    sampleIdSet
+  );
 
   // Every header unrecognised means the id column was the wrong one. Splitting on that would
   // leave the OTU table with nothing but its first column, so treat it as no taxonomy found.

@@ -1,4 +1,4 @@
-import { toBiom, addReadCounts, metaDataFileToMap } from '../converters/biom.js';
+import { toBiom, addReadCounts, metaDataFileToMap, embeddedTaxaToMap } from '../converters/biom.js';
 
 import { getYargs, isFastaFile } from '../util/index.js';
 // import config from '../config.js'
@@ -38,7 +38,16 @@ export const processDataset = async (id, version, systemShouldAssignTaxonomy, sk
     const samples = await metaDataFileToMap(fileMap?.samples, mapping?.samples, updateStatusOnCurrentStep)  
     updateStatusOnCurrentStep(0, 0, 'Reading taxon file', {sampleCount: samples.size});
     let taxa = fileMap?.taxa ? await metaDataFileToMap(fileMap?.taxa, mapping.taxa, updateStatusOnCurrentStep, sequencesAsHeaders ? md5 : (key) => key) : null; // If there is no Taxon file, create an empty MAP
-    
+
+    // No taxon file does not have to mean no taxonomy: a two-table dataset keeps the taxon fields
+    // in the OTU table beside the counts. Only when samples are the columns, since the fields sit
+    // alongside them. Returns null if the table holds nothing but counts, leaving taxa unset as before.
+    let taxonomyFromOtuTable = false;
+    if(!taxa && samplesAsColumns){
+        taxa = await embeddedTaxaToMap(fileMap?.otuTable, samples, mapping.taxa, updateStatusOnCurrentStep)
+        taxonomyFromOtuTable = !!taxa;
+    }
+
     if(fasta){
         const fastaMap = await readFastaAsMap(`${config.dataStorage}${id}/${version}/original/${fasta.name}`);
         // adds sequences from fasta to taxonomy file
@@ -80,7 +89,7 @@ export const processDataset = async (id, version, systemShouldAssignTaxonomy, sk
     console.log(`TSV worker running id ${id}`)
    // console.log(`#### TSV worker samplesAsColumns ${samplesAsColumns}`)
    //{otuTableFile, samples, taxa, samplesAsColumns = false, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id}
-    const {biom, consistencyCheck} = await toBiom({otuTableFile: fileMap?.otuTable, samples, taxa, samplesAsColumns,  processFn: updateStatusOnCurrentStep ,termMapping: mapping, id})
+    const {biom, consistencyCheck} = await toBiom({otuTableFile: fileMap?.otuTable, samples, taxa, samplesAsColumns,  processFn: updateStatusOnCurrentStep ,termMapping: mapping, id, taxonomyFromOtuTable})
     consistencyCheckReport(consistencyCheck)
     /* if(sampleIdsWithNoRecordInSampleFile?.length > 0){
         // Some ids did not have a corresponding entry in the sample file

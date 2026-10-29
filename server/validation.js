@@ -9,6 +9,34 @@ import _ from "lodash"
 import mapping from './mapping.js';
 import validFileExtensions from '../enum/validFileExtensions.js';
 import {readHDF5data} from '../converters/hdf5.js'
+import streamReader from '../util/streamReader.js'
+import {sampleIdHeaderByOtuOverlap, embeddedTaxonColumnIndices, hasEmbeddedTaxonColumns} from '../util/index.js'
+
+/**
+ * The headers of the OTU table columns that hold taxonomy rather than counts, for a dataset that
+ * has no taxon file. The id column is first, so the caller can use it as the taxon id.
+ *
+ * The sample id column is resolved here rather than taken from hasIdColumn, which falls back to
+ * the first column: a wrong choice matches no OTU header, and the rule that separates taxonomy
+ * from counts would then report every column as taxonomy.
+ */
+const deriveEmbeddedTaxonHeaders = async (fileMap, sampleIdFromValidation) => {
+    const otuHeaders = await readTsvHeaders(fileMap?.otuTable?.path, fileMap?.otuTable?.properties?.delimiter)
+    const sampleRecords = await streamReader.readMetaData(fileMap?.samples?.path, () => {}, fileMap?.samples?.properties?.delimiter)
+    const sampleHeaders = Object.keys(sampleRecords?.[0] || {})
+    const sampleIdHeader =
+        sampleHeaders.find(h => !!h && ['id', 'sampleid'].includes(h.toString().toLowerCase()))
+        || sampleIdHeaderByOtuOverlap(
+            sampleHeaders.map(header => ({ header, values: sampleRecords.map(r => r[header]) })),
+            otuHeaders)
+        || sampleIdFromValidation
+    if(!sampleIdHeader){
+        return undefined
+    }
+    const sampleIdSet = new Set(sampleRecords.map(r => r[sampleIdHeader]))
+    const indices = embeddedTaxonColumnIndices(otuHeaders, sampleIdSet)
+    return hasEmbeddedTaxonColumns(indices, otuHeaders) ? indices.map(i => otuHeaders[i]) : undefined
+}
 // Validations of the same dataset run one at a time.
 //
 // validateDataset reads the processing report at the start and writes it back at the end, so
@@ -91,6 +119,7 @@ const validateDataset = async (id, user) => {
 
      let validationErrors = []
      let samplesAsColumns, errors, invalid, sampleId, taxonId;
+     let embeddedTaxonHeaders;
 
      if(files?.format?.startsWith('TSV')){
       try {
@@ -128,6 +157,19 @@ const validateDataset = async (id, user) => {
         } else {
           taxonId = term
         }
+      } else if(files?.format?.startsWith('TSV') && samplesAsColumns && fileMap?.otuTable?.path && fileMap?.samples?.path){
+        // A two-table dataset has no taxon file: the taxon fields sit in the OTU table beside the
+        // counts. Work out which columns those are now, so the mapping step can offer them - the
+        // processing worker applies the same rule to read the records themselves.
+        try {
+          embeddedTaxonHeaders = await deriveEmbeddedTaxonHeaders(fileMap, sampleId)
+          if(embeddedTaxonHeaders?.length > 1){
+            taxonId = embeddedTaxonHeaders[0]
+          }
+        } catch (error) {
+          console.log('Could not look for taxonomy in the OTU table')
+          console.log(error)
+        }
       }
 
       const unknownTypeErrors = (files?.files || []).filter(f => !f?.type && validFileExtensions.includes(f?.name.split('.').pop())).map(f => ({file: f?.name, message: "Could not identify the data type. Is it OTU table, Taxonomy table, Sample table or Study defaults?"}))
@@ -158,7 +200,9 @@ const validateDataset = async (id, user) => {
       }
       if(fileMap?.taxa){
         validationReport.taxonHeaders = await readTsvHeaders(fileMap?.taxa?.path, fileMap?.taxa?.properties?.delimiter)
-      
+
+      } else if(embeddedTaxonHeaders?.length > 1){
+        validationReport.taxonHeaders = embeddedTaxonHeaders
       }
 
       if(fileMap?.defaultValues?.properties?.rows?.length > 1){

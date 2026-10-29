@@ -3,7 +3,8 @@ import fs from 'fs';
 import {Biom} from 'biojs-io-biom';
 import _ from 'lodash'
 import {getGroupMetaDataAsJsonString} from '../validation/termMapper.js'
-import {getMetaDataRow, getTaxonomyArray, duplicateSampleEventIds} from '../util/index.js'
+import {getMetaDataRow, getTaxonomyArray, duplicateSampleEventIds, embeddedTaxonColumnIndices, hasEmbeddedTaxonColumns} from '../util/index.js'
+import {readTsvHeaders} from '../util/filesAndDirectories.js'
 import {readHDF5} from './hdf5.js'
 /* const getMetaDataRow = row => {
     if(!row?.id){
@@ -51,8 +52,27 @@ export const metaDataFileToMap = async (file, mapping, processFn = (progress, to
     return data;
 }
 
+/**
+ * Read taxon records out of the OTU table itself, for a dataset that keeps the taxon fields beside
+ * the counts instead of in a file of their own. The column headers that are not sample ids are the
+ * taxon fields - the same rule the workbook reader uses - and only those are kept, so a wide OTU
+ * table does not put a count per sample on every taxon record. Returns null when the table carries
+ * nothing but counts, which leaves the caller's existing 'no taxon file' behaviour alone.
+ */
+export const embeddedTaxaToMap = async (otuTableFile, samples, mapping, processFn = (progress, total, message, summary) => {}) => {
+    const headers = await readTsvHeaders(otuTableFile?.path, otuTableFile?.properties?.delimiter)
+    const indices = embeddedTaxonColumnIndices(headers, new Set(samples?.keys() || []))
+    if (!hasEmbeddedTaxonColumns(indices, headers)) {
+        return null;
+    }
+    const keepColumns = new Set(indices.map(i => headers[i]))
+    console.log(`Reading taxonomy from the OTU table: ${[...keepColumns].join(', ')}`)
+    return streamReader.readMetaDataAsMap(
+        otuTableFile?.path, processFn, mapping, otuTableFile?.properties?.delimiter, (key) => key, keepColumns)
+}
+
 // converts an otu table with sample and taxon metada files to BIOM format
-export const toBiom = async ({otuTableFile, samples, taxa, samplesAsColumns = false, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id}) => {
+export const toBiom = async ({otuTableFile, samples, taxa, samplesAsColumns = false, processFn = (progress, total, message, summary) => {}, termMapping = { taxa: {}, samples: {}, defaultValues: {}}, id, taxonomyFromOtuTable = false}) => {
     console.log("SAMPLES AS COLUMNS: "+samplesAsColumns)
    /*  processFn(0, 0, 'Reading sample file')
     const samples = await streamReader.readMetaDataAsMap(sampleFile, processFn, termMapping.samples)
@@ -87,7 +107,13 @@ export const toBiom = async ({otuTableFile, samples, taxa, samplesAsColumns = fa
             samples.set(c, {id: c})
         }
     }) */
-    const sampleIdsWithNoRecordInSampleFile = samplesAsColumns ? consistencyCheck.dimensionXidsWithNoRecordInDataFile : consistencyCheck.dimensionYidsWithNoRecordInDataFile;
+    // When the taxonomy was read out of the OTU table, the columns with no row in the sample file
+    // are exactly the columns it was read from - both are chosen by the same rule from the same
+    // sample ids - so reporting them as missing samples would be nine or so false warnings. The
+    // cost is that a sample column genuinely absent from the sample file goes unreported, but such
+    // a column was taken for taxonomy upstream anyway, so the warning had nothing left to say.
+    const sampleIdsWithNoRecordInSampleFile = taxonomyFromOtuTable ? [] :
+        samplesAsColumns ? consistencyCheck.dimensionXidsWithNoRecordInDataFile : consistencyCheck.dimensionYidsWithNoRecordInDataFile;
     const taxonIdsWithNoRecordInTaxonFile = samplesAsColumns ? consistencyCheck.dimensionYidsWithNoRecordInDataFile : consistencyCheck.dimensionXidsWithNoRecordInDataFile;
     const sampleIdsWithNoRecordInOtuTable = samplesAsColumns ? consistencyCheck.dimensionXidsWithNoRecordInOtuTable : consistencyCheck.dimensionYidsWithNoRecordInOtuTable;
     const taxonIdsWithNoRecordInOtuTable = samplesAsColumns ? consistencyCheck.dimensionYidsWithNoRecordInOtuTable : consistencyCheck.dimensionXidsWithNoRecordInOtuTable

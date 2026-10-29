@@ -263,7 +263,10 @@ export const readMetaData = (path,  progressFn = ()=>{}, delimiter = "\t") => {
     })
 }
 
-export const readMetaDataAsMap = (path, /* idHeader = 'id', */ progressFn = ()=>{}, mapping = {}, delimiter = "\t", formatKey = (key) => key) => {
+// keepColumns, when given, is the set of source headers to retain. It exists so that taxon records
+// can be read out of an OTU table without also carrying its count columns, which on a wide table
+// would be a field per sample on every record.
+export const readMetaDataAsMap = (path, /* idHeader = 'id', */ progressFn = ()=>{}, mapping = {}, delimiter = "\t", formatKey = (key) => key, keepColumns = null) => {
 
   /**
  * Use a mapping object to rename terms corresponding to DWC / MiXS
@@ -273,6 +276,9 @@ const reverseMapping = objectSwap(mapping)
 const mapRecord = record => {
   // return record;
  return Object.keys(record).reduce((acc, key) => {
+      if(keepColumns && !keepColumns.has(key)){
+        return acc;
+      }
       if(reverseMapping[key]){
         // console.log(reverseMapping[key])
         acc[reverseMapping[key]] = record[key]
