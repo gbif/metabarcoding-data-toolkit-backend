@@ -24,10 +24,25 @@ const goldenPath = (name) => path.join(GOLDEN_ROOT, name);
  *
  * `name` is a path relative to the golden root, e.g. 'biowide_fungi_min/occurrence.txt'.
  */
-export const compareToGolden = (name, actual) => {
+export const compareToGolden = (name, actual) => compare(name, actual, updating());
+
+/**
+ * Compares against a golden that another test owns, and never writes it, even under
+ * test:golden:update. For tests asserting that a second input produces the same output as the
+ * first: letting the update run record from the second input would silently re-baseline the
+ * first one's test from data it never saw.
+ */
+export const compareToSharedGolden = (name, actual) => compare(name, actual, false);
+
+/** Same, for a structure that is compared as canonical JSON. */
+export const compareJsonToSharedGolden = (name, actual) => {
+    compareToSharedGolden(name, JSON.stringify(actual, null, 2) + '\n');
+};
+
+const compare = (name, actual, update) => {
     const file = goldenPath(name);
 
-    if (updating()) {
+    if (update) {
         fs.mkdirSync(path.dirname(file), { recursive: true });
         fs.writeFileSync(file, actual);
         console.log(`  updated golden ${name} (${actual.length} bytes)`);
