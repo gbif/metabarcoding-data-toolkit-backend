@@ -150,9 +150,23 @@ export const sampleEventIdIsUsable = (columns = []) => {
 // has to agree, or the DwC-DP foreign keys stop resolving.
 export const eventIdForSample = (column, useProvided) => useProvided ? eventIdValue(column) : column?.id
 
+// The repeated values behind a failed sampleEventIdIsUsable, so that the fallback can be reported
+// rather than applied silently - the column is dropped, and a user who meant it to be the event
+// key should hear why. Derived from the same values as the check itself so the two cannot
+// disagree. Empty when no eventID was supplied at all, which is not something to warn about.
+export const duplicateSampleEventIds = (columns = []) => {
+    const counts = new Map()
+    for (const column of columns || []) {
+        const value = eventIdValue(column)
+        if (value !== '') counts.set(value, (counts.get(value) || 0) + 1)
+    }
+    return [...counts.entries()].filter(([, n]) => n > 1).map(([value]) => value)
+}
+
 export default {
     metaXml,
     sampleEventIdIsUsable,
+    duplicateSampleEventIds,
     eventIdForSample,
     dwcTerms,
     getDwcDPtermsFromSchema,

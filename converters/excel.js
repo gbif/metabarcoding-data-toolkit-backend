@@ -289,6 +289,7 @@ export const toBiom = async (
           sampleIdsWithNoRecordInSampleFile,
           taxonIdsWithNoRecordInOtuTable,
           taxonIdsWithNoRecordInTaxonFile,
+          duplicateEventIdsInSampleFile: util.duplicateSampleEventIds(biom?.columns),
         } /* sampleIdsWithNoRecordInSampleFile */,
       });
     } catch (error) {

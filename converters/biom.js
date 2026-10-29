@@ -3,7 +3,7 @@ import fs from 'fs';
 import {Biom} from 'biojs-io-biom';
 import _ from 'lodash'
 import {getGroupMetaDataAsJsonString} from '../validation/termMapper.js'
-import {getMetaDataRow, getTaxonomyArray} from '../util/index.js'
+import {getMetaDataRow, getTaxonomyArray, duplicateSampleEventIds} from '../util/index.js'
 import {readHDF5} from './hdf5.js'
 /* const getMetaDataRow = row => {
     if(!row?.id){
@@ -116,7 +116,7 @@ export const toBiom = async ({otuTableFile, samples, taxa, samplesAsColumns = fa
                   biom.transpose()
                 }
                 console.log("Resolve toBiom")
-               resolve({biom, consistencyCheck: {sampleIdsWithNoRecordInSampleFile, taxonIdsWithNoRecordInTaxonFile, sampleIdsWithNoRecordInOtuTable, taxonIdsWithNoRecordInOtuTable } /* sampleIdsWithNoRecordInSampleFile */});
+               resolve({biom, consistencyCheck: {sampleIdsWithNoRecordInSampleFile, taxonIdsWithNoRecordInTaxonFile, sampleIdsWithNoRecordInOtuTable, taxonIdsWithNoRecordInOtuTable, duplicateEventIdsInSampleFile: duplicateSampleEventIds(biom?.columns) } /* sampleIdsWithNoRecordInSampleFile */});
           } catch (error) {
               reject(error)
           }
@@ -167,7 +167,7 @@ export const fromHdf5ToBiom = async ({otuTableFile, samples, taxa, samplesAsColu
                   console.log("Biom created")
                 
                   console.log("Resolve toBiom")
-                 resolve({biom, consistencyCheck: {sampleIdsWithNoRecordInSampleFile, taxonIdsWithNoRecordInTaxonFile, sampleIdsWithNoRecordInOtuTable, taxonIdsWithNoRecordInOtuTable } /* sampleIdsWithNoRecordInSampleFile */});
+                 resolve({biom, consistencyCheck: {sampleIdsWithNoRecordInSampleFile, taxonIdsWithNoRecordInTaxonFile, sampleIdsWithNoRecordInOtuTable, taxonIdsWithNoRecordInOtuTable, duplicateEventIdsInSampleFile: duplicateSampleEventIds(biom?.columns) } /* sampleIdsWithNoRecordInSampleFile */});
             } catch (error) {
                 reject(error)
             }

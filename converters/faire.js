@@ -5,7 +5,7 @@ import config from "../config.js";
 import { getStreamAsArrayBuffer } from 'get-stream';
 import { analyseCsv } from '../validation/tsvformat.js';
 import { readFlatFile2D } from '../util/streamReader.js';
-import { getMetaDataRow } from '../util/index.js';
+import { getMetaDataRow, duplicateSampleEventIds } from '../util/index.js';
 import { getGroupMetaDataAsJsonString } from '../validation/termMapper.js';
 import license from "../enum/license.js";
 
@@ -921,7 +921,8 @@ export const toBiom = async ({
             sampleIdsWithNoRecordInSampleFile,
             taxonIdsWithNoRecordInTaxonFile,
             sampleIdsWithNoRecordInOtuTable,
-            taxonIdsWithNoRecordInOtuTable
+            taxonIdsWithNoRecordInOtuTable,
+            duplicateEventIdsInSampleFile: duplicateSampleEventIds(biom?.columns)
         }
     };
 };
