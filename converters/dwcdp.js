@@ -5,7 +5,9 @@ import emofToEventAssertion from '../enum/emofToEventAssertion.js';
 import {once} from 'events';
 
 
-const getEmofData = (evt, termMapping ) => {
+// eventId is the event table's key for this sample, which the assertion has to reference. The
+// assertionID stays built from the sample id so that it is unique per sample and measurement.
+const getEmofData = (evt, termMapping, eventId = evt?.id ) => {
     // eventAssertionStream.write(`${["assertionID", "eventID", "assertionValue", ...Object.keys(emofToEventAssertion).map(k => emofToEventAssertion[k])].join("\t")}\n`)
 
     try {
@@ -14,7 +16,7 @@ const getEmofData = (evt, termMapping ) => {
             Object.keys(measurements).forEach((m, idx) => {
             const hasValue = (evt.metadata?.[m] && !["null", "na","n/a"].includes(evt.metadata?.[m]?.toString().toLowerCase())) || evt.metadata?.[m] === 0;
               if (hasValue) {
-                dataString += `${[evt.id+":"+idx, evt.id, (evt.metadata[m] || ""), ...Object.keys(emofToEventAssertion).map(k => measurements[m][k])].join("\t")}\n`
+                dataString += `${[evt.id+":"+idx, eventId, (evt.metadata[m] || ""), ...Object.keys(emofToEventAssertion).map(k => measurements[m][k])].join("\t")}\n`
                 }
         })
         return dataString;
@@ -120,7 +122,12 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
         const protocolTerms = await util.getDwcDPtermsFromSchema('molecular-protocol')
         const identificationRelevantTaxonHeaders = taxonHeaders.filter(h => identificationTerms.has(h))
       //  const otherTaxonHeaders = taxonHeaders.filter(h => !identificationTerms.has(h))
-        const eventRelevantSampleHeaders = sampleHeaders.filter(h => eventTerms.has(h));
+        // eventID is written as the event table's first column, so it is excluded here for the
+        // same reason as in the DWCA: a sample table carrying its own eventID otherwise produced
+        // the column twice. Here it also keys the table, and nucleotide-analysis and
+        // event-assertion reference it, so every writer below has to agree on the value.
+        const useProvidedEventId = util.sampleEventIdIsUsable(biomData.columns)
+        const eventRelevantSampleHeaders = sampleHeaders.filter(h => h !== 'eventID' && eventTerms.has(h));
        // const otherSampleHeaders = = sampleHeaders.filter(h => !identificationTerms.has(h));
        const protocolRelevantStudyHeaders = Object.keys(defaultValues?.sample || {}).filter(k => protocolTerms.has(k))
        // console.log(biomData.data);
@@ -240,7 +247,7 @@ export const biomToDwcDp  = async (biomData, termMapping = { taxa: {}, samples: 
 for await (const [idx, d] of biomData.data.entries()) {
    try {
                 const nucleotideAnalysisID = `${biomData.columns[d[1]].id}:${biomData.rows[d[0]].id}`;
-               if (!analysisStream.write(`${[nucleotideAnalysisID,  biomData.columns[d[1]].id, molecularProtocolID, biomData.rows[d[0]].id, d[2], biomData.columns[d[1]].metadata.readCount].join("\t")}\n`)) {
+               if (!analysisStream.write(`${[nucleotideAnalysisID,  util.eventIdForSample(biomData.columns[d[1]], useProvidedEventId), molecularProtocolID, biomData.rows[d[0]].id, d[2], biomData.columns[d[1]].metadata.readCount].join("\t")}\n`)) {
                    await once(analysisStream, 'drain');
                }
                 rowsWritten ++;
@@ -267,7 +274,7 @@ for await (const [idx, d] of biomData.data.entries()) {
       /*   biomData.data.forEach((d, idx) => {
             try {
                 const nucleotideAnalysisID = `${biomData.columns[d[1]].id}:${biomData.rows[d[0]].id}`;
-                analysisStream.write(`${[nucleotideAnalysisID,  biomData.columns[d[1]].id, molecularProtocolID, biomData.rows[d[0]].id, d[2], biomData.columns[d[1]].metadata.readCount].join("\t")}\n`)
+                analysisStream.write(`${[nucleotideAnalysisID,  util.eventIdForSample(biomData.columns[d[1]], useProvidedEventId), molecularProtocolID, biomData.rows[d[0]].id, d[2], biomData.columns[d[1]].metadata.readCount].join("\t")}\n`)
                 rowsWritten ++;
                 processFn(rowsWritten, rowTotal, 'Writing data')
 
@@ -317,12 +324,12 @@ for await (const [idx, r] of biomData.rows.entries()) {
         identificationStream.close()
         for await (const [idx, c] of biomData.columns.entries()) {
            try {
-                if(!eventStream.write(`${[c.id, ...eventRelevantSampleHeaders.map(h => c.metadata[h] || "") ].join("\t")}\n`)){
+                if(!eventStream.write(`${[util.eventIdForSample(c, useProvidedEventId), ...eventRelevantSampleHeaders.map(h => c.metadata[h] || "") ].join("\t")}\n`)){
                    await once(eventStream, 'drain');
                }
 
                 if(hasEmof && !!eventAssertionStream){
-                  if(!eventAssertionStream.write(getEmofData(c, termMapping))){
+                  if(!eventAssertionStream.write(getEmofData(c, termMapping, util.eventIdForSample(c, useProvidedEventId)))){
                     await once(eventAssertionStream, 'drain');
 
                   }
@@ -338,10 +345,10 @@ for await (const [idx, r] of biomData.rows.entries()) {
         }
       /*   biomData.columns.forEach((c, idx) => {
             try {
-                eventStream.write(`${[c.id, ...eventRelevantSampleHeaders.map(h => c.metadata[h] || "") ].join("\t")}\n`)
+                eventStream.write(`${[util.eventIdForSample(c, useProvidedEventId), ...eventRelevantSampleHeaders.map(h => c.metadata[h] || "") ].join("\t")}\n`)
 
                 if(hasEmof && !!eventAssertionStream){
-                    eventAssertionStream.write(getEmofData(c, termMapping))
+                    eventAssertionStream.write(getEmofData(c, termMapping, util.eventIdForSample(c, useProvidedEventId)))
                 }
                 rowsWritten ++;
                 processFn(rowsWritten, rowTotal, 'Writing data')

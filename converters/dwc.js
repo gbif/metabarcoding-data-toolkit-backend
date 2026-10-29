@@ -136,8 +136,13 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
       // previous behaviour, where the sample column wins. Only flip when the taxon table really
       // carries the term, so that a sample-only column is still written rather than dropped.
       const taxonOwnedTerm = (key) => TAXON_OWNED_GROUPS.has(occTerms.get(key)?.group) && taxonHeaderSet.has(key)
-      const relevantOccTerms  = [...sampleHeaders.filter(key => occTerms.has(key) && !defaults.keySet.has(key) && !taxonOwnedTerm(key)).map(key => occTerms.get(key)),
-          ...taxonHeaders.filter(key => (!sampleHeaderSet.has(key) || taxonOwnedTerm(key)) && occTerms.has(key)  && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
+      // eventID is appended to the core terms below so that an archive always has one, even when
+      // the uploaded tables carry no such column. It is therefore kept out of the term list here:
+      // leaving it in meant a sample table with its own eventID column declared the term twice in
+      // meta.xml and wrote two columns holding different values, which is not a valid archive.
+      const useProvidedEventId = util.sampleEventIdIsUsable(biomData.columns)
+      const relevantOccTerms  = [...sampleHeaders.filter(key => key !== 'eventID' && occTerms.has(key) && !defaults.keySet.has(key) && !taxonOwnedTerm(key)).map(key => occTerms.get(key)),
+          ...taxonHeaders.filter(key => key !== 'eventID' && (!sampleHeaderSet.has(key) || taxonOwnedTerm(key)) && occTerms.has(key)  && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
          /*  ...defaults.occDefaultTerms */
         ];
       const relevantDnaTerms = [...sampleHeaders.filter(key => dnaTerms.has(key) && !defaults.keySet.has(key)).map(key => dnaTerms.get(key)),
@@ -255,12 +260,12 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
                     // row = taxon, column = sample 
                     const row = biomData.rows[i];
                     const occurrenceId = `${c.id}:${row.id}`;
-                    const sampleId = c.id;
-        
-                    const occSampleData = getDataForTermfromSample(c, relevantOccTerms);         
+                    const eventId = util.eventIdForSample(c, useProvidedEventId);
+
+                    const occSampleData = getDataForTermfromSample(c, relevantOccTerms);
                     const occTaxonData = getDataForTermFromTaxon(row, relevantOccTerms);
-        
-                   if(!occStream.write(`${occurrenceId}\t${occSampleData ? `${occSampleData}\t` : ""}${occTaxonData ? `${occTaxonData}\t` : ""}${_.get(c, 'metadata.readCount','')}\t${DEFAULT_UNIT}\t${r}\t${DEFAULT_UNIT}\t${BASIS_OF_RECORD}\t${sampleId}\n`)){
+
+                   if(!occStream.write(`${occurrenceId}\t${occSampleData ? `${occSampleData}\t` : ""}${occTaxonData ? `${occTaxonData}\t` : ""}${_.get(c, 'metadata.readCount','')}\t${DEFAULT_UNIT}\t${r}\t${DEFAULT_UNIT}\t${BASIS_OF_RECORD}\t${eventId}\n`)){
                     await once(occStream, 'drain');
                    };
         

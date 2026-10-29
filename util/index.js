@@ -133,8 +133,27 @@ export const partitionArray = (array, isValid) => {
 
 export const isFastaFile = (fileName) => typeof fileName === "string" ?  fastaFileExtensions.includes(fileName.split('.').pop()) : false
 
+const eventIdValue = (column) => `${column?.metadata?.eventID ?? ''}`.trim()
+
+// An eventID the sample table supplies is the better event key than one derived from the sample
+// id: it groups the occurrences the way the collector grouped them. It can only be used when it
+// is present on every sample and distinct per sample, because the DwC-DP event table keys one row
+// per sample on it and a repeated or blank value would give that table duplicate keys. Callers
+// that find it unusable fall back to the sample id, which is unique by construction.
+export const sampleEventIdIsUsable = (columns = []) => {
+    const values = (columns || []).map(eventIdValue)
+    if (values.length === 0 || values.some(v => v === '')) return false
+    return new Set(values).size === values.length
+}
+
+// The event key for one sample, honouring the check above. Every table that references eventID
+// has to agree, or the DwC-DP foreign keys stop resolving.
+export const eventIdForSample = (column, useProvided) => useProvided ? eventIdValue(column) : column?.id
+
 export default {
     metaXml,
+    sampleEventIdIsUsable,
+    eventIdForSample,
     dwcTerms,
     getDwcDPtermsFromSchema,
     objectSwap,
