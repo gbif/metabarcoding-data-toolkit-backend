@@ -28,7 +28,7 @@ export const processDataset = async (id, version, userName) => {
         let sheets_ = {};
         try {
 
-          const {headers, sheets} = await readXlsxHeaders(id, xlsx?.name, version)
+          const {headers, sheets, sampleId: resolvedSampleId, taxonId: resolvedTaxonId} = await readXlsxHeaders(id, xlsx?.name, version)
           headers_ = headers 
           sheets_ = sheets 
           
@@ -52,11 +52,15 @@ export const processDataset = async (id, version, userName) => {
           }
     
            
-           // get the ID terms
-           const sampleId = headers?.sampleHeaders?.[0]
-           const taxonId = headers?.taxonHeaders?.[0]
+           // get the ID terms - readXlsxHeaders has already worked out which column identifies a
+           // sample, and it is the one the sheets were split on, so taking the first header here
+           // instead could write a mapping that disagrees with that split.
+           const sampleId = resolvedSampleId || headers?.sampleHeaders?.[0]
+           const taxonId = resolvedTaxonId || headers?.taxonHeaders?.[0]
 
-           const sampleTaxonHeaderIntersection = getArrayIntersection(headers?.sampleHeaders.filter(s => s !== sampleId), headers?.taxonHeaders.filter(s => s !== taxonId));    
+           // A taxon table is optional - sequences can arrive as OTU table column headers or in a
+           // fasta - so these headers may legitimately be absent and must not be read off undefined.
+           const sampleTaxonHeaderIntersection = getArrayIntersection((headers?.sampleHeaders || []).filter(s => s !== sampleId), (headers?.taxonHeaders || []).filter(s => s !== taxonId));
 
 
            // The Study sheet bypasses the vocabulary-constrained picker, so target_gene is checked
@@ -78,14 +82,14 @@ export const processDataset = async (id, version, userName) => {
             xlsx.errors.push({file: xlsx.name, message: `The column${plural ? 's':''} ${sampleTaxonHeaderIntersection.join(', ')} ${plural ? 'are' : 'is'} present in both the sample and taxon sheet. Only the value from the sample sheet will be added to the DWC archive.`})
            }
 
-           const studySampleIntersection = getArrayIntersection(headers?.sampleHeaders, defaultValueTerms);       
+           const studySampleIntersection = getArrayIntersection(headers?.sampleHeaders || [], defaultValueTerms);       
     
            if(studySampleIntersection.filter(e => !!e).length > 0) {
             const plural = studySampleIntersection.length > 1;
             xlsx.errors.push({file: xlsx.name, message: `The term${plural ? 's':''} ${studySampleIntersection.join(', ')} ${plural ? 'are' : 'is'} present in both the sample and study sheet. Only the value from the study sheet will be added to the DWC archive.`})
            }
 
-           const studyTaxonIntersection = getArrayIntersection(headers?.taxonHeaders, defaultValueTerms);       
+           const studyTaxonIntersection = getArrayIntersection(headers?.taxonHeaders || [], defaultValueTerms);       
     
            if(studyTaxonIntersection.filter(e => !!e).length > 0) {
             const plural = studyTaxonIntersection.length > 1;

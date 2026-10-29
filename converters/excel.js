@@ -4,61 +4,81 @@ import fileNames from "../validation/filenames.js";
 import { Biom } from "biojs-io-biom";
 import config from "../config.js";
 import util, { getTaxonomyArray, getMetaDataRow } from "../util/index.js";
-import { writeMapping } from "../util/filesAndDirectories.js";
+import { writeMapping, readMapping } from "../util/filesAndDirectories.js";
 import { getGroupMetaDataAsJsonString } from "../validation/termMapper.js";
 import {getStreamAsArrayBuffer} from 'get-stream';
 
 // import {getDataForBiomFile, getMetadataRowsWithNoIdInOTUtable} from './dataintegrity.js';
 
 const extractTaxaFromOTUtable = (otuTable, samples, termMapping) => {
-  try {
-    const notSamplIdHeaderIndices = getTaxonHeaderIndicesFromOtuTable(
-      otuTable,
-      samples,
-      termMapping
-    );
-    const taxonData = otuTable?.data.map((d) =>
-      d.filter((val, idx) => notSamplIdHeaderIndices.includes(idx))
-    );
-    const otuTableData = otuTable?.data.map((d) =>
-      d.filter(
-        (val, idx) => idx === 0 || !notSamplIdHeaderIndices.includes(idx)
-      )
-    );
+  // Any failure here is rethrown. Returning undefined instead left the caller with no taxonomy
+  // *and* no OTU table, so the workbook looked as though neither sheet had been found and the
+  // validation worker went on to read headers off undefined.
+  const notSamplIdHeaderIndices = getTaxonHeaderIndicesFromOtuTable(
+    otuTable,
+    samples,
+    termMapping
+  );
+  const taxonData = otuTable?.data.map((d) =>
+    d.filter((val, idx) => notSamplIdHeaderIndices.includes(idx))
+  );
+  const otuTableData = otuTable?.data.map((d) =>
+    d.filter(
+      (val, idx) => idx === 0 || !notSamplIdHeaderIndices.includes(idx)
+    )
+  );
 
-    return {
-      otuTable: {
-        name: "otuTable",
-        data: otuTableData,
-      },
-      taxa: {
-        name: "taxa",
-        data: taxonData,
-      },
-    };
-  } catch (error) {
-    console.log(error);
-  }
+  return {
+    otuTable: {
+      name: "otuTable",
+      data: otuTableData,
+    },
+    taxa: {
+      name: "taxa",
+      data: taxonData,
+    },
+  };
+};
+
+// The sample id column is the one whose values label the OTU table's columns, so when neither the
+// mapping nor an "id" header names it, the column that matches the most OTU table headers is it.
+// This runs before the mapping step exists, so without it a workbook whose sample id column is
+// named anything else could not be split at all. Falling back to the first column, as the id
+// checks elsewhere do, is not safe here: a wrong column matches no header, which would hand every
+// column in the OTU table to the taxonomy.
+const findSampleIdHeaderByOtuOverlap = (sampleHeaders, sampleRows, otuTableHeaders) => {
+  const otuHeaderSet = new Set(otuTableHeaders.map((h) => `${h ?? ""}`.trim()));
+  let best = { header: undefined, matches: 0 };
+  sampleHeaders.forEach((header, idx) => {
+    if (!header) return;
+    const matches = new Set(
+      sampleRows
+        .map((r) => `${r?.[idx] ?? ""}`.trim())
+        .filter((v) => v !== "" && otuHeaderSet.has(v))
+    ).size;
+    if (matches > best.matches) best = { header, matches };
+  });
+  return best.header;
 };
 
 const getTaxonHeaderIndicesFromOtuTable = (otuTable, samples, termMapping) => {
-  let sampleId = termMapping?.samples?.id;
+  const sampleHeaders = samples?.data?.[0] || [];
+  const sampleRows = samples?.data?.slice(1) || [];
+  const otuTableHeaders = otuTable?.data?.[0] || [];
 
-  const sampleHeaders = samples?.data[0];
-  if (!sampleId) {
-    sampleId = sampleHeaders.find(
-      (e) => !!e && ["id", "sampleid"].includes(e.toLowerCase())
-    );
-  }
+  const sampleId =
+    termMapping?.samples?.id ||
+    sampleHeaders.find(
+      (e) => !!e && ["id", "sampleid"].includes(e.toString().toLowerCase())
+    ) ||
+    findSampleIdHeaderByOtuOverlap(sampleHeaders, sampleRows, otuTableHeaders);
+
   if (!sampleId) {
     throw "No sample id in sample file";
   }
   const sampleIdIndex = sampleHeaders.indexOf(sampleId);
   // Create a Set if sample IDs:
-  const sampleIdSet = new Set(
-    samples?.data.slice(1).map((s) => s[sampleIdIndex])
-  );
-  const otuTableHeaders = otuTable?.data[0];
+  const sampleIdSet = new Set(sampleRows.map((s) => s[sampleIdIndex]));
 
   // Find all headers that are not a sample id
   const notSamplIdHeaderIndices = otuTableHeaders.reduce((acc, curr, idx) => {
@@ -67,6 +87,12 @@ const getTaxonHeaderIndicesFromOtuTable = (otuTable, samples, termMapping) => {
     }
     return acc;
   }, []);
+
+  // Every header unrecognised means the id column was the wrong one. Splitting on that would
+  // leave the OTU table with nothing but its first column, so treat it as no taxonomy found.
+  if (notSamplIdHeaderIndices.length === otuTableHeaders.length) {
+    throw "No sample id in sample file";
+  }
 
   return notSamplIdHeaderIndices;
 };
@@ -422,8 +448,11 @@ export const readXlsxHeaders = async (id, fileName, version) => {
           name: n,
           data: xlsx.utils.sheet_to_json(workbook.Sheets[n], { header: 1 }),
         }));
+        // Pass the stored mapping, as the two processing paths do. On the first validation there
+        // is none and the sample id is worked out from the sheets; once the user has chosen one,
+        // a re-validation honours it rather than guessing again.
         const { otuTable, taxa, samples, defaultValues } =
-          determineFileNames(data);
+          determineFileNames(data, await readMapping(id, version));
 
         const otuTableColumns = (otuTable?.data?.[0]?.slice(1) || []).map(
           (c) => c.trim()
@@ -449,12 +478,19 @@ export const readXlsxHeaders = async (id, fileName, version) => {
           taxonHeaders: taxa?.data?.[0],
         };
         console.log(headers)
+        // Prefer the column that labels the OTU table's own columns over the first one, so the id
+        // this reports - and that the validation worker writes into the mapping - is one the OTU
+        // table can actually be joined on.
         let sampleId = headers.sampleHeaders.find(
           (e) => !!e && ["id"].includes(e.toLowerCase())
+        ) || findSampleIdHeaderByOtuOverlap(
+          headers.sampleHeaders || [],
+          samples?.data?.slice(1) || [],
+          otuTable?.data?.[0] || []
         ) ||  headers.sampleHeaders[0];
-        let taxonId = headers.taxonHeaders.find(
+        let taxonId = (headers.taxonHeaders || []).find(
           (e) => !!e && ["id"].includes(e.toLowerCase())
-        ) ||  headers.taxonHeaders[0];
+        ) ||  (headers.taxonHeaders || [])[0];
 
         console.log("samp id "+sampleId)
         const sampleIdIndex = headers.sampleHeaders.indexOf(sampleId);
@@ -534,7 +570,7 @@ export const readXlsxHeaders = async (id, fileName, version) => {
             };
           });
 
-        resolve({ headers, sheets });
+        resolve({ headers, sheets, sampleId, taxonId });
       }
       } catch (error) {
         reject(error);
