@@ -19,13 +19,17 @@ const extractTaxaFromOTUtable = (otuTable, samples, termMapping) => {
     samples,
     termMapping
   );
+  // Columns are picked by position, never with filter: sheet_to_json leaves a hole for an empty
+  // cell and filter skips holes, which moved every later value one column to the left.
+  const taxonIndexSet = new Set(notSamplIdHeaderIndices);
+  const countIndices = [...Array(otuTable?.data?.[0]?.length || 0).keys()].filter(
+    (idx) => idx === 0 || !taxonIndexSet.has(idx)
+  );
   const taxonData = otuTable?.data.map((d) =>
-    d.filter((val, idx) => notSamplIdHeaderIndices.includes(idx))
+    notSamplIdHeaderIndices.map((idx) => d[idx])
   );
   const otuTableData = otuTable?.data.map((d) =>
-    d.filter(
-      (val, idx) => idx === 0 || !notSamplIdHeaderIndices.includes(idx)
-    )
+    countIndices.map((idx) => d[idx])
   );
 
   return {
@@ -230,7 +234,12 @@ export const toBiom = async (
         //  rows.push(row[0]);
           let hasValidColumns = false;
 
-          row.slice(1).forEach((val, index) => {
+          // A loop over the header positions rather than row.forEach: sheet_to_json leaves a
+          // hole for an empty cell, forEach skips holes, and columnIdx then fell behind, giving
+          // every later count to an earlier sample. An empty cell reads as undefined, which is
+          // NaN and so a zero.
+          for (let index = 0; index < columns.length; index++) {
+            const val = row[index + 1];
             if (
               !isNaN(Number(val)) &&
               Number(val) > 0 &&
@@ -245,7 +254,7 @@ export const toBiom = async (
             if (sampleMap.has(columns[index])) {
               columnIdx++;
             }
-          });
+          }
 
           if(hasValidColumns){
             count ++;
