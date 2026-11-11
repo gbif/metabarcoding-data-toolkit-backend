@@ -56,12 +56,12 @@ export const parseFAIReComponents = (sheets, preferredAssay = null) => {
         throw 'No otuFinal sheet found in FAIRe dataset';
     }
 
-    // otuFinal_<assay>_<run> — assay is the second underscore-separated token.
-    // Bare 'otuFinal' has no assay suffix; treat as a single implicit assay (null key).
-    const getAssayFromName = (name) => {
-        const parts = name.split('_');
-        return parts.length >= 2 ? parts[1] : null;
-    };
+    const projectMetadata = find('projectMetadata');
+    const declaredAssays = declaredAssayNames(projectMetadata?.data, experimentRunMetadata?.data);
+
+    // otuFinal_<assay>_<run>. Bare 'otuFinal' has no assay suffix; treat as a single implicit assay (null key).
+    const splitName = (name) => splitAssayAndRun(name.split('_').slice(1).join('_'), declaredAssays);
+    const getAssayFromName = (name) => splitName(name).assay;
 
     // For bare otuFinal the assay name is null — use a sentinel so it can be selected
     const BARE_ASSAY = '__bare__';
@@ -79,8 +79,7 @@ export const parseFAIReComponents = (sheets, preferredAssay = null) => {
 
     const otuFinal = otuFinalSheets.find(s => (getAssayFromName(s.name) ?? null) === selectedAssay);
 
-    const otuParts = otuFinal.name.split('_');
-    const seqRunId = otuParts.length >= 3 ? otuParts.slice(2).join('_') : null;
+    const seqRunId = splitName(otuFinal.name).run;
 
     const taxaFinal = taxaFinalSheets.find(s => (getAssayFromName(s.name) ?? null) === selectedAssay) || taxaFinalSheets[0];
 
@@ -88,8 +87,6 @@ export const parseFAIReComponents = (sheets, preferredAssay = null) => {
     if (!sampleMetadata) missingComponentErrors.push('Missing required component: sampleMetadata');
     if (!taxaFinal) missingComponentErrors.push('Missing required component: taxaFinal');
     if (!experimentRunMetadata) missingComponentErrors.push('Missing required component: experimentRunMetadata');
-
-    const projectMetadata = find('projectMetadata');
 
     // Only expose named assays in the UI picklist — bare (null) assay means single implicit assay, no picker needed
     const namedAssayNames = assayNames.filter(Boolean);
@@ -187,6 +184,45 @@ const projectMetadataAssayColumns = (data) => {
 
 /** The name to show a user for an assay column: what it declares, else its header. */
 const assayColumnLabel = (column) => column.assayName || column.header;
+
+/**
+ * Every assay name the dataset declares: the assay_name row of projectMetadata and the assay_name
+ * column of experimentRunMetadata. Both are read because they do not always agree - one workbook
+ * declared 12S-V5 in the first and 12S_V5 in the second.
+ */
+const declaredAssayNames = (projectMetadataData, experimentRunData) => {
+    const names = new Set();
+    for (const column of projectMetadataAssayColumns(projectMetadataData) || []) {
+        if (column.assayName) names.add(column.assayName);
+    }
+    const runRows = stripCommentRows(experimentRunData || []);
+    const assayIdx = (runRows[0] || []).findIndex(h => String(h ?? '').trim().toLowerCase() === 'assay_name');
+    if (assayIdx >= 0) {
+        for (const row of runRows.slice(1)) {
+            const name = String(row?.[assayIdx] ?? '').trim();
+            if (name) names.add(name);
+        }
+    }
+    return [...names];
+};
+
+/**
+ * Split the '<assay>_<seq_run_id>' part of an otuFinal or taxaFinal name.
+ *
+ * Splitting on the first underscore cut an assay such as 12S_V5 down to 12S, and two assays sharing
+ * that first token became one. Underscores are allowed in both parts (verte_quadeloupe has run
+ * vert_2021), so the name alone is ambiguous: the assay is the longest declared assay name the
+ * suffix starts with. Only an assay nobody declared falls back to the first underscore.
+ */
+const splitAssayAndRun = (suffix, declaredAssays = []) => {
+    if (!suffix) return { assay: null, run: null };
+    const lower = suffix.toLowerCase();
+    const declared = declaredAssays
+        .filter(a => lower === a.toLowerCase() || lower.startsWith(`${a.toLowerCase()}_`))
+        .sort((a, b) => b.length - a.length)[0];
+    const assayLength = declared ? declared.length : suffix.split('_')[0].length;
+    return { assay: suffix.slice(0, assayLength), run: suffix.slice(assayLength + 1) || null };
+};
 
 /**
  * Locate the projectMetadata column carrying values for one assay.
@@ -704,17 +740,26 @@ export const readFAIReFlatFiles = async (id, version, preferredAssay = null) => 
         throw 'No otuFinal file found in FAIRe dataset';
     }
 
-    const getAssayFromFilename = (filename) => {
-        const noExt = filename.replace(/\.[^.]+$/, '');
-        const match = noExt.match(/^otufinal_[^_]+_([^_]+)/i);
-        return match ? match[1] : null;
+    const readFileAsEntity = async (filename, nameOverride) => {
+        if (!filename) return null;
+        const data = await readFlatComponent(`${basePath}${filename}`);
+        if (!data) return null;
+        return { name: nameOverride || filename.replace(/\.[^.]+$/, ''), data };
     };
 
-    const getTaxaAssayFromFilename = (filename) => {
-        const noExt = filename.replace(/\.[^.]+$/, '');
-        const match = noExt.match(/^taxafinal_[^_]+_([^_]+)/i);
-        return match ? match[1] : null;
-    };
+    // Read first: the assays they declare are what separates an assay from its run in the file names.
+    const [projectMetadata, experimentRunMetadata] = await Promise.all([
+        readFileAsEntity(projectMetadataFiles[0], 'projectMetadata'),
+        readFileAsEntity(expRunFiles[0], 'experimentRunMetadata')
+    ]);
+    const declaredAssays = declaredAssayNames(projectMetadata?.data, experimentRunMetadata?.data);
+
+    // <component>_<project_id>_<assay>_<seq_run_id>, with project_id dropped by normalizeFileToSheetName.
+    // A name with only a project_id carries no assay.
+    const splitFilename = (filename) => filename.replace(/\.[^.]+$/, '').split('_').length < 3
+        ? { assay: null, run: null }
+        : splitAssayAndRun(normalizeFileToSheetName(filename).split('_').slice(1).join('_'), declaredAssays);
+    const getAssayFromFilename = (filename) => splitFilename(filename).assay;
 
     const assayNames = [...new Set(otuFinalFiles.map(f => getAssayFromFilename(f)).filter(Boolean))];
 
@@ -728,28 +773,14 @@ export const readFAIReFlatFiles = async (id, version, preferredAssay = null) => 
     }
 
     const otuFinalFile = otuFinalFiles.find(f => getAssayFromFilename(f) === selectedAssay);
-    const taxaFinalFile = taxaFinalFiles.find(f => getTaxaAssayFromFilename(f) === selectedAssay) || taxaFinalFiles[0];
+    const taxaFinalFile = taxaFinalFiles.find(f => getAssayFromFilename(f) === selectedAssay) || taxaFinalFiles[0];
 
-    const getSeqRunFromFilename = (filename) => {
-        const noExt = filename.replace(/\.[^.]+$/, '');
-        const match = noExt.match(/^otufinal_[^_]+_[^_]+_(.+)/i);
-        return match ? match[1] : null;
-    };
-    const seqRunId = otuFinalFile ? getSeqRunFromFilename(otuFinalFile) : null;
+    const seqRunId = otuFinalFile ? splitFilename(otuFinalFile).run : null;
 
-    const readFileAsEntity = async (filename, nameOverride) => {
-        if (!filename) return null;
-        const data = await readFlatComponent(`${basePath}${filename}`);
-        if (!data) return null;
-        return { name: nameOverride || filename.replace(/\.[^.]+$/, ''), data };
-    };
-
-    const [projectMetadata, sampleMetadata, otuFinal, taxaFinal, experimentRunMetadata] = await Promise.all([
-        readFileAsEntity(projectMetadataFiles[0], 'projectMetadata'),
+    const [sampleMetadata, otuFinal, taxaFinal] = await Promise.all([
         readFileAsEntity(sampleMetadataFiles[0], 'sampleMetadata'),
         readFileAsEntity(otuFinalFile, otuFinalFile?.replace(/\.[^.]+$/, '')),
-        readFileAsEntity(taxaFinalFile, taxaFinalFile?.replace(/\.[^.]+$/, '')),
-        readFileAsEntity(expRunFiles[0], 'experimentRunMetadata')
+        readFileAsEntity(taxaFinalFile, taxaFinalFile?.replace(/\.[^.]+$/, ''))
     ]);
 
     const missingComponentErrors = [];

@@ -70,7 +70,9 @@ in either of these forms, or both mixed together:
 row per term, not one column per term. Its values are used as the dataset defaults and to start
 the dataset metadata (EML). One assay is processed per upload. The assay is read from the
 `otuFinal` name, and if there are several the user picks one. Assay names must match the values
-in the `assay_name` row of `projectMetadata`.
+in the `assay_name` row of `projectMetadata`. Assay and run names may contain underscores when the
+assay is declared there or in the `assay_name` column of `experimentRunMetadata`; an undeclared
+assay is taken to end at the first underscore.
 
 ## Options shared by the text-file and workbook formats
 
