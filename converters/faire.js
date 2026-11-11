@@ -486,15 +486,59 @@ const buildSheetsWithCrossReferences = (components) => {
 const FAIRE_PREFIXES = ['otufinal_', 'taxafinal_', 'samplemetadata_', 'experimentrunmetadata_', 'projectmetadata_', 'oturaw_', 'taxaraw_'];
 const hasFAIRePrefix = (name) => FAIRE_PREFIXES.some(p => name.toLowerCase().startsWith(p));
 
-// Flat-file naming:    otuFinal_<project_id>_<assay>_<seq_run_id>  (≥4 underscore-separated tokens)
-// Workbook convention: otuFinal_<assay>_<seq_run_id>               (3 tokens — project_id is the workbook filename)
-// Strip parts[1] (project_id) to normalise a flat-file name to workbook convention so
-// parseFAIReComponents can use the same parts[1]=assay logic for all sources.
-// Only strips when parts.length >= 3; bare names (e.g. 'otuFinal') are left unchanged.
-const normalizeFileToSheetName = (filename) => {
+const METADATA_COMPONENTS = ['projectMetadata', 'sampleMetadata', 'experimentRunMetadata'];
+
+/** The <project_id> of a FAIRe-prefixed file name, when the name carries nothing else. */
+const projectIdFromFilename = (filename) => {
+    const [component, ...rest] = filename.replace(/\.[^.]+$/, '').split('_');
+    const isMetadata = METADATA_COMPONENTS.some(c => c.toLowerCase() === component.toLowerCase());
+    return isMetadata && rest.length > 0 ? rest.join('_') : null;
+};
+
+/**
+ * Rename a FAIRe-prefixed file to the sheet name it would have in a workbook, which is what
+ * parseFAIReComponents reads:
+ *
+ *   flat file                                        workbook sheet
+ *   sampleMetadata_<project_id>                      sampleMetadata
+ *   otuFinal_<project_id>_<assay>_<seq_run_id>       otuFinal_<assay>_<seq_run_id>
+ *
+ * The metadata components used to keep their project id, so the parser, which looks them up by
+ * their bare name, never found them and a dataset of flat files failed for want of sampleMetadata.
+ * And project_id was taken to be the second underscore-separated token, which cut an id such as
+ * verte_quadeloupe in two. The dataset states its project ids - in the metadata file names, the
+ * main workbook's name and projectMetadata's project_id - so the longest of those the name
+ * continues with is removed. Only a name matching none of them falls back to the second token.
+ */
+const normalizeFileToSheetName = (filename, projectIds = []) => {
     const noExt = filename.replace(/\.[^.]+$/, '');
-    const parts = noExt.split('_');
-    return parts.length >= 3 ? [parts[0], ...parts.slice(2)].join('_') : noExt;
+    const [component, ...rest] = noExt.split('_');
+
+    const metadata = METADATA_COMPONENTS.find(c => c.toLowerCase() === component.toLowerCase());
+    if (metadata) return metadata;
+
+    const suffix = rest.join('_');
+    const lower = suffix.toLowerCase();
+    const projectId = projectIds
+        .filter(p => lower === p.toLowerCase() || lower.startsWith(`${p.toLowerCase()}_`))
+        .sort((a, b) => b.length - a.length)[0];
+    if (projectId) {
+        const remainder = suffix.slice(projectId.length + 1);
+        return remainder ? `${component}_${remainder}` : component;
+    }
+    return rest.length >= 2 ? [component, ...rest.slice(1)].join('_') : noExt;
+};
+
+/** The project_id value in a projectMetadata sheet's project_level column. */
+const projectIdFromProjectMetadata = (data) => {
+    const cleanData = stripCommentRows(data || []);
+    const headers = (cleanData[0] || []).map(h => String(h ?? '').trim().toLowerCase());
+    const termNameIdx = headers.indexOf('term_name');
+    const projectLevelIdx = headers.indexOf('project_level');
+    if (termNameIdx < 0 || projectLevelIdx < 0) return null;
+    const row = cleanData.slice(1).find(r => String(r[termNameIdx] ?? '').trim().toLowerCase() === 'project_id');
+    const value = String(row?.[projectLevelIdx] ?? '').trim();
+    return value || null;
 };
 
 /**
@@ -538,10 +582,9 @@ const extractTermComments = (rawSheet) => {
  */
 const readFlatComponent = async (filePath) => {
     const preview = await analyseCsv(filePath);
-    // analyseCsv yields nothing when no candidate delimiter could parse the file at all. A
-    // FAIRe-prefixed xlsx arrives here that way, because readFAIReFlatFiles selects components by
-    // filename prefix without checking the extension. There is nothing to read as a flat file, and
-    // the caller already treats null as 'component absent' - so return quietly, as before.
+    // analyseCsv yields nothing when no candidate delimiter could parse the file at all. There is
+    // nothing to read as a flat file, and the caller already treats null as 'component absent' -
+    // so return quietly, as before.
     if (!preview) return null;
     try {
         return await readFlatFile2D(filePath, preview?.delimiter ?? '\t');
@@ -558,10 +601,15 @@ const readFlatComponent = async (filePath) => {
  *   - FAIRe-prefixed xlsx (e.g. taxaFinal_*.xlsx): first sheet, named after the file
  *   - FAIRe-prefixed flat files (tsv/csv/txt): read in full, named after the file
  * Returns a unified array of { name, data } objects suitable for parseFAIReComponents.
+ *
+ * Prefixed files are named only once everything is read, since the project ids that are cut from
+ * their names come partly from the contents of projectMetadata.
  */
 const collectAllSheets = async (basePath) => {
     const fileList = fs.readdirSync(basePath).filter(f => !f.startsWith('.nfs') && !f.startsWith('.'));
     const sheets = [];
+    const prefixed = [];
+    const projectIds = new Set();
 
     for (const filename of fileList) {
         const lowerName = filename.toLowerCase();
@@ -572,18 +620,15 @@ const collectAllSheets = async (basePath) => {
             const wb = xlsx.read(buffer, { type: 'array', dense: true, cellDates: true });
 
             if (hasFAIRePrefix(filename)) {
-                // FAIRe-prefixed workbook: treat as a single sheet, normalised to workbook naming
+                // FAIRe-prefixed workbook: treat as a single sheet, named after the file
                 const firstSheet = wb.SheetNames[0];
                 if (firstSheet) {
-                    const sheetName = normalizeFileToSheetName(filename);
-                    sheets.push({
-                        name: sheetName,
-                        data: sheetRows(wb.Sheets[firstSheet]),
-                        ...(sheetName === 'projectMetadata' ? { termComments: extractTermComments(wb.Sheets[firstSheet]) } : {})
-                    });
+                    prefixed.push({ filename, data: sheetRows(wb.Sheets[firstSheet]), termComments: extractTermComments(wb.Sheets[firstSheet]) });
                 }
             } else {
-                // Non-prefixed workbook (main workbook): contribute all sheets by sheet name
+                // Non-prefixed workbook (main workbook): contribute all sheets by sheet name.
+                // FAIRe names it <project_id>.xlsx.
+                projectIds.add(filename.replace(/\.[^.]+$/, ''));
                 for (const sheetName of wb.SheetNames) {
                     sheets.push({
                         name: sheetName,
@@ -593,22 +638,32 @@ const collectAllSheets = async (basePath) => {
                 }
             }
         } else if (hasFAIRePrefix(filename)) {
-            // FAIRe-prefixed flat file — normalise name to workbook convention
             const data = await readFlatComponent(filePath);
-            if (data?.length > 0) {
-                sheets.push({
-                    name: normalizeFileToSheetName(filename),
-                    data
-                });
-            }
+            if (data?.length > 0) prefixed.push({ filename, data });
         }
+    }
+
+    for (const { filename } of prefixed) {
+        const projectId = projectIdFromFilename(filename);
+        if (projectId) projectIds.add(projectId);
+    }
+    for (const entity of [...sheets, ...prefixed]) {
+        const isProjectMetadata = entity.name === 'projectMetadata'
+            || (entity.filename && normalizeFileToSheetName(entity.filename) === 'projectMetadata');
+        const projectId = isProjectMetadata ? projectIdFromProjectMetadata(entity.data) : null;
+        if (projectId) projectIds.add(projectId);
+    }
+
+    for (const { filename, data, termComments } of prefixed) {
+        const name = normalizeFileToSheetName(filename, [...projectIds]);
+        sheets.push({ name, data, ...(name === 'projectMetadata' ? { termComments } : {}) });
     }
     return sheets;
 };
 
 /**
- * Read a hybrid FAIRe dataset where components may be spread across multiple workbooks
- * and/or flat files. Collects all sheets from all sources and parses them together.
+ * Read a FAIRe dataset that is not a single workbook: flat files, prefixed workbooks, or a main
+ * workbook with any of those beside it. Collects all sheets from all sources and parses them together.
  */
 export const readFAIReHybrid = async (id, version, preferredAssay = null) => {
     const basePath = `${config.dataStorage}${id}/${version}/original/`;
@@ -630,7 +685,7 @@ export const readFAIReHybrid = async (id, version, preferredAssay = null) => {
 
 /**
  * Load the raw FAIRe component objects needed for BIOM conversion.
- * Handles single-workbook, flat-file, and hybrid modes.
+ * Handles single-workbook, flat-file, and hybrid modes - the same way validation reads them.
  * Returns the result of parseFAIReComponents: { sampleMetadata, otuFinal, taxaFinal,
  * experimentRunMetadata, assayName, seqRunId, assayNames, ... }
  */
@@ -638,49 +693,8 @@ export const loadFAIReComponents = async (id, version, preferredAssay = null) =>
     const basePath = `${config.dataStorage}${id}/${version}/original/`;
     const fileList = fs.readdirSync(basePath).filter(f => !f.startsWith('.nfs') && !f.startsWith('.'));
 
-    const hasFAIRePrefixedFiles = fileList.some(f => hasFAIRePrefix(f));
-
-    if (hasFAIRePrefixedFiles) {
-        // Hybrid or pure flat-file: build sheets directly, reading full file content.
-        const sheets = [];
-        for (const filename of fileList) {
-            const lowerName = filename.toLowerCase();
-            const filePath = `${basePath}${filename}`;
-
-            if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
-                const buffer = await getStreamAsArrayBuffer(fs.createReadStream(filePath));
-                const wb = xlsx.read(buffer, { type: 'array', dense: true, cellDates: true });
-
-                if (hasFAIRePrefix(filename)) {
-                    // FAIRe-prefixed workbook: single sheet, normalised name
-                    const firstSheet = wb.SheetNames[0];
-                    if (firstSheet) {
-                        sheets.push({
-                            name: normalizeFileToSheetName(filename),
-                            data: sheetRows(wb.Sheets[firstSheet])
-                        });
-                    }
-                } else {
-                    // Non-prefixed main workbook: all sheets by their sheet name
-                    for (const sheetName of wb.SheetNames) {
-                        sheets.push({
-                            name: sheetName,
-                            data: sheetRows(wb.Sheets[sheetName])
-                        });
-                    }
-                }
-            } else if (hasFAIRePrefix(filename)) {
-                // FAIRe-prefixed flat file
-                const data = await readFlatComponent(filePath);
-                if (data?.length > 0) {
-                    sheets.push({
-                        name: normalizeFileToSheetName(filename),
-                        data
-                    });
-                }
-            }
-        }
-        return parseFAIReComponents(sheets, preferredAssay);
+    if (fileList.some(f => hasFAIRePrefix(f))) {
+        return parseFAIReComponents(await collectAllSheets(basePath), preferredAssay);
     }
 
     // Pure single-workbook mode
@@ -721,89 +735,6 @@ export const readFAIReWorkbook = async (id, xlsxFileName, version, preferredAssa
         .map(s => buildSheet(s, []));
 
     return { ...result, projectMetadataDefaults, projectMetadataComments, sheets: [...result.sheets, ...extraSheets] };
-};
-
-export const readFAIReFlatFiles = async (id, version, preferredAssay = null) => {
-    const basePath = `${config.dataStorage}${id}/${version}/original/`;
-    const fileList = fs.readdirSync(basePath);
-
-    const findByPrefix = (prefix) =>
-        fileList.filter(f => f.toLowerCase().startsWith(prefix.toLowerCase()));
-
-    const projectMetadataFiles = findByPrefix('projectmetadata_');
-    const sampleMetadataFiles  = findByPrefix('samplemetadata_');
-    const otuFinalFiles        = findByPrefix('otufinal_');
-    const taxaFinalFiles       = findByPrefix('taxafinal_');
-    const expRunFiles          = findByPrefix('experimentrunmetadata_');
-
-    if (otuFinalFiles.length === 0) {
-        throw 'No otuFinal file found in FAIRe dataset';
-    }
-
-    const readFileAsEntity = async (filename, nameOverride) => {
-        if (!filename) return null;
-        const data = await readFlatComponent(`${basePath}${filename}`);
-        if (!data) return null;
-        return { name: nameOverride || filename.replace(/\.[^.]+$/, ''), data };
-    };
-
-    // Read first: the assays they declare are what separates an assay from its run in the file names.
-    const [projectMetadata, experimentRunMetadata] = await Promise.all([
-        readFileAsEntity(projectMetadataFiles[0], 'projectMetadata'),
-        readFileAsEntity(expRunFiles[0], 'experimentRunMetadata')
-    ]);
-    const declaredAssays = declaredAssayNames(projectMetadata?.data, experimentRunMetadata?.data);
-
-    // <component>_<project_id>_<assay>_<seq_run_id>, with project_id dropped by normalizeFileToSheetName.
-    // A name with only a project_id carries no assay.
-    const splitFilename = (filename) => filename.replace(/\.[^.]+$/, '').split('_').length < 3
-        ? { assay: null, run: null }
-        : splitAssayAndRun(normalizeFileToSheetName(filename).split('_').slice(1).join('_'), declaredAssays);
-    const getAssayFromFilename = (filename) => splitFilename(filename).assay;
-
-    const assayNames = [...new Set(otuFinalFiles.map(f => getAssayFromFilename(f)).filter(Boolean))];
-
-    const selectedAssay = (preferredAssay && assayNames.includes(preferredAssay))
-        ? preferredAssay
-        : assayNames[0];
-
-    let multipleAssaysWarning = null;
-    if (assayNames.length > 1) {
-        multipleAssaysWarning = `This dataset contains multiple assays: ${assayNames.join(', ')}. MDT can only process one assay at a time. Processing assay '${selectedAssay}' only.`;
-    }
-
-    const otuFinalFile = otuFinalFiles.find(f => getAssayFromFilename(f) === selectedAssay);
-    const taxaFinalFile = taxaFinalFiles.find(f => getAssayFromFilename(f) === selectedAssay) || taxaFinalFiles[0];
-
-    const seqRunId = otuFinalFile ? splitFilename(otuFinalFile).run : null;
-
-    const [sampleMetadata, otuFinal, taxaFinal] = await Promise.all([
-        readFileAsEntity(sampleMetadataFiles[0], 'sampleMetadata'),
-        readFileAsEntity(otuFinalFile, otuFinalFile?.replace(/\.[^.]+$/, '')),
-        readFileAsEntity(taxaFinalFile, taxaFinalFile?.replace(/\.[^.]+$/, ''))
-    ]);
-
-    const missingComponentErrors = [];
-    if (!sampleMetadata) missingComponentErrors.push('Missing required component: sampleMetadata');
-    if (!otuFinal) missingComponentErrors.push('Missing required component: otuFinal');
-    if (!taxaFinal) missingComponentErrors.push('Missing required component: taxaFinal');
-    if (!experimentRunMetadata) missingComponentErrors.push('Missing required component: experimentRunMetadata');
-
-    const projectMetadataDefaults = extractProjectMetadataDefaults(projectMetadata?.data, selectedAssay);
-
-    const result = buildSheetsWithCrossReferences({
-        projectMetadata,
-        sampleMetadata,
-        experimentRunMetadata,
-        otuFinal,
-        taxaFinal,
-        assayName: selectedAssay,
-        assayNames,
-        seqRunId,
-        multipleAssaysWarning,
-        missingComponentErrors
-    });
-    return { ...result, projectMetadataDefaults, projectMetadataComments: {} };
 };
 
 /**

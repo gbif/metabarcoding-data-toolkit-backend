@@ -1,4 +1,4 @@
-import { readFAIReWorkbook, readFAIReFlatFiles, readFAIReHybrid, extractEmlFromProjectMetadata } from '../converters/faire.js'
+import { readFAIReWorkbook, readFAIReHybrid, extractEmlFromProjectMetadata } from '../converters/faire.js'
 import { uploadedFilesAndTypes } from '../validation/files.js'
 import { getYargs } from '../util/index.js'
 import { readMapping, writeMapping, getProcessingReport, writeProcessingReport, getMetadata, writeEmlJson, writeEmlXml } from '../util/filesAndDirectories.js'
@@ -37,14 +37,9 @@ export const processDataset = async (id, version, userName) => {
         let sheets_ = []
 
         try {
-            let result
-            if (hasFAIRePrefixedFiles) {
-                result = await readFAIReHybrid(id, version, preferredAssay)
-            } else if (xlsxFile) {
-                result = await readFAIReWorkbook(id, xlsxFile.name, version, preferredAssay)
-            } else {
-                result = await readFAIReFlatFiles(id, version, preferredAssay)
-            }
+            const result = xlsxFile && !hasFAIRePrefixedFiles
+                ? await readFAIReWorkbook(id, xlsxFile.name, version, preferredAssay)
+                : await readFAIReHybrid(id, version, preferredAssay)
 
             const { headers, sheets, projectMetadataDefaults = {}, projectMetadataComments = {}, assayNames } = result
             headers_ = headers

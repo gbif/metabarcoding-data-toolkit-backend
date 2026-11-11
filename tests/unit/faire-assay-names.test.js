@@ -5,8 +5,8 @@
  * assays sharing that token - 12S_V5 and 12S_MiFish - became one, leaving the second unreachable.
  * Underscores are allowed in run ids too (vert_2021), so the split is made against the assay names
  * the dataset declares, in projectMetadata's assay_name row or experimentRunMetadata's assay_name
- * column. Both lanes that read the names are covered: the sheet parser, used for workbooks and for
- * processing, and the flat-file reader used by validation.
+ * column. Workbook sheets and flat files are both covered; flat files are read the same way by
+ * validation and processing, and both are checked.
  */
 import '../helpers/env.js';
 
@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 
 import config from '../../config.js';
 import { DATASET_VERSION } from '../helpers/dataset.js';
-import { parseFAIReComponents, readFAIReFlatFiles } from '../../converters/faire.js';
+import { parseFAIReComponents, readFAIReHybrid, loadFAIReComponents } from '../../converters/faire.js';
 
 const ASSAYS = ['12S_V5', '12S_MiFish'];
 const RUN = 'Run_1';
@@ -92,10 +92,14 @@ test('flat files: assays declared in the metadata files keep their underscores',
         fs.writeFileSync(`${dir}taxaFinal_proj_${a}_${RUN}.tsv`, tsv(taxaTable));
     }
 
-    const result = await readFAIReFlatFiles(id, DATASET_VERSION, '12S_MiFish');
-    assert.deepEqual([...result.assayNames].sort(), [...ASSAYS].sort());
-    assert.equal(result.assayName, '12S_MiFish');
-    assert.equal(result.seqRunId, RUN);
-    assert.ok(result.sheets.some(s => s.name === `otuFinal_proj_12S_MiFish_${RUN}`));
-    assert.ok(result.sheets.some(s => s.name === `taxaFinal_proj_12S_MiFish_${RUN}`));
+    const validated = await readFAIReHybrid(id, DATASET_VERSION, '12S_MiFish');
+    assert.deepEqual([...validated.assayNames].sort(), [...ASSAYS].sort());
+    assert.equal(validated.assayName, '12S_MiFish');
+    assert.equal(validated.seqRunId, RUN);
+
+    const components = await loadFAIReComponents(id, DATASET_VERSION, '12S_MiFish');
+    assert.equal(components.assayName, '12S_MiFish');
+    assert.equal(components.otuFinal.name, `otuFinal_12S_MiFish_${RUN}`);
+    assert.equal(components.taxaFinal.name, `taxaFinal_12S_MiFish_${RUN}`);
+    assert.deepEqual(components.missingComponentErrors, []);
 });
