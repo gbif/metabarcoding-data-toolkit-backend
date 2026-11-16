@@ -152,6 +152,12 @@ Text files only. When the OTU table has samples as rows, its column headers can 
 sequences themselves. MDT recognises this when the headers are long (over 75 characters) and
 made of nucleotide letters, and it then uses an MD5 hash of each sequence as the OTU/ASV id.
 
+This is the layout of the sequence table [DADA2](https://benjjneb.github.io/dada2/) produces
+(`seqtab`, from `makeSequenceTable` or `removeBimeraDenovo`), with sample names as row names.
+The header row needs a field for the sample-name column, so the first sequence header is in the
+second field. `write.csv(seqtab, ...)` writes it that way. `write.table` does so only with
+`col.names = NA`; by default its header row is one field short.
+
 ### Study file
 
 A text file, or a workbook sheet, with a header row followed by one term and its value per row,
