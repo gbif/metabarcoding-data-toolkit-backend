@@ -263,7 +263,10 @@ export const readMetaData = (path,  progressFn = ()=>{}, delimiter = "\t") => {
     })
 }
 
-export const readMetaDataAsMap = (path, /* idHeader = 'id', */ progressFn = ()=>{}, mapping = {}, delimiter = "\t", formatKey = (key) => key) => {
+// keepColumns, when given, is the set of source headers to retain. It exists so that taxon records
+// can be read out of an OTU table without also carrying its count columns, which on a wide table
+// would be a field per sample on every record.
+export const readMetaDataAsMap = (path, /* idHeader = 'id', */ progressFn = ()=>{}, mapping = {}, delimiter = "\t", formatKey = (key) => key, keepColumns = null) => {
 
   /**
  * Use a mapping object to rename terms corresponding to DWC / MiXS
@@ -273,6 +276,9 @@ const reverseMapping = objectSwap(mapping)
 const mapRecord = record => {
   // return record;
  return Object.keys(record).reduce((acc, key) => {
+      if(keepColumns && !keepColumns.has(key)){
+        return acc;
+      }
       if(reverseMapping[key]){
         // console.log(reverseMapping[key])
         acc[reverseMapping[key]] = record[key]
@@ -337,6 +343,12 @@ const mapRecord = record => {
   })
 }
 
+// The identifier of a fasta record is the defline up to the first whitespace; anything after it
+// is a free-text description. Keying on the whole defline instead meant that a file written in
+// the standard '>id description' form matched nothing when the sequences were joined onto the
+// OTU table, and every sequence was silently dropped.
+const fastaRecordId = (defline) => `${defline}`.split(/\s/)[0];
+
 export const readFastaAsMap = (path, progressFn = ()=>{},) => {
   return new Promise((resolve, reject) => {
     const parser = parse({
@@ -354,8 +366,9 @@ export const readFastaAsMap = (path, progressFn = ()=>{},) => {
         while ((record = parser.read()) !== null) {
            
          // const splitted = record[0].split("\n")
-          if(!!record[0] && !!record[1]){
-            records.set(record[0], record.slice(1).join("").toUpperCase())  
+          const id = fastaRecordId(record[0]);
+          if(!!id && !!record[1]){
+            records.set(id, record.slice(1).join("").toUpperCase())
          count++;
           }
           

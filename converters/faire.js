@@ -5,7 +5,7 @@ import config from "../config.js";
 import { getStreamAsArrayBuffer } from 'get-stream';
 import { analyseCsv } from '../validation/tsvformat.js';
 import { readFlatFile2D } from '../util/streamReader.js';
-import { getMetaDataRow } from '../util/index.js';
+import { getMetaDataRow, duplicateSampleEventIds } from '../util/index.js';
 import { getGroupMetaDataAsJsonString } from '../validation/termMapper.js';
 import license from "../enum/license.js";
 
@@ -56,12 +56,12 @@ export const parseFAIReComponents = (sheets, preferredAssay = null) => {
         throw 'No otuFinal sheet found in FAIRe dataset';
     }
 
-    // otuFinal_<assay>_<run> — assay is the second underscore-separated token.
-    // Bare 'otuFinal' has no assay suffix; treat as a single implicit assay (null key).
-    const getAssayFromName = (name) => {
-        const parts = name.split('_');
-        return parts.length >= 2 ? parts[1] : null;
-    };
+    const projectMetadata = find('projectMetadata');
+    const declaredAssays = declaredAssayNames(projectMetadata?.data, experimentRunMetadata?.data);
+
+    // otuFinal_<assay>_<run>. Bare 'otuFinal' has no assay suffix; treat as a single implicit assay (null key).
+    const splitName = (name) => splitAssayAndRun(name.split('_').slice(1).join('_'), declaredAssays);
+    const getAssayFromName = (name) => splitName(name).assay;
 
     // For bare otuFinal the assay name is null — use a sentinel so it can be selected
     const BARE_ASSAY = '__bare__';
@@ -79,8 +79,7 @@ export const parseFAIReComponents = (sheets, preferredAssay = null) => {
 
     const otuFinal = otuFinalSheets.find(s => (getAssayFromName(s.name) ?? null) === selectedAssay);
 
-    const otuParts = otuFinal.name.split('_');
-    const seqRunId = otuParts.length >= 3 ? otuParts.slice(2).join('_') : null;
+    const seqRunId = splitName(otuFinal.name).run;
 
     const taxaFinal = taxaFinalSheets.find(s => (getAssayFromName(s.name) ?? null) === selectedAssay) || taxaFinalSheets[0];
 
@@ -88,8 +87,6 @@ export const parseFAIReComponents = (sheets, preferredAssay = null) => {
     if (!sampleMetadata) missingComponentErrors.push('Missing required component: sampleMetadata');
     if (!taxaFinal) missingComponentErrors.push('Missing required component: taxaFinal');
     if (!experimentRunMetadata) missingComponentErrors.push('Missing required component: experimentRunMetadata');
-
-    const projectMetadata = find('projectMetadata');
 
     // Only expose named assays in the UI picklist — bare (null) assay means single implicit assay, no picker needed
     const namedAssayNames = assayNames.filter(Boolean);
@@ -99,11 +96,162 @@ export const parseFAIReComponents = (sheets, preferredAssay = null) => {
 };
 
 // Strip leading rows whose first cell starts with '#' (FAIRe comment rows)
+/**
+ * Reads a sheet to rows, converting date cells to calendar dates.
+ *
+ * A date in a spreadsheet is a calendar date, not an instant. The xlsx library's cellDates
+ * option returns a Date set to *local* midnight - for a workbook cell of 2024-09-26 it builds
+ * `Thu Sep 26 2024 00:00:00` in whatever zone the process is running in - so the local
+ * components are the date the author wrote. Letting such a value reach JSON.stringify, as the
+ * BIOM writer does, serialises it with toISOString() and bakes the server's timezone into the
+ * published data: that same cell became 2024-09-25T22:00:00.000Z on a UTC+2 host and
+ * 2024-09-26T07:00:00.000Z on a UTC-7 one, so an installation east of UTC published every
+ * eventDate a day early.
+ *
+ * Reading the local components and formatting them as a plain date string keeps the author's
+ * date and removes the timezone from the output entirely. A time of day, if the cell has one,
+ * is preserved without an offset, which is what Darwin Core asks for when none is known.
+ *
+ * Datasets processed before this change keep the shifted values: reprocessing them was
+ * considered and rejected as too invasive, since it would rewrite published archives under
+ * existing endpoints. So two datasets can legitimately disagree about the same calendar date
+ * depending on when and where they were processed, and an old dataset reprocessed for any other
+ * reason will have its eventDates move by a day. That is expected, not a regression.
+ */
+const pad = (n, width = 2) => `${n}`.padStart(width, '0');
+
+export const toCalendarDate = (value) => {
+    if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+        return value;
+    }
+    const date = `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+    const hasTime = value.getHours() || value.getMinutes() || value.getSeconds() || value.getMilliseconds();
+    if (!hasTime) {
+        return date;
+    }
+    return `${date}T${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}`;
+};
+
+const sheetRows = (sheet) => xlsx.utils.sheet_to_json(sheet, { header: 1 })
+    .map(row => (Array.isArray(row) ? row.map(toCalendarDate) : row));
+
 const stripCommentRows = (data) => {
     if (!data || data.length === 0) return data;
     let i = 0;
     while (i < data.length && String(data[i]?.[0] ?? '').startsWith('#')) i++;
     return i > 0 ? data.slice(i) : data;
+};
+
+/**
+ * The assay columns of a projectMetadata sheet, in sheet order.
+ *
+ * projectMetadata is laid out term-per-row, with one column per assay to the right of
+ * project_level. The FAIRe template names those columns generically - assay1, assay2 - and records
+ * which assay each one describes in the assay_name row:
+ *
+ *   term_name    project_level                   assay1           assay2
+ *   assay_name   ssu16sv4v5-emp | ssu18sv9-emp   ssu16sv4v5-emp   ssu18sv9-emp
+ *   target_gene                                  16S rRNA (SSU    18S rRNA (SSU
+ *                                                prokaryote)      eukaryote)
+ *
+ * So an assay cannot be recognised from a column header, and the header is not the name to show a
+ * user either - 'assay1' tells them nothing. Both the defaults extractor and the assay
+ * cross-reference need the same reading of this, hence one function.
+ *
+ * Returns [{ index, header, assayName }] with assayName null when the assay_name row is absent, or
+ * null when the sheet has no project_level column at all and the layout cannot be read.
+ */
+const projectMetadataAssayColumns = (data) => {
+    const cleanData = stripCommentRows(data || []);
+    const headers = (cleanData[0] || []).map(h => String(h ?? '').trim());
+
+    const termNameIdx     = headers.findIndex(h => h.toLowerCase() === 'term_name');
+    const projectLevelIdx = headers.findIndex(h => h.toLowerCase() === 'project_level');
+    if (projectLevelIdx < 0) return null;
+
+    const assayNameRow = termNameIdx >= 0
+        ? cleanData.slice(1).find(r => String(r[termNameIdx] ?? '').trim().toLowerCase() === 'assay_name')
+        : null;
+
+    const columns = [];
+    for (let i = projectLevelIdx + 1; i < headers.length; i++) {
+        if (!headers[i]) continue;
+        const declared = assayNameRow ? String(assayNameRow[i] ?? '').trim() : '';
+        columns.push({ index: i, header: headers[i], assayName: declared || null });
+    }
+    return columns;
+};
+
+/** The name to show a user for an assay column: what it declares, else its header. */
+const assayColumnLabel = (column) => column.assayName || column.header;
+
+/**
+ * Every assay name the dataset declares: the assay_name row of projectMetadata and the assay_name
+ * column of experimentRunMetadata. Both are read because they do not always agree - one workbook
+ * declared 12S-V5 in the first and 12S_V5 in the second.
+ */
+const declaredAssayNames = (projectMetadataData, experimentRunData) => {
+    const names = new Set();
+    for (const column of projectMetadataAssayColumns(projectMetadataData) || []) {
+        if (column.assayName) names.add(column.assayName);
+    }
+    const runRows = stripCommentRows(experimentRunData || []);
+    const assayIdx = (runRows[0] || []).findIndex(h => String(h ?? '').trim().toLowerCase() === 'assay_name');
+    if (assayIdx >= 0) {
+        for (const row of runRows.slice(1)) {
+            const name = String(row?.[assayIdx] ?? '').trim();
+            if (name) names.add(name);
+        }
+    }
+    return [...names];
+};
+
+/**
+ * Split the '<assay>_<seq_run_id>' part of an otuFinal or taxaFinal name.
+ *
+ * Splitting on the first underscore cut an assay such as 12S_V5 down to 12S, and two assays sharing
+ * that first token became one. Underscores are allowed in both parts (verte_quadeloupe has run
+ * vert_2021), so the name alone is ambiguous: the assay is the longest declared assay name the
+ * suffix starts with. Only an assay nobody declared falls back to the first underscore.
+ */
+const splitAssayAndRun = (suffix, declaredAssays = []) => {
+    if (!suffix) return { assay: null, run: null };
+    const lower = suffix.toLowerCase();
+    const declared = declaredAssays
+        .filter(a => lower === a.toLowerCase() || lower.startsWith(`${a.toLowerCase()}_`))
+        .sort((a, b) => b.length - a.length)[0];
+    const assayLength = declared ? declared.length : suffix.split('_')[0].length;
+    return { assay: suffix.slice(0, assayLength), run: suffix.slice(assayLength + 1) || null };
+};
+
+/**
+ * Locate the projectMetadata column carrying values for one assay.
+ *
+ * This used to take the first column unconditionally, which meant selecting any assay but the
+ * first silently inherited the first assay's target_gene, primers and amplicon size - published as
+ * if they described the sequences.
+ *
+ * Returns -1 when the assay cannot be placed and more than one column is a candidate. The caller
+ * then falls back to project_level values alone: losing the assay-scoped defaults shows up in the
+ * mapping form as terms left to fill in, whereas taking the wrong column does not show up at all.
+ */
+const findAssayColumn = (columns, selectedAssay) => {
+    if (!columns?.length) return -1;
+
+    // A bare otuFinal carries no assay name - one implicit assay, so a lone column is unambiguous.
+    if (!selectedAssay) return columns.length === 1 ? columns[0].index : -1;
+
+    const needle = String(selectedAssay).trim().toLowerCase();
+
+    const byName = columns.find(c => c.assayName?.toLowerCase() === needle);
+    if (byName) return byName.index;
+
+    // Some templates do name the column after the assay itself.
+    const byHeader = columns.find(c => c.header.toLowerCase() === needle);
+    if (byHeader) return byHeader.index;
+
+    // One candidate whose name does not match is still the only thing it can be.
+    return columns.length === 1 ? columns[0].index : -1;
 };
 
 /**
@@ -114,11 +262,11 @@ const stripCommentRows = (data) => {
  *   rows 1+: one row per FAIRe vocabulary term
  *
  * Result is a flat key→value map: term_name → value.
- * project_level values are written first; the first assay column then overrides them
+ * project_level values are written first; the column for the selected assay then overrides them
  * for assay-scoped terms (so assay-specific values win over project-wide values).
  * Blank and literal "None" values are skipped.
  */
-const extractProjectMetadataDefaults = (data) => {
+const extractProjectMetadataDefaults = (data, selectedAssay = null) => {
     if (!data || data.length < 2) return {};
 
     const cleanData = stripCommentRows(data);
@@ -128,14 +276,14 @@ const extractProjectMetadataDefaults = (data) => {
     const projectLevelIdx = headers.findIndex(h => h === 'project_level');
     if (termNameIdx < 0 || projectLevelIdx < 0) return {};
 
-    // First assay column is immediately to the right of project_level
-    const firstAssayIdx = projectLevelIdx + 1 < headers.length ? projectLevelIdx + 1 : -1;
+    const rows = cleanData.slice(1);
+    const assayIdx = findAssayColumn(projectMetadataAssayColumns(data), selectedAssay);
 
     const isValidValue = (v) =>
         v != null && v !== '' && String(v).trim().toLowerCase() !== 'none';
 
     const defaults = {};
-    for (const row of cleanData.slice(1)) {
+    for (const row of rows) {
         const termName = row[termNameIdx];
         if (!termName) continue;
         const key = String(termName).trim();
@@ -145,8 +293,8 @@ const extractProjectMetadataDefaults = (data) => {
             defaults[key] = projectVal;
         }
 
-        if (firstAssayIdx >= 0) {
-            const assayVal = row[firstAssayIdx];
+        if (assayIdx >= 0) {
+            const assayVal = row[assayIdx];
             if (isValidValue(assayVal)) {
                 defaults[key] = assayVal; // assay-scoped value overrides project-level
             }
@@ -303,18 +451,20 @@ const buildSheetsWithCrossReferences = (components) => {
         }
     }
 
-    // Cross-reference: assay names from otuFinal sheet names <-> projectMetadata column headers
+    // Cross-reference: assay names from otuFinal sheet names <-> assays declared in projectMetadata.
+    // The assays a projectMetadata declares are the values in its assay_name row, not its column
+    // headers: the template headers them assay1, assay2, so comparing against those reported every
+    // assay as missing and offered 'assay1, assay2' as the names it had found.
     if (projectMetadata && assayNames?.length > 0) {
-        const cleanedPmData = stripCommentRows(projectMetadata.data);
-        const pmHeaders = (cleanedPmData[0] || []).map(h => String(h ?? '').trim());
-        const projectLevelIdx = pmHeaders.findIndex(h => h.toLowerCase() === 'project_level');
-        if (projectLevelIdx >= 0) {
-            const pmAssayCols = new Set(pmHeaders.slice(projectLevelIdx + 1).filter(Boolean));
-            const missingInPm = assayNames.filter(a => !pmAssayCols.has(a));
+        const assayColumns = projectMetadataAssayColumns(projectMetadata.data);
+        if (assayColumns) {
+            const declared = assayColumns.map(assayColumnLabel);
+            const declaredSet = new Set(declared.map(d => d.toLowerCase()));
+            const missingInPm = assayNames.filter(a => !declaredSet.has(String(a).trim().toLowerCase()));
             if (missingInPm.length > 0) {
                 sheetErrors.sampleMetadata.push(
-                    `Assay name(s) "${missingInPm.join('", "')}" from otuFinal sheet(s) not found as column(s) in projectMetadata. ` +
-                    `Found assay column(s): ${pmAssayCols.size > 0 ? [...pmAssayCols].join(', ') : '(none)'}.`
+                    `Assay name(s) "${missingInPm.join('", "')}" from otuFinal sheet(s) not declared in projectMetadata. ` +
+                    `Found assay(s): ${declared.length > 0 ? declared.join(', ') : '(none)'}.`
                 );
             }
         }
@@ -336,15 +486,59 @@ const buildSheetsWithCrossReferences = (components) => {
 const FAIRE_PREFIXES = ['otufinal_', 'taxafinal_', 'samplemetadata_', 'experimentrunmetadata_', 'projectmetadata_', 'oturaw_', 'taxaraw_'];
 const hasFAIRePrefix = (name) => FAIRE_PREFIXES.some(p => name.toLowerCase().startsWith(p));
 
-// Flat-file naming:    otuFinal_<project_id>_<assay>_<seq_run_id>  (≥4 underscore-separated tokens)
-// Workbook convention: otuFinal_<assay>_<seq_run_id>               (3 tokens — project_id is the workbook filename)
-// Strip parts[1] (project_id) to normalise a flat-file name to workbook convention so
-// parseFAIReComponents can use the same parts[1]=assay logic for all sources.
-// Only strips when parts.length >= 3; bare names (e.g. 'otuFinal') are left unchanged.
-const normalizeFileToSheetName = (filename) => {
+const METADATA_COMPONENTS = ['projectMetadata', 'sampleMetadata', 'experimentRunMetadata'];
+
+/** The <project_id> of a FAIRe-prefixed file name, when the name carries nothing else. */
+const projectIdFromFilename = (filename) => {
+    const [component, ...rest] = filename.replace(/\.[^.]+$/, '').split('_');
+    const isMetadata = METADATA_COMPONENTS.some(c => c.toLowerCase() === component.toLowerCase());
+    return isMetadata && rest.length > 0 ? rest.join('_') : null;
+};
+
+/**
+ * Rename a FAIRe-prefixed file to the sheet name it would have in a workbook, which is what
+ * parseFAIReComponents reads:
+ *
+ *   flat file                                        workbook sheet
+ *   sampleMetadata_<project_id>                      sampleMetadata
+ *   otuFinal_<project_id>_<assay>_<seq_run_id>       otuFinal_<assay>_<seq_run_id>
+ *
+ * The metadata components used to keep their project id, so the parser, which looks them up by
+ * their bare name, never found them and a dataset of flat files failed for want of sampleMetadata.
+ * And project_id was taken to be the second underscore-separated token, which cut an id such as
+ * verte_quadeloupe in two. The dataset states its project ids - in the metadata file names, the
+ * main workbook's name and projectMetadata's project_id - so the longest of those the name
+ * continues with is removed. Only a name matching none of them falls back to the second token.
+ */
+const normalizeFileToSheetName = (filename, projectIds = []) => {
     const noExt = filename.replace(/\.[^.]+$/, '');
-    const parts = noExt.split('_');
-    return parts.length >= 3 ? [parts[0], ...parts.slice(2)].join('_') : noExt;
+    const [component, ...rest] = noExt.split('_');
+
+    const metadata = METADATA_COMPONENTS.find(c => c.toLowerCase() === component.toLowerCase());
+    if (metadata) return metadata;
+
+    const suffix = rest.join('_');
+    const lower = suffix.toLowerCase();
+    const projectId = projectIds
+        .filter(p => lower === p.toLowerCase() || lower.startsWith(`${p.toLowerCase()}_`))
+        .sort((a, b) => b.length - a.length)[0];
+    if (projectId) {
+        const remainder = suffix.slice(projectId.length + 1);
+        return remainder ? `${component}_${remainder}` : component;
+    }
+    return rest.length >= 2 ? [component, ...rest.slice(1)].join('_') : noExt;
+};
+
+/** The project_id value in a projectMetadata sheet's project_level column. */
+const projectIdFromProjectMetadata = (data) => {
+    const cleanData = stripCommentRows(data || []);
+    const headers = (cleanData[0] || []).map(h => String(h ?? '').trim().toLowerCase());
+    const termNameIdx = headers.indexOf('term_name');
+    const projectLevelIdx = headers.indexOf('project_level');
+    if (termNameIdx < 0 || projectLevelIdx < 0) return null;
+    const row = cleanData.slice(1).find(r => String(r[termNameIdx] ?? '').trim().toLowerCase() === 'project_id');
+    const value = String(row?.[projectLevelIdx] ?? '').trim();
+    return value || null;
 };
 
 /**
@@ -373,15 +567,49 @@ const extractTermComments = (rawSheet) => {
 };
 
 /**
+ * Read a FAIRe flat component file (tsv/csv/txt) in full, as a 2D array.
+ *
+ * analyseCsv is a format sniffer for the upload preview. It tries each candidate delimiter and
+ * caps what it returns at 100 rows and 100 columns (validation/tsvformat.js testDelimiter:
+ * `to_line: 100` plus a slice to COLUMN_LIMIT). Those caps are correct for a preview and wrong
+ * for anything that reasons about the data: a 61730 x 469 otuFinal came back as its top-left
+ * 100 x 100 corner, and because the caller kept only `rows` - dropping `numColumns` and
+ * `columnLimit`, the two fields that record the crop - the cross-reference checks could not tell
+ * they were looking at one. Every sample and seq_id past the corner was reported missing.
+ *
+ * So: sniff the delimiter with analyseCsv, then read the whole file. Display truncation still
+ * happens, but in buildSheet, where it belongs.
+ */
+const readFlatComponent = async (filePath) => {
+    const preview = await analyseCsv(filePath);
+    // analyseCsv yields nothing when no candidate delimiter could parse the file at all. There is
+    // nothing to read as a flat file, and the caller already treats null as 'component absent' -
+    // so return quietly, as before.
+    if (!preview) return null;
+    try {
+        return await readFlatFile2D(filePath, preview?.delimiter ?? '\t');
+    } catch (error) {
+        console.log(`Could not read FAIRe component file ${filePath}`);
+        console.log(error);
+        return null;
+    }
+};
+
+/**
  * Collect all FAIRe sheets from a directory, handling three file types:
  *   - Non-prefixed xlsx (main workbooks): all sheets added by sheet name
  *   - FAIRe-prefixed xlsx (e.g. taxaFinal_*.xlsx): first sheet, named after the file
- *   - FAIRe-prefixed flat files (tsv/csv/txt): read via analyseCsv, named after the file
+ *   - FAIRe-prefixed flat files (tsv/csv/txt): read in full, named after the file
  * Returns a unified array of { name, data } objects suitable for parseFAIReComponents.
+ *
+ * Prefixed files are named only once everything is read, since the project ids that are cut from
+ * their names come partly from the contents of projectMetadata.
  */
 const collectAllSheets = async (basePath) => {
     const fileList = fs.readdirSync(basePath).filter(f => !f.startsWith('.nfs') && !f.startsWith('.'));
     const sheets = [];
+    const prefixed = [];
+    const projectIds = new Set();
 
     for (const filename of fileList) {
         const lowerName = filename.toLowerCase();
@@ -392,50 +620,57 @@ const collectAllSheets = async (basePath) => {
             const wb = xlsx.read(buffer, { type: 'array', dense: true, cellDates: true });
 
             if (hasFAIRePrefix(filename)) {
-                // FAIRe-prefixed workbook: treat as a single sheet, normalised to workbook naming
+                // FAIRe-prefixed workbook: treat as a single sheet, named after the file
                 const firstSheet = wb.SheetNames[0];
                 if (firstSheet) {
-                    const sheetName = normalizeFileToSheetName(filename);
-                    sheets.push({
-                        name: sheetName,
-                        data: xlsx.utils.sheet_to_json(wb.Sheets[firstSheet], { header: 1 }),
-                        ...(sheetName === 'projectMetadata' ? { termComments: extractTermComments(wb.Sheets[firstSheet]) } : {})
-                    });
+                    prefixed.push({ filename, data: sheetRows(wb.Sheets[firstSheet]), termComments: extractTermComments(wb.Sheets[firstSheet]) });
                 }
             } else {
-                // Non-prefixed workbook (main workbook): contribute all sheets by sheet name
+                // Non-prefixed workbook (main workbook): contribute all sheets by sheet name.
+                // FAIRe names it <project_id>.xlsx.
+                projectIds.add(filename.replace(/\.[^.]+$/, ''));
                 for (const sheetName of wb.SheetNames) {
                     sheets.push({
                         name: sheetName,
-                        data: xlsx.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 }),
+                        data: sheetRows(wb.Sheets[sheetName]),
                         ...(sheetName === 'projectMetadata' ? { termComments: extractTermComments(wb.Sheets[sheetName]) } : {})
                     });
                 }
             }
         } else if (hasFAIRePrefix(filename)) {
-            // FAIRe-prefixed flat file — normalise name to workbook convention
-            const result = await analyseCsv(filePath);
-            if (result?.rows?.length > 0) {
-                sheets.push({
-                    name: normalizeFileToSheetName(filename),
-                    data: result.rows
-                });
-            }
+            const data = await readFlatComponent(filePath);
+            if (data?.length > 0) prefixed.push({ filename, data });
         }
+    }
+
+    for (const { filename } of prefixed) {
+        const projectId = projectIdFromFilename(filename);
+        if (projectId) projectIds.add(projectId);
+    }
+    for (const entity of [...sheets, ...prefixed]) {
+        const isProjectMetadata = entity.name === 'projectMetadata'
+            || (entity.filename && normalizeFileToSheetName(entity.filename) === 'projectMetadata');
+        const projectId = isProjectMetadata ? projectIdFromProjectMetadata(entity.data) : null;
+        if (projectId) projectIds.add(projectId);
+    }
+
+    for (const { filename, data, termComments } of prefixed) {
+        const name = normalizeFileToSheetName(filename, [...projectIds]);
+        sheets.push({ name, data, ...(name === 'projectMetadata' ? { termComments } : {}) });
     }
     return sheets;
 };
 
 /**
- * Read a hybrid FAIRe dataset where components may be spread across multiple workbooks
- * and/or flat files. Collects all sheets from all sources and parses them together.
+ * Read a FAIRe dataset that is not a single workbook: flat files, prefixed workbooks, or a main
+ * workbook with any of those beside it. Collects all sheets from all sources and parses them together.
  */
 export const readFAIReHybrid = async (id, version, preferredAssay = null) => {
     const basePath = `${config.dataStorage}${id}/${version}/original/`;
     const allSheets = await collectAllSheets(basePath);
 
     const components = parseFAIReComponents(allSheets, preferredAssay);
-    const projectMetadataDefaults = extractProjectMetadataDefaults(components.projectMetadata?.data);
+    const projectMetadataDefaults = extractProjectMetadataDefaults(components.projectMetadata?.data, components.assayName);
     const projectMetadataComments = components.projectMetadataComments ?? {};
     const result = buildSheetsWithCrossReferences(components);
 
@@ -450,7 +685,7 @@ export const readFAIReHybrid = async (id, version, preferredAssay = null) => {
 
 /**
  * Load the raw FAIRe component objects needed for BIOM conversion.
- * Handles single-workbook, flat-file, and hybrid modes.
+ * Handles single-workbook, flat-file, and hybrid modes - the same way validation reads them.
  * Returns the result of parseFAIReComponents: { sampleMetadata, otuFinal, taxaFinal,
  * experimentRunMetadata, assayName, seqRunId, assayNames, ... }
  */
@@ -458,53 +693,8 @@ export const loadFAIReComponents = async (id, version, preferredAssay = null) =>
     const basePath = `${config.dataStorage}${id}/${version}/original/`;
     const fileList = fs.readdirSync(basePath).filter(f => !f.startsWith('.nfs') && !f.startsWith('.'));
 
-    const hasFAIRePrefixedFiles = fileList.some(f => hasFAIRePrefix(f));
-
-    if (hasFAIRePrefixedFiles) {
-        // Hybrid or pure flat-file: build sheets directly, reading full file content.
-        // analyseCsv is only used to detect the delimiter (it limits to 100 rows for UI preview).
-        // readFlatFile2D reads the entire file without a row cap.
-        const sheets = [];
-        for (const filename of fileList) {
-            const lowerName = filename.toLowerCase();
-            const filePath = `${basePath}${filename}`;
-
-            if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
-                const buffer = await getStreamAsArrayBuffer(fs.createReadStream(filePath));
-                const wb = xlsx.read(buffer, { type: 'array', dense: true, cellDates: true });
-
-                if (hasFAIRePrefix(filename)) {
-                    // FAIRe-prefixed workbook: single sheet, normalised name
-                    const firstSheet = wb.SheetNames[0];
-                    if (firstSheet) {
-                        sheets.push({
-                            name: normalizeFileToSheetName(filename),
-                            data: xlsx.utils.sheet_to_json(wb.Sheets[firstSheet], { header: 1 })
-                        });
-                    }
-                } else {
-                    // Non-prefixed main workbook: all sheets by their sheet name
-                    for (const sheetName of wb.SheetNames) {
-                        sheets.push({
-                            name: sheetName,
-                            data: xlsx.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 })
-                        });
-                    }
-                }
-            } else if (hasFAIRePrefix(filename)) {
-                // FAIRe-prefixed flat file — detect delimiter then read full file
-                const preview = await analyseCsv(filePath);
-                const delimiter = preview?.delimiter ?? '\t';
-                const data = await readFlatFile2D(filePath, delimiter);
-                if (data.length > 0) {
-                    sheets.push({
-                        name: normalizeFileToSheetName(filename),
-                        data
-                    });
-                }
-            }
-        }
-        return parseFAIReComponents(sheets, preferredAssay);
+    if (fileList.some(f => hasFAIRePrefix(f))) {
+        return parseFAIReComponents(await collectAllSheets(basePath), preferredAssay);
     }
 
     // Pure single-workbook mode
@@ -515,7 +705,7 @@ export const loadFAIReComponents = async (id, version, preferredAssay = null) =>
     const workbook = xlsx.read(buffer, { type: 'array', dense: true, cellDates: true });
     const sheets = workbook.SheetNames.map(name => ({
         name,
-        data: xlsx.utils.sheet_to_json(workbook.Sheets[name], { header: 1 })
+        data: sheetRows(workbook.Sheets[name])
     }));
     return parseFAIReComponents(sheets, preferredAssay);
 };
@@ -528,12 +718,12 @@ export const readFAIReWorkbook = async (id, xlsxFileName, version, preferredAssa
 
     const allSheetData = workbook.SheetNames.map(name => ({
         name,
-        data: xlsx.utils.sheet_to_json(workbook.Sheets[name], { header: 1 }),
+        data: sheetRows(workbook.Sheets[name]),
         ...(name === 'projectMetadata' ? { termComments: extractTermComments(workbook.Sheets[name]) } : {})
     }));
 
     const components = parseFAIReComponents(allSheetData, preferredAssay);
-    const projectMetadataDefaults = extractProjectMetadataDefaults(components.projectMetadata?.data);
+    const projectMetadataDefaults = extractProjectMetadataDefaults(components.projectMetadata?.data, components.assayName);
     const projectMetadataComments = components.projectMetadataComments ?? {};
     const result = buildSheetsWithCrossReferences(components);
 
@@ -545,94 +735,6 @@ export const readFAIReWorkbook = async (id, xlsxFileName, version, preferredAssa
         .map(s => buildSheet(s, []));
 
     return { ...result, projectMetadataDefaults, projectMetadataComments, sheets: [...result.sheets, ...extraSheets] };
-};
-
-export const readFAIReFlatFiles = async (id, version, preferredAssay = null) => {
-    const basePath = `${config.dataStorage}${id}/${version}/original/`;
-    const fileList = fs.readdirSync(basePath);
-
-    const findByPrefix = (prefix) =>
-        fileList.filter(f => f.toLowerCase().startsWith(prefix.toLowerCase()));
-
-    const projectMetadataFiles = findByPrefix('projectmetadata_');
-    const sampleMetadataFiles  = findByPrefix('samplemetadata_');
-    const otuFinalFiles        = findByPrefix('otufinal_');
-    const taxaFinalFiles       = findByPrefix('taxafinal_');
-    const expRunFiles          = findByPrefix('experimentrunmetadata_');
-
-    if (otuFinalFiles.length === 0) {
-        throw 'No otuFinal file found in FAIRe dataset';
-    }
-
-    const getAssayFromFilename = (filename) => {
-        const noExt = filename.replace(/\.[^.]+$/, '');
-        const match = noExt.match(/^otufinal_[^_]+_([^_]+)/i);
-        return match ? match[1] : null;
-    };
-
-    const getTaxaAssayFromFilename = (filename) => {
-        const noExt = filename.replace(/\.[^.]+$/, '');
-        const match = noExt.match(/^taxafinal_[^_]+_([^_]+)/i);
-        return match ? match[1] : null;
-    };
-
-    const assayNames = [...new Set(otuFinalFiles.map(f => getAssayFromFilename(f)).filter(Boolean))];
-
-    const selectedAssay = (preferredAssay && assayNames.includes(preferredAssay))
-        ? preferredAssay
-        : assayNames[0];
-
-    let multipleAssaysWarning = null;
-    if (assayNames.length > 1) {
-        multipleAssaysWarning = `This dataset contains multiple assays: ${assayNames.join(', ')}. MDT can only process one assay at a time. Processing assay '${selectedAssay}' only.`;
-    }
-
-    const otuFinalFile = otuFinalFiles.find(f => getAssayFromFilename(f) === selectedAssay);
-    const taxaFinalFile = taxaFinalFiles.find(f => getTaxaAssayFromFilename(f) === selectedAssay) || taxaFinalFiles[0];
-
-    const getSeqRunFromFilename = (filename) => {
-        const noExt = filename.replace(/\.[^.]+$/, '');
-        const match = noExt.match(/^otufinal_[^_]+_[^_]+_(.+)/i);
-        return match ? match[1] : null;
-    };
-    const seqRunId = otuFinalFile ? getSeqRunFromFilename(otuFinalFile) : null;
-
-    const readFileAsEntity = async (filename, nameOverride) => {
-        if (!filename) return null;
-        const result = await analyseCsv(`${basePath}${filename}`);
-        if (!result) return null;
-        return { name: nameOverride || filename.replace(/\.[^.]+$/, ''), data: result.rows || [] };
-    };
-
-    const [projectMetadata, sampleMetadata, otuFinal, taxaFinal, experimentRunMetadata] = await Promise.all([
-        readFileAsEntity(projectMetadataFiles[0], 'projectMetadata'),
-        readFileAsEntity(sampleMetadataFiles[0], 'sampleMetadata'),
-        readFileAsEntity(otuFinalFile, otuFinalFile?.replace(/\.[^.]+$/, '')),
-        readFileAsEntity(taxaFinalFile, taxaFinalFile?.replace(/\.[^.]+$/, '')),
-        readFileAsEntity(expRunFiles[0], 'experimentRunMetadata')
-    ]);
-
-    const missingComponentErrors = [];
-    if (!sampleMetadata) missingComponentErrors.push('Missing required component: sampleMetadata');
-    if (!otuFinal) missingComponentErrors.push('Missing required component: otuFinal');
-    if (!taxaFinal) missingComponentErrors.push('Missing required component: taxaFinal');
-    if (!experimentRunMetadata) missingComponentErrors.push('Missing required component: experimentRunMetadata');
-
-    const projectMetadataDefaults = extractProjectMetadataDefaults(projectMetadata?.data);
-
-    const result = buildSheetsWithCrossReferences({
-        projectMetadata,
-        sampleMetadata,
-        experimentRunMetadata,
-        otuFinal,
-        taxaFinal,
-        assayName: selectedAssay,
-        assayNames,
-        seqRunId,
-        multipleAssaysWarning,
-        missingComponentErrors
-    });
-    return { ...result, projectMetadataDefaults, projectMetadataComments: {} };
 };
 
 /**
@@ -781,7 +883,8 @@ export const toBiom = async ({
             sampleIdsWithNoRecordInSampleFile,
             taxonIdsWithNoRecordInTaxonFile,
             sampleIdsWithNoRecordInOtuTable,
-            taxonIdsWithNoRecordInOtuTable
+            taxonIdsWithNoRecordInOtuTable,
+            duplicateEventIdsInSampleFile: duplicateSampleEventIds(biom?.columns)
         }
     };
 };

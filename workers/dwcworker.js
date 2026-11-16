@@ -10,7 +10,7 @@ import {updateStatusOnCurrentStep, beginStep, stepFinished,  finishedJobSuccesss
 
 
 
-const createDwc = async (id, version) => {
+export const createDwc = async (id, version) => {
     try {
        
         beginStep('readBiom')
@@ -66,7 +66,12 @@ try {
     const yargs = getYargs()
     const {id, version } = yargs;
     
-    createDwc(id, version)
+    // Only start a job when forked with --id. Importing this module - which the test suite does,
+    // to drive the pipeline in-process - must not kick off processing, and without the guard the
+    // call below runs with id undefined and fails on the first property access.
+    if(id){
+        createDwc(id, version)
+    }
 
     } catch (error) {
         console.log(error)

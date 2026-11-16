@@ -9,6 +9,10 @@ import {once} from 'events';
 
 const DEFAULT_UNIT = "DNA sequence reads";
 const BASIS_OF_RECORD = "MATERIAL_SAMPLE";
+// Schema groups whose terms belong to the organism and to how it was identified, rather than to
+// the place the sample came from. For an eDNA dataset an identification is made per sequence, so
+// both of these are properties of the taxon table.
+const TAXON_OWNED_GROUPS = new Set(['Taxon', 'Identification']);
 export const otherEMOFfields = ["measurementUnit", "measurementAccuracy", "measurementMethod", "measurementTypeID","measurementUnitID", "measurementValueID", "measurementDeterminedDate", "measurementDeterminedBy", "measurementRemarks"]
 
 const writeMetaXml = async (hasEmof, occCore, dnaExt, path, ignoreHeaderLines ) =>  await fs.promises.writeFile(`${path}/archive/meta.xml`, util.metaXml(occCore, dnaExt, hasEmof, ignoreHeaderLines))
@@ -122,8 +126,23 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
       const defaults = getDefaultTermsForMetaXml(biomData, dnaTerms, occTerms)
     // Make a set of sampleHeaders to avoid terms exist in both taxon and sample 
       const sampleHeaderSet = new Set(sampleHeaders)
-      const relevantOccTerms  = [...sampleHeaders.filter(key => occTerms.has(key) && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
-          ...taxonHeaders.filter(key => !sampleHeaderSet.has(key) && occTerms.has(key)  && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
+      const taxonHeaderSet = new Set(taxonHeaders)
+      // When the same term name is present in both tables and the schema puts it in one of the
+      // taxon-owned groups, the taxon table is the one that means it - its value comes from the
+      // classifier, per ASV, whereas a sample column of that name is usually leftover voucher
+      // provenance. Without this, a sampleMetadata 'phylum' of "Unknown" replaced a 94%-populated
+      // per-ASV phylum in every occurrence, while kingdom and class still came from the taxon
+      // table, so a single record contradicted itself. Terms in every other group keep the
+      // previous behaviour, where the sample column wins. Only flip when the taxon table really
+      // carries the term, so that a sample-only column is still written rather than dropped.
+      const taxonOwnedTerm = (key) => TAXON_OWNED_GROUPS.has(occTerms.get(key)?.group) && taxonHeaderSet.has(key)
+      // eventID is appended to the core terms below so that an archive always has one, even when
+      // the uploaded tables carry no such column. It is therefore kept out of the term list here:
+      // leaving it in meant a sample table with its own eventID column declared the term twice in
+      // meta.xml and wrote two columns holding different values, which is not a valid archive.
+      const useProvidedEventId = util.sampleEventIdIsUsable(biomData.columns)
+      const relevantOccTerms  = [...sampleHeaders.filter(key => key !== 'eventID' && occTerms.has(key) && !defaults.keySet.has(key) && !taxonOwnedTerm(key)).map(key => occTerms.get(key)),
+          ...taxonHeaders.filter(key => key !== 'eventID' && (!sampleHeaderSet.has(key) || taxonOwnedTerm(key)) && occTerms.has(key)  && !defaults.keySet.has(key)).map(key => occTerms.get(key)),
          /*  ...defaults.occDefaultTerms */
         ];
       const relevantDnaTerms = [...sampleHeaders.filter(key => dnaTerms.has(key) && !defaults.keySet.has(key)).map(key => dnaTerms.get(key)),
@@ -202,8 +221,10 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
         reject(err)
       })
 
-      const getDataForTermfromSample = (sample, terms) => terms.filter(term => term.name in sample.metadata).map(term => sample.metadata[term.name] || "").join("\t");
-      const getDataForTermFromTaxon = (taxon, terms) => terms.filter(term => !sampleHeaderSet.has(term.name) && term.name in taxon.metadata).map(term => taxon.metadata[term.name] || "").join("\t"); 
+      // These two must partition the term list exactly as it was built above, in the same order,
+      // or the values stop lining up with the header written to meta.xml.
+      const getDataForTermfromSample = (sample, terms) => terms.filter(term => !taxonOwnedTerm(term.name) && term.name in sample.metadata).map(term => sample.metadata[term.name] || "").join("\t");
+      const getDataForTermFromTaxon = (taxon, terms) => terms.filter(term => (!sampleHeaderSet.has(term.name) || taxonOwnedTerm(term.name)) && term.name in taxon.metadata).map(term => taxon.metadata[term.name] || "").join("\t");
        
 /*       biomData.columns.forEach((c, cidx) => {
            const rowData = biomData.getDataColumn(c.id);
@@ -239,12 +260,12 @@ export const biomToDwc = async (biomData, termMapping = { taxa: {}, samples: {},
                     // row = taxon, column = sample 
                     const row = biomData.rows[i];
                     const occurrenceId = `${c.id}:${row.id}`;
-                    const sampleId = c.id;
-        
-                    const occSampleData = getDataForTermfromSample(c, relevantOccTerms);         
+                    const eventId = util.eventIdForSample(c, useProvidedEventId);
+
+                    const occSampleData = getDataForTermfromSample(c, relevantOccTerms);
                     const occTaxonData = getDataForTermFromTaxon(row, relevantOccTerms);
-        
-                   if(!occStream.write(`${occurrenceId}\t${occSampleData ? `${occSampleData}\t` : ""}${occTaxonData ? `${occTaxonData}\t` : ""}${_.get(c, 'metadata.readCount','')}\t${DEFAULT_UNIT}\t${r}\t${DEFAULT_UNIT}\t${BASIS_OF_RECORD}\t${sampleId}\n`)){
+
+                   if(!occStream.write(`${occurrenceId}\t${occSampleData ? `${occSampleData}\t` : ""}${occTaxonData ? `${occTaxonData}\t` : ""}${_.get(c, 'metadata.readCount','')}\t${DEFAULT_UNIT}\t${r}\t${DEFAULT_UNIT}\t${BASIS_OF_RECORD}\t${eventId}\n`)){
                     await once(occStream, 'drain');
                    };
         

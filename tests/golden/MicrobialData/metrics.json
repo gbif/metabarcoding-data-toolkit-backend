@@ -1,0 +1,120 @@
+{
+  "totalReads": 297311,
+  "otuCountPrSample": {
+    "mean": 87.412698413,
+    "stdev": 25.140017528
+  },
+  "readSumPrSample": {
+    "mean": 4719.222222222,
+    "stdev": 255.15001561
+  },
+  "sampleCountPrOtu": {
+    "mostFrequent": [
+      {
+        "key": "3",
+        "val": 21,
+        "id": "ASV_000021"
+      },
+      {
+        "key": "12",
+        "val": 21,
+        "id": "ASV_000095"
+      },
+      {
+        "key": "16",
+        "val": 21,
+        "id": "ASV_000189"
+      },
+      {
+        "key": "34",
+        "val": 21,
+        "id": "ASV_000513"
+      },
+      {
+        "key": "43",
+        "val": 21,
+        "id": "ASV_000720"
+      },
+      {
+        "key": "62",
+        "val": 21,
+        "id": "ASV_001033"
+      },
+      {
+        "key": "74",
+        "val": 21,
+        "id": "ASV_001382"
+      },
+      {
+        "key": "28",
+        "val": 20,
+        "id": "ASV_000417"
+      },
+      {
+        "key": "36",
+        "val": 20,
+        "id": "ASV_000591"
+      },
+      {
+        "key": "60",
+        "val": 20,
+        "id": "ASV_001017"
+      }
+    ],
+    "leastFrequent": [
+      {
+        "key": "2109",
+        "val": 2,
+        "id": "ASV_150138"
+      },
+      {
+        "key": "2137",
+        "val": 2,
+        "id": "ASV_154205"
+      },
+      {
+        "key": "2171",
+        "val": 2,
+        "id": "ASV_158584"
+      },
+      {
+        "key": "2175",
+        "val": 2,
+        "id": "ASV_158588"
+      },
+      {
+        "key": "2201",
+        "val": 2,
+        "id": "ASV_163335"
+      },
+      {
+        "key": "2229",
+        "val": 2,
+        "id": "ASV_168630"
+      },
+      {
+        "key": "2235",
+        "val": 2,
+        "id": "ASV_168636"
+      },
+      {
+        "key": "2272",
+        "val": 2,
+        "id": "ASV_174501"
+      },
+      {
+        "key": "2315",
+        "val": 2,
+        "id": "ASV_180820"
+      },
+      {
+        "key": "2318",
+        "val": 2,
+        "id": "ASV_180823"
+      }
+    ],
+    "singletonsTotal": 1681
+  },
+  "singletonsTotal": 1681,
+  "taxonomicScope": {}
+}

@@ -1,0 +1,446 @@
+{
+  "totalReads": 43244,
+  "otuCountPrSample": {
+    "mean": 6.1,
+    "stdev": 2.024845673
+  },
+  "readSumPrSample": {
+    "mean": 4324.4,
+    "stdev": 5804.029121605
+  },
+  "sequenceLength": {
+    "mean": 172.142857143,
+    "stdev": 46.02964883
+  },
+  "sampleCountPrOtu": {
+    "mostFrequent": [
+      {
+        "key": "11",
+        "val": 9,
+        "DNA_sequence": "CACCACTCAAGCCTCGCTTGGTATTGGGCAACGCGGTCCGCCGCGTGCCTCAAATCGTCCGGCTGGGTCTTCTGTCCCCTAAGCGTTGTGGAAACTATTCGCTAAAGGGTGTTCGGGAGGCTACGCCGTAAAACAACCCCATTTCTAA",
+        "class": "Dothideomycetes",
+        "family": "Mycosphaerellaceae",
+        "genus": "Mycosphaerella",
+        "id": "39efbae3f448393c8795c2ee920ab1041e947c37",
+        "kingdom": "Fungi",
+        "order": "Capnodiales",
+        "phylum": "Ascomycota",
+        "scientificName": "Mycosphaerella_tassiana"
+      },
+      {
+        "key": "2",
+        "val": 8,
+        "DNA_sequence": "AGACTCAATCCCTCGGGTTTCCGAGGAGATTGGACTTGGGTGTTGCCGCTCTGCCGGCTCGCCTTAAAAGACTTAGCGGGATAGCACCGTAGTCGGCGTAATAAGTTTCGTCGGTGAAGGTTGTGATGACTGCTTACAATCGCCCTCGGGCAATTTTTGA",
+        "class": "Tremellomycetes",
+        "family": "Tremellales_fam_Incertae_sedis",
+        "genus": "Cryptococcus",
+        "id": "fcf6642261e836a14d1e996e9d19f5b5d5d633f9",
+        "kingdom": "Fungi",
+        "order": "Tremellales",
+        "phylum": "Basidiomycota",
+        "scientificName": "Cryptococcus_podzolicus"
+      },
+      {
+        "key": "7",
+        "val": 6,
+        "DNA_sequence": "AACACCTCAACCTCCTCTTGTTTTTTCAAAAGGAGGGTGGACTTGAGCTATCCCAACAACCTTCACCGGTAGGCGGGCGGCTTGAAATGCAGGTGCAGCTGGACTTTTATCTGAGCTAAAAGCATATCTATTTAGTCCTCGTCAAACAGGATTATTACTATTGCTGCAGCTAACATAAAGGATAATTGTCCTCATTGCTGACTGATGCAGGATTTTACGACACTTTATGTGTTGTTCA",
+        "class": "Mortierellomycotina_cls_Incertae_sedis",
+        "family": "Mortierellaceae",
+        "genus": "Mortierella",
+        "id": "be5255f9fb42b64df755d7ac2a169e1da5073d48",
+        "kingdom": "Fungi",
+        "order": "Mortierellales",
+        "phylum": "Zygomycota",
+        "scientificName": "Mortierella_humilis"
+      },
+      {
+        "key": "15",
+        "val": 5,
+        "DNA_sequence": "GTACCTTCAAGCTCTGCTTGGTGTTGGGTGTTTGTCTCGCCTTTGCGTGTAGACTCGCCTCAAAACAATTGGCAGCCGGCGTATTGATTTCGGAGCGCAGTACATCTCGCGCTTTGCACTCATAACGACGACGTCCAAAAGTACATTTTTACAC",
+        "class": "unidentified",
+        "family": "unidentified",
+        "genus": "unidentified",
+        "id": "46a23274b546988769f2e28dc88bc15abdf5c619",
+        "kingdom": "Fungi",
+        "order": "unidentified",
+        "phylum": "Ascomycota",
+        "scientificName": "Ascomycota_sp"
+      },
+      {
+        "key": "10",
+        "val": 4,
+        "DNA_sequence": "AACACCTCAAAGCTTTTGGATTTTTTAATCGAAAAGCTTTGGACTTGAGCAATCCCAACACCAATCTTTTTGAGATCGGTGGCGGGTTGCTTGAAATGCAGGTGCAGCTGGACATTCTCCTGAGCTAAAAGCATATTCATTTAGTCCCGTCAAACGGATTATTACTTTTGCTGCAGCTAACATAAAGGGAGTTTGACCGTATTGGCTGACTGATGCAGGATTTCACAAGGGTCGGCAACGATTCTTGTTAA",
+        "class": "Mortierellomycotina_cls_Incertae_sedis",
+        "family": "Mortierellaceae",
+        "genus": "Mortierella",
+        "id": "84b20b64ed622cdafb08ecda23795f03e15917d9",
+        "kingdom": "Fungi",
+        "order": "Mortierellales",
+        "phylum": "Zygomycota",
+        "scientificName": "Mortierella_sp"
+      },
+      {
+        "key": "16",
+        "val": 4,
+        "DNA_sequence": "AATCTCAACCATTAGGGTTTCTTAATGGCTTGGATTTGGGTGTTGCCAGTCTCTGGCTCGCCTTAAAGGAGTTAGCGAGTTTAACAATGTCGTCTGGCGTAATAAGTTTCGCTGGTAAGACTTGTGAAGTTTGCTTCTAATCGTCTTCGGACAATTACTTTGA",
+        "class": "Tremellomycetes",
+        "family": "Trichosporonaceae",
+        "genus": "Apiotrichum",
+        "id": "77bd35530c2c8408d23b3525908526794b09055d",
+        "kingdom": "Fungi",
+        "order": "Trichosporonales",
+        "phylum": "Basidiomycota",
+        "scientificName": "Apiotrichum_xylopini"
+      },
+      {
+        "key": "8",
+        "val": 3,
+        "DNA_sequence": "GAAACCAATGAGTCTCCGGACTTGTGTTGGGCTCCGCACCCTCGCGTTGCCTCGAAGCCATGGTCTAACCTGCGGACGACTCCAATCGGACCTGCCGCGGCGTGGCCCATACATAC",
+        "class": "Archaeorhizomycetes",
+        "family": "Archaeorhizomycetaceae",
+        "genus": "Archaeorhizomyces",
+        "id": "f3d6776aee2825dc927ec1964a2f2c09592de8c6",
+        "kingdom": "Fungi",
+        "order": "Archaeorhizomycetales",
+        "phylum": "Ascomycota",
+        "scientificName": "Archaeorhizomyces_sp"
+      },
+      {
+        "key": "12",
+        "val": 3,
+        "DNA_sequence": "AACAAGATCAACTCTAGTTGAGAGTTGGGATTGGCCTTATATATGCGGTAGTGTGTATTTGGCTTGAATTTATCGAGTTGATGAGCTTCCCAGCGCGGCTCAATGTGTGCTAGCGAGACAGTCGTCCCGATCTCACATTATTGTCGCGTTGCAGAGTTCTGACCACAGCTCGCTAAACCTATCAATCAA",
+        "class": "unidentified",
+        "family": "unidentified",
+        "genus": "unidentified",
+        "id": "dda4a9f2b4689962c88e000fbe06b19c7b648d4a",
+        "kingdom": "Fungi",
+        "order": "unidentified",
+        "phylum": "unidentified",
+        "scientificName": "Fungi_sp"
+      },
+      {
+        "key": "1",
+        "val": 2,
+        "DNA_sequence": "AAACCAATGAATCCCCAGGATTTGTGTTGGGCTCCGCATCGAATGCGTTGCCTCGAAGCCATGGTCTAACCTGCGGACGAGCTCCAATCGGACCTGCCGTGGGCGTGGCCCAGACCTTCTGA",
+        "class": "Archaeorhizomycetes",
+        "family": "Archaeorhizomycetaceae",
+        "genus": "Archaeorhizomyces",
+        "id": "282a4068f53f33244f372079ce7634af48ff32dc",
+        "kingdom": "Fungi",
+        "order": "Archaeorhizomycetales",
+        "phylum": "Ascomycota",
+        "scientificName": "Archaeorhizomyces_sp"
+      },
+      {
+        "key": "3",
+        "val": 2,
+        "DNA_sequence": "CACCCCTCAAAGATGACTCTTTGGCGTTGGGCAATGCCTAAAGGCATGCCTCAAAATCAGCGATGGTGATATTCAACCACAGGCGCACACACGTCGTCTAGCTGGCGGGATGTTGACAGTCAATTGATGAATTTCTAAA",
+        "class": "Lecanoromycetes",
+        "family": "Parmeliaceae",
+        "genus": "Parmelia",
+        "id": "90774b6411d6f8af6bb92a122bc5a5c42f661f8c",
+        "kingdom": "Fungi",
+        "order": "Lecanorales",
+        "phylum": "Ascomycota",
+        "scientificName": "Parmelia_sp"
+      }
+    ],
+    "leastFrequent": [
+      {
+        "key": "15",
+        "val": 5,
+        "DNA_sequence": "GTACCTTCAAGCTCTGCTTGGTGTTGGGTGTTTGTCTCGCCTTTGCGTGTAGACTCGCCTCAAAACAATTGGCAGCCGGCGTATTGATTTCGGAGCGCAGTACATCTCGCGCTTTGCACTCATAACGACGACGTCCAAAAGTACATTTTTACAC",
+        "class": "unidentified",
+        "family": "unidentified",
+        "genus": "unidentified",
+        "id": "46a23274b546988769f2e28dc88bc15abdf5c619",
+        "kingdom": "Fungi",
+        "order": "unidentified",
+        "phylum": "Ascomycota",
+        "scientificName": "Ascomycota_sp"
+      },
+      {
+        "key": "10",
+        "val": 4,
+        "DNA_sequence": "AACACCTCAAAGCTTTTGGATTTTTTAATCGAAAAGCTTTGGACTTGAGCAATCCCAACACCAATCTTTTTGAGATCGGTGGCGGGTTGCTTGAAATGCAGGTGCAGCTGGACATTCTCCTGAGCTAAAAGCATATTCATTTAGTCCCGTCAAACGGATTATTACTTTTGCTGCAGCTAACATAAAGGGAGTTTGACCGTATTGGCTGACTGATGCAGGATTTCACAAGGGTCGGCAACGATTCTTGTTAA",
+        "class": "Mortierellomycotina_cls_Incertae_sedis",
+        "family": "Mortierellaceae",
+        "genus": "Mortierella",
+        "id": "84b20b64ed622cdafb08ecda23795f03e15917d9",
+        "kingdom": "Fungi",
+        "order": "Mortierellales",
+        "phylum": "Zygomycota",
+        "scientificName": "Mortierella_sp"
+      },
+      {
+        "key": "16",
+        "val": 4,
+        "DNA_sequence": "AATCTCAACCATTAGGGTTTCTTAATGGCTTGGATTTGGGTGTTGCCAGTCTCTGGCTCGCCTTAAAGGAGTTAGCGAGTTTAACAATGTCGTCTGGCGTAATAAGTTTCGCTGGTAAGACTTGTGAAGTTTGCTTCTAATCGTCTTCGGACAATTACTTTGA",
+        "class": "Tremellomycetes",
+        "family": "Trichosporonaceae",
+        "genus": "Apiotrichum",
+        "id": "77bd35530c2c8408d23b3525908526794b09055d",
+        "kingdom": "Fungi",
+        "order": "Trichosporonales",
+        "phylum": "Basidiomycota",
+        "scientificName": "Apiotrichum_xylopini"
+      },
+      {
+        "key": "8",
+        "val": 3,
+        "DNA_sequence": "GAAACCAATGAGTCTCCGGACTTGTGTTGGGCTCCGCACCCTCGCGTTGCCTCGAAGCCATGGTCTAACCTGCGGACGACTCCAATCGGACCTGCCGCGGCGTGGCCCATACATAC",
+        "class": "Archaeorhizomycetes",
+        "family": "Archaeorhizomycetaceae",
+        "genus": "Archaeorhizomyces",
+        "id": "f3d6776aee2825dc927ec1964a2f2c09592de8c6",
+        "kingdom": "Fungi",
+        "order": "Archaeorhizomycetales",
+        "phylum": "Ascomycota",
+        "scientificName": "Archaeorhizomyces_sp"
+      },
+      {
+        "key": "12",
+        "val": 3,
+        "DNA_sequence": "AACAAGATCAACTCTAGTTGAGAGTTGGGATTGGCCTTATATATGCGGTAGTGTGTATTTGGCTTGAATTTATCGAGTTGATGAGCTTCCCAGCGCGGCTCAATGTGTGCTAGCGAGACAGTCGTCCCGATCTCACATTATTGTCGCGTTGCAGAGTTCTGACCACAGCTCGCTAAACCTATCAATCAA",
+        "class": "unidentified",
+        "family": "unidentified",
+        "genus": "unidentified",
+        "id": "dda4a9f2b4689962c88e000fbe06b19c7b648d4a",
+        "kingdom": "Fungi",
+        "order": "unidentified",
+        "phylum": "unidentified",
+        "scientificName": "Fungi_sp"
+      },
+      {
+        "key": "1",
+        "val": 2,
+        "DNA_sequence": "AAACCAATGAATCCCCAGGATTTGTGTTGGGCTCCGCATCGAATGCGTTGCCTCGAAGCCATGGTCTAACCTGCGGACGAGCTCCAATCGGACCTGCCGTGGGCGTGGCCCAGACCTTCTGA",
+        "class": "Archaeorhizomycetes",
+        "family": "Archaeorhizomycetaceae",
+        "genus": "Archaeorhizomyces",
+        "id": "282a4068f53f33244f372079ce7634af48ff32dc",
+        "kingdom": "Fungi",
+        "order": "Archaeorhizomycetales",
+        "phylum": "Ascomycota",
+        "scientificName": "Archaeorhizomyces_sp"
+      },
+      {
+        "key": "3",
+        "val": 2,
+        "DNA_sequence": "CACCCCTCAAAGATGACTCTTTGGCGTTGGGCAATGCCTAAAGGCATGCCTCAAAATCAGCGATGGTGATATTCAACCACAGGCGCACACACGTCGTCTAGCTGGCGGGATGTTGACAGTCAATTGATGAATTTCTAAA",
+        "class": "Lecanoromycetes",
+        "family": "Parmeliaceae",
+        "genus": "Parmelia",
+        "id": "90774b6411d6f8af6bb92a122bc5a5c42f661f8c",
+        "kingdom": "Fungi",
+        "order": "Lecanorales",
+        "phylum": "Ascomycota",
+        "scientificName": "Parmelia_sp"
+      },
+      {
+        "key": "4",
+        "val": 2,
+        "DNA_sequence": "AACACCTCAACCTCTCTTTTTTGATAAAAAAAAGGGAGGGTGGACTTGAGCTATCCCAACGACCTTCACCGGTAGGCGGGCGGCTTGAAATGCAGGTGCAGCTGGACTTTTATCTGAGCTAAAAGCATATCTATTTAGTCCTCGTCAAACAGGATTATTACTTTTGCTGCAGCTAACATAAAGGATAATTGTCCTCTTTGCTGACTGATGCAGGATTTTACGACACTTTATGTGTTGTTCA",
+        "class": "Mortierellomycotina_cls_Incertae_sedis",
+        "family": "Mortierellaceae",
+        "genus": "Mortierella",
+        "id": "efa49da6c35317a5fb9d9551e631656448ac4a0e",
+        "kingdom": "Fungi",
+        "order": "Mortierellales",
+        "phylum": "Zygomycota",
+        "scientificName": "Mortierella_minutissima"
+      },
+      {
+        "key": "5",
+        "val": 2,
+        "DNA_sequence": "AACTCATACCTTCTTAGTGTGTTGGGCCTCGCCCCAGCGGCGTAGCCTCAAAGTCATTGGTCTAAAGGCGGACAAGATCCATTGGGACCGACCGTTTGGGACCATAAACCTCTG",
+        "class": "Archaeorhizomycetes",
+        "family": "unidentified",
+        "genus": "unidentified",
+        "id": "1b247938f45848d8761666c36ca6d73b3fccd049",
+        "kingdom": "Fungi",
+        "order": "Archaeorhizomycetales",
+        "phylum": "Ascomycota",
+        "scientificName": "Archaeorhizomycetales_sp"
+      },
+      {
+        "key": "17",
+        "val": 2,
+        "DNA_sequence": "AAAACCACTCAAGCTCTTTTGCTTGGTATTGGAAGATGAGTATGCTTTGTTATACTCACTTTCGAAATTCAAAGGCGTAGAGCCCCACGTGCCACGGCGTAGTAAGTTTTCTTTCGCTTGGAATGTGAGGTGATATTGCCACAAACCCCCAATTTTTCTA",
+        "class": "Pezizomycetes",
+        "family": "Pyronemataceae",
+        "genus": "Pseudaleuria",
+        "id": "ef9b606b58543ed8319aa0ce2b4ebae25b92d719",
+        "kingdom": "Fungi",
+        "order": "Pezizales",
+        "phylum": "Ascomycota",
+        "scientificName": "Pseudaleuria_sp"
+      }
+    ],
+    "singletonsTotal": 7
+  },
+  "singletonsTotal": 7,
+  "jaccard": [
+    {
+      "Sample": "NV001",
+      "x": 0.012636116,
+      "y": 0.26577263
+    },
+    {
+      "Sample": "NV002",
+      "x": -0.020288381,
+      "y": -0.056235575
+    },
+    {
+      "Sample": "NV003",
+      "x": -0.081020936,
+      "y": -0.113084081
+    },
+    {
+      "Sample": "NV004",
+      "x": -0.369612822,
+      "y": -0.154443038
+    },
+    {
+      "Sample": "NV005",
+      "x": 0.02266955,
+      "y": 0.02381142
+    },
+    {
+      "Sample": "NV006",
+      "x": 0.380248145,
+      "y": -0.200907517
+    },
+    {
+      "Sample": "NV007",
+      "x": -0.037080174,
+      "y": -0.145682643
+    },
+    {
+      "Sample": "NV008",
+      "x": -0.011361253,
+      "y": 0.270579073
+    },
+    {
+      "Sample": "NV009",
+      "x": 0.003801758,
+      "y": 0.085631931
+    },
+    {
+      "Sample": "NT010",
+      "x": 0.100007996,
+      "y": 0.024557801
+    }
+  ],
+  "brayCurtis": [
+    {
+      "Sample": "NV001",
+      "x": 0.908285834,
+      "y": 1.86140234
+    },
+    {
+      "Sample": "NV002",
+      "x": -36.409538993,
+      "y": 7.358925782
+    },
+    {
+      "Sample": "NV003",
+      "x": -6.186843336,
+      "y": 14.262450018
+    },
+    {
+      "Sample": "NV004",
+      "x": 3.209740676,
+      "y": 36.83970317
+    },
+    {
+      "Sample": "NV005",
+      "x": 6.217629863,
+      "y": -0.446335051
+    },
+    {
+      "Sample": "NV006",
+      "x": -12.084286094,
+      "y": -37.370412729
+    },
+    {
+      "Sample": "NV007",
+      "x": 42.662055429,
+      "y": -5.090622491
+    },
+    {
+      "Sample": "NV008",
+      "x": 0.119082725,
+      "y": -0.294264072
+    },
+    {
+      "Sample": "NV009",
+      "x": 1.979624296,
+      "y": -1.038706444
+    },
+    {
+      "Sample": "NT010",
+      "x": -0.415750399,
+      "y": -16.082140523
+    }
+  ],
+  "geographicScope": {
+    "northBoundingCoordinate": 57.644761744,
+    "southBoundingCoordinate": 57.116878223,
+    "westBoundingCoordinate": 8.655664167,
+    "eastBoundingCoordinate": 10.407221816
+  },
+  "temporalScope": {
+    "from": "2014-11-16",
+    "to": "2014-11-18"
+  },
+  "taxonomicScope": {
+    "class": [
+      "Archaeorhizomycetes",
+      "Tremellomycetes",
+      "Lecanoromycetes",
+      "Mortierellomycotina_cls_Incertae_sedis",
+      "Agaricomycetes",
+      "Dothideomycetes",
+      "unidentified",
+      "Saccharomycetes",
+      "Pezizomycetes"
+    ],
+    "family": [
+      "Archaeorhizomycetaceae",
+      "Tremellales_fam_Incertae_sedis",
+      "Parmeliaceae",
+      "Mortierellaceae",
+      "unidentified",
+      "Clavulinaceae",
+      "Mycosphaerellaceae",
+      "Trichosporonaceae",
+      "Pyronemataceae",
+      "Sporormiaceae",
+      "Didymellaceae"
+    ],
+    "kingdom": [
+      "Fungi"
+    ],
+    "order": [
+      "Archaeorhizomycetales",
+      "Tremellales",
+      "Lecanorales",
+      "Mortierellales",
+      "Cantharellales",
+      "Capnodiales",
+      "unidentified",
+      "Saccharomycetales",
+      "Trichosporonales",
+      "Pezizales",
+      "Pleosporales"
+    ],
+    "phylum": [
+      "Ascomycota",
+      "Basidiomycota",
+      "Zygomycota",
+      "unidentified",
+      "Rozellomycota"
+    ]
+  }
+}

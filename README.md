@@ -29,6 +29,8 @@ This will give you an `AUTHORIZATION_TOKEN` valid for 30 minutes,
 
 
 ## Uploading and validating data files
+The input formats the MDT accepts, and how files are recognised, are described in [docs/input-formats.md](docs/input-formats.md).
+
 Start by uploading a set of files to the MDT. Replace `@/Path/to/OTU_table.tsv`, `@/Path/to/samples.tsv` etc with the actual paths to your data files.
 
 ````

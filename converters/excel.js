@@ -3,74 +3,89 @@ import fs from "fs";
 import fileNames from "../validation/filenames.js";
 import { Biom } from "biojs-io-biom";
 import config from "../config.js";
-import util, { getTaxonomyArray, getMetaDataRow } from "../util/index.js";
-import { writeMapping } from "../util/filesAndDirectories.js";
+import util, { getTaxonomyArray, getMetaDataRow, embeddedTaxonColumnIndices, sampleIdHeaderByOtuOverlap } from "../util/index.js";
+import { writeMapping, readMapping } from "../util/filesAndDirectories.js";
 import { getGroupMetaDataAsJsonString } from "../validation/termMapper.js";
 import {getStreamAsArrayBuffer} from 'get-stream';
 
 // import {getDataForBiomFile, getMetadataRowsWithNoIdInOTUtable} from './dataintegrity.js';
 
 const extractTaxaFromOTUtable = (otuTable, samples, termMapping) => {
-  try {
-    const notSamplIdHeaderIndices = getTaxonHeaderIndicesFromOtuTable(
-      otuTable,
-      samples,
-      termMapping
-    );
-    // Columns are picked by position, never with filter: sheet_to_json leaves a hole for an empty
-    // cell and filter skips holes, which moved every later value one column to the left.
-    const taxonIndexSet = new Set(notSamplIdHeaderIndices);
-    const countIndices = [...Array(otuTable?.data?.[0]?.length || 0).keys()].filter(
-      (idx) => idx === 0 || !taxonIndexSet.has(idx)
-    );
-    const taxonData = otuTable?.data.map((d) =>
-      notSamplIdHeaderIndices.map((idx) => d[idx])
-    );
-    const otuTableData = otuTable?.data.map((d) =>
-      countIndices.map((idx) => d[idx])
-    );
+  // Any failure here is rethrown. Returning undefined instead left the caller with no taxonomy
+  // *and* no OTU table, so the workbook looked as though neither sheet had been found and the
+  // validation worker went on to read headers off undefined.
+  const notSamplIdHeaderIndices = getTaxonHeaderIndicesFromOtuTable(
+    otuTable,
+    samples,
+    termMapping
+  );
+  // Columns are picked by position, never with filter: sheet_to_json leaves a hole for an empty
+  // cell and filter skips holes, which moved every later value one column to the left.
+  const taxonIndexSet = new Set(notSamplIdHeaderIndices);
+  const countIndices = [...Array(otuTable?.data?.[0]?.length || 0).keys()].filter(
+    (idx) => idx === 0 || !taxonIndexSet.has(idx)
+  );
+  const taxonData = otuTable?.data.map((d) =>
+    notSamplIdHeaderIndices.map((idx) => d[idx])
+  );
+  const otuTableData = otuTable?.data.map((d) =>
+    countIndices.map((idx) => d[idx])
+  );
 
-    return {
-      otuTable: {
-        name: "otuTable",
-        data: otuTableData,
-      },
-      taxa: {
-        name: "taxa",
-        data: taxonData,
-      },
-    };
-  } catch (error) {
-    console.log(error);
-  }
+  return {
+    otuTable: {
+      name: "otuTable",
+      data: otuTableData,
+    },
+    taxa: {
+      name: "taxa",
+      data: taxonData,
+    },
+  };
 };
 
-const getTaxonHeaderIndicesFromOtuTable = (otuTable, samples, termMapping) => {
-  let sampleId = termMapping?.samples?.id;
+// Sheets hold their rows as arrays, so put the columns in the shape the shared rule expects. This
+// runs before the mapping step exists, so without it a workbook whose sample id column is named
+// anything but "id" could not be split at all.
+const findSampleIdHeaderByOtuOverlap = (sampleHeaders, sampleRows, otuTableHeaders) =>
+  sampleIdHeaderByOtuOverlap(
+    (sampleHeaders || []).map((header, idx) => ({
+      header,
+      values: (sampleRows || []).map((r) => r?.[idx]),
+    })),
+    otuTableHeaders
+  );
 
-  const sampleHeaders = samples?.data[0];
-  if (!sampleId) {
-    sampleId = sampleHeaders.find(
-      (e) => !!e && ["id", "sampleid"].includes(e.toLowerCase())
-    );
-  }
+const getTaxonHeaderIndicesFromOtuTable = (otuTable, samples, termMapping) => {
+  const sampleHeaders = samples?.data?.[0] || [];
+  const sampleRows = samples?.data?.slice(1) || [];
+  const otuTableHeaders = otuTable?.data?.[0] || [];
+
+  const sampleId =
+    termMapping?.samples?.id ||
+    sampleHeaders.find(
+      (e) => !!e && ["id", "sampleid"].includes(e.toString().toLowerCase())
+    ) ||
+    findSampleIdHeaderByOtuOverlap(sampleHeaders, sampleRows, otuTableHeaders);
+
   if (!sampleId) {
     throw "No sample id in sample file";
   }
   const sampleIdIndex = sampleHeaders.indexOf(sampleId);
   // Create a Set if sample IDs:
-  const sampleIdSet = new Set(
-    samples?.data.slice(1).map((s) => s[sampleIdIndex])
-  );
-  const otuTableHeaders = otuTable?.data[0];
+  const sampleIdSet = new Set(sampleRows.map((s) => s[sampleIdIndex]));
 
   // Find all headers that are not a sample id
-  const notSamplIdHeaderIndices = otuTableHeaders.reduce((acc, curr, idx) => {
-    if (!sampleIdSet.has(curr)) {
-      acc.push(idx);
-    }
-    return acc;
-  }, []);
+  const notSamplIdHeaderIndices = embeddedTaxonColumnIndices(
+    otuTableHeaders,
+    sampleIdSet
+  );
+
+  // Every header unrecognised means the id column was the wrong one. Splitting on that would
+  // leave the OTU table with nothing but its first column, so treat it as no taxonomy found.
+  if (notSamplIdHeaderIndices.length === otuTableHeaders.length) {
+    throw "No sample id in sample file";
+  }
 
   return notSamplIdHeaderIndices;
 };
@@ -298,6 +313,7 @@ export const toBiom = async (
           sampleIdsWithNoRecordInSampleFile,
           taxonIdsWithNoRecordInOtuTable,
           taxonIdsWithNoRecordInTaxonFile,
+          duplicateEventIdsInSampleFile: util.duplicateSampleEventIds(biom?.columns),
         } /* sampleIdsWithNoRecordInSampleFile */,
       });
     } catch (error) {
@@ -430,8 +446,11 @@ export const readXlsxHeaders = async (id, fileName, version) => {
           name: n,
           data: xlsx.utils.sheet_to_json(workbook.Sheets[n], { header: 1 }),
         }));
+        // Pass the stored mapping, as the two processing paths do. On the first validation there
+        // is none and the sample id is worked out from the sheets; once the user has chosen one,
+        // a re-validation honours it rather than guessing again.
         const { otuTable, taxa, samples, defaultValues } =
-          determineFileNames(data);
+          determineFileNames(data, await readMapping(id, version));
 
         const otuTableColumns = (otuTable?.data?.[0]?.slice(1) || []).map(
           (c) => c.trim()
@@ -457,12 +476,19 @@ export const readXlsxHeaders = async (id, fileName, version) => {
           taxonHeaders: taxa?.data?.[0],
         };
         console.log(headers)
+        // Prefer the column that labels the OTU table's own columns over the first one, so the id
+        // this reports - and that the validation worker writes into the mapping - is one the OTU
+        // table can actually be joined on.
         let sampleId = headers.sampleHeaders.find(
           (e) => !!e && ["id"].includes(e.toLowerCase())
+        ) || findSampleIdHeaderByOtuOverlap(
+          headers.sampleHeaders || [],
+          samples?.data?.slice(1) || [],
+          otuTable?.data?.[0] || []
         ) ||  headers.sampleHeaders[0];
-        let taxonId = headers.taxonHeaders.find(
+        let taxonId = (headers.taxonHeaders || []).find(
           (e) => !!e && ["id"].includes(e.toLowerCase())
-        ) ||  headers.taxonHeaders[0];
+        ) ||  (headers.taxonHeaders || [])[0];
 
         console.log("samp id "+sampleId)
         const sampleIdIndex = headers.sampleHeaders.indexOf(sampleId);
@@ -542,7 +568,7 @@ export const readXlsxHeaders = async (id, fileName, version) => {
             };
           });
 
-        resolve({ headers, sheets });
+        resolve({ headers, sheets, sampleId, taxonId });
       }
       } catch (error) {
         reject(error);
