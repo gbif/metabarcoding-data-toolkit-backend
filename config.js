@@ -2,6 +2,7 @@
 import * as url from 'url';
 
 import fs from 'fs'
+import crypto from 'crypto'
 import base64 from 'base-64';
 // import {getYargs} from './util/index.js'
 const gbifBaseUrl = {
@@ -57,6 +58,14 @@ try {
      gbifCredentials = JSON.parse(creds)
      gbifCredentials.uatAuth = `Basic ${base64.encode(gbifCredentials.uatPublishingOrganizationKey + ":" + gbifCredentials.uatOrganizationToken)}`
      gbifCredentials.organizationFilePath = yargs.organizationfile || process.env.MDT_ORGANIZATIONFILE;
+     // Signs the MDT's own login tokens. Without it a random secret is made at startup, and every
+     // login ends when the server restarts.
+     if (gbifCredentials.tokenSecret === undefined) {
+        console.log("No tokenSecret in the credentials file: logins will not survive a restart")
+        gbifCredentials.tokenSecret = crypto.randomBytes(32).toString('base64')
+     } else if (typeof gbifCredentials.tokenSecret !== 'string' || gbifCredentials.tokenSecret.length < 32) {
+        throw new Error("tokenSecret in the credentials file must be at least 32 characters")
+     }
      if(!!yargs?.port){
         gbifCredentials.port = yargs?.port
      }
@@ -94,6 +103,7 @@ const config = {
         termsLink: gbifCredentials?.termsLink,
         installationAdmins: gbifCredentials?.installationAdmins,
         supportAdmins: gbifCredentials?.supportAdmins || [],
+        tokenSecret: gbifCredentials?.tokenSecret,
         installationContactEmail: gbifCredentials?.installationContactEmail,
         dataStorage :   gbifCredentials?.dataDirectory,
         ebiOntologyService: 'https://www.ebi.ac.uk/ols/api/search',
@@ -127,6 +137,7 @@ const config = {
         termsLink: gbifCredentials?.termsLink,
         installationAdmins: gbifCredentials?.installationAdmins,
         supportAdmins: gbifCredentials?.supportAdmins || [],
+        tokenSecret: gbifCredentials?.tokenSecret,
         installationContactEmail: gbifCredentials?.installationContactEmail,
         dataStorage :   gbifCredentials?.dataDirectory,
         //dataStorage : "/mnt/auto/misc/hosted-datasets.gbif-uat.org/edna/" + gbifCredentials?.dataDirectory,
@@ -166,6 +177,7 @@ const config = {
         termsLink: gbifCredentials?.termsLink,
         installationAdmins: gbifCredentials?.installationAdmins,
         supportAdmins: gbifCredentials?.supportAdmins || [],
+        tokenSecret: gbifCredentials?.tokenSecret,
         installationContactEmail: gbifCredentials?.installationContactEmail,
         dataStorage :   gbifCredentials?.dataDirectory,
         // dataStorage : "/mnt/auto/misc/hosted-datasets.gbif.org/edna/"  + gbifCredentials?.dataDirectory,

@@ -1,76 +1,65 @@
 import config from '../../config.js'
 import db from '../db/index.js'
 import axios from 'axios'
+import { issueWebToken, renewWebToken, verify, setGbifToken } from './tokens.js'
 
-//const url = config.env === "prod" ? config.gbifBaseUrlProd : config.gbifBaseUrl
+const adminFlags = userName => ({
+    isAdmin: config.installationAdmins?.includes(userName) || config.supportAdmins.includes(userName),
+    isSupportAdmin: config.supportAdmins.includes(userName)
+})
 
-async function login(auth) {
-    // Use prod users for all user management
-    let loginRequest = {
+// GBIF accounts are the identity: the user's Basic auth goes to the registry (prod, for all
+// environments) once. The registry's token is kept server side for the few calls that act as
+// the user at GBIF; the client gets the MDT's own token.
+async function gbifLogin(auth) {
+    const response = await axios({
         url: `${config.gbifRegistryBaseUrl.prod}user/login`,
         method: 'get',
         headers: {
             authorization: auth
         }
-    };
-    try {
-        let response = await axios(loginRequest);
-        const user = response?.data
-        return {...user, isAdmin: config.installationAdmins.includes(user?.userName) || config.supportAdmins.includes(user.userName), isSupportAdmin: config.supportAdmins.includes(user.userName)};
-    } catch (error) {
-        console.log(error)
-        throw error
+    });
+    const { token: gbifToken, ...user } = response?.data || {}
+    if (!user?.userName) {
+        throw { response: { status: 403 } }
     }
-    
+    return { user, gbifToken }
 }
 
+async function login(auth) {
+    const { user, gbifToken } = await gbifLogin(auth)
+    setGbifToken(user.userName, gbifToken)
+    return { ...user, token: issueWebToken(user), ...adminFlags(user.userName) };
+}
+
+// The user behind an MDT token, or null. For a browser session, user.token is the renewed token
 async function getFromToken(auth) {
-    // Use prod users for all user management
-    let options = {
-        method: 'post',
-        url: `${config.gbifRegistryBaseUrl.prod}user/whoami`,
-        headers: {
-            authorization: auth
-        }
-        
-    };
-    
-
-    try {
-        let response = await axios(options);
-        let user = response?.data;
-        if(user){
-            let datasets = [] 
-            try {
-                datasets = await db.getUserDatasets(user?.userName)
-            } catch (error) {
-                console.log(`DB error, trying to get datasets for ${user?.userName}`)
-                console.log(error)
-            }
-            if(!response?.headers?.token){
-                console.log(`No token from registry? Token: ${response?.headers?.token}`)
-            }
-            return {...user,datasets: datasets, token: response?.headers?.token || '', isAdmin: config.installationAdmins.includes(user.userName) || config.supportAdmins.includes(user.userName), isSupportAdmin: config.supportAdmins.includes(user.userName)};
-        } else {
-            throw "No user from that token, expired?"
-        }
-        
-
-    } catch (error) {
-        if(error?.response?.status || error?.response?.statusText){
-            console.log(`Status: ${error?.response?.status} ${error?.response?.statusText || ""}`)
-        }
-        if(auth && [401, 403].includes(error?.response?.status)){
-            console.log("Auth header: "+ auth)
-        }
-       // console.log(error)
-        throw error;  
+    const claims = verify(auth)
+    if (!claims) {
+        return null
     }
-    
-} 
+    const userName = claims.sub
+    let datasets = []
+    try {
+        datasets = await db.getUserDatasets(userName)
+    } catch (error) {
+        console.log(`DB error, trying to get datasets for ${userName}`)
+        console.log(error)
+    }
+    return {
+        userName,
+        firstName: claims.firstName,
+        lastName: claims.lastName,
+        email: claims.email,
+        datasets,
+        claims,
+        token: claims.kind === 'web' ? renewWebToken(claims) : undefined,
+        ...adminFlags(userName)
+    };
+}
 
 export default {
-    
-    login: login,
-    getFromToken: getFromToken
+    login,
+    gbifLogin,
+    getFromToken
 };

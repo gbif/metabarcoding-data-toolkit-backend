@@ -15,6 +15,8 @@ node server/index.js --credentials /Path/to/credentials.json --organizationfile 
 In order to run very large datasets, increase heap space
 `export NODE_OPTIONS="--max-old-space-size=6144" # Increase to 6 GB`
 
+Logins are checked against GBIF accounts, after which the MDT issues its own tokens, signed with `tokenSecret` from the credentials file. Make it a random string of at least 32 characters, for example with `openssl rand -base64 48`, and keep it as secret as the rest of that file: anyone who has it can sign in as any user. Changing it logs everyone out. Without a `tokenSecret`, a random one is made at every start, and every login ends when the server restarts.
+
 # API
 This section describes the API methods needed to run a dataset through the MDT, from raw data files to a Darwin Core Archive, published to GBIF.org.
 
@@ -25,7 +27,9 @@ In order to operate the Metabarcoding Data Toolkit through the API, you need to 
 
 `curl -u username:password -X 'POST' 'https://mdt.gbif.org/service/auth/login' | jq .token`
 
-This will give you an `AUTHORIZATION_TOKEN` valid for 30 minutes,
+This will give you an `AUTHORIZATION_TOKEN` issued by this MDT. It is valid for 2 hours, and each request renews it: the response carries a new one in its `token` header. It ends 24 hours after login at the latest.
+
+For scripts and tools, an API token is easier: create one on your profile page in the MDT (`https://mdt.gbif.org/user-profile`) with a lifetime of 1, 7 or 30 days. It is shown once, gives access to your datasets on this MDT only, is not renewed, and can be revoked on the same page. API tokens end when the MDT restarts.
 
 
 ## Uploading and validating data files
@@ -164,6 +168,13 @@ It is also possible to run a validation report, using the [GBIF data-validator](
 curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/data-validator' \
   -X 'POST' \
   -H 'Authorization: Bearer <AUTHORIZATION_TOKEN>' | jq .key
+````
+
+The data validator is used as your GBIF account, with the GBIF login from when you logged in to the MDT. When that has expired (after about 30 minutes), or when you use an API token, the response is `401 {"error": "gbif-login-required"}`. Log in to GBIF again, with your MDT token in `X-MDT-Token`, and repeat the request:
+
+````
+curl -u username:password -X 'POST' 'https://mdt.gbif.org/service/auth/gbif-login' \
+  -H 'X-MDT-Token: Bearer <AUTHORIZATION_TOKEN>'
 ````
 
 This will return a `VALIDATION_KEY` from the gif data validator. The validation report will be accessible at `https://www.gbif.org/tools/data-validator/<VALIDATION_KEY>`. You will receive an email when the validation has finished.

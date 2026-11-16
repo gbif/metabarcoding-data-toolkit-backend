@@ -7,6 +7,7 @@ import {
   getCurrentDatasetVersion,
 } from "../util/filesAndDirectories.js";
 import auth from "./Auth/auth.js";
+import { gbifAuthorization, sendGbifLoginRequired } from "./Auth/tokens.js";
 import db from "./db/index.js";
 import config from "../config.js";
 import axios from "axios";
@@ -81,25 +82,34 @@ const getInstallationAdmins = async (req, res) => {
 };
 
 const getOrganizationToken = async (req, res) => {
+  // The registry decides whether this GBIF account may see the organization's token
+  const authorization = gbifAuthorization(req.user?.userName);
+  if (!authorization) {
+    return sendGbifLoginRequired(res, req.user?.userName);
+  }
   try {
     let options = {
       method: "get",
       url: `${config.gbifRegistryBaseUrl[config.env === "prod" ? "prod" : "uat"]}organization/${req?.params?.key}/password`,
       headers: {
-        authorization: req?.headers?.authorization,
+        authorization,
       },
     };
     const response = await axios(options);
 
     res.send(response?.data);
   } catch (error) {
-    console.log(error);
-    res.sendStatus(error?.response?.status || 500);
+    console.log(error?.response?.status || error);
+    if (error?.response?.status === 401) {
+      sendGbifLoginRequired(res, req.user?.userName);
+    } else {
+      res.sendStatus(error?.response?.status || 500);
+    }
   }
 };
 
 export default (app) => {
-  app.get("/organization/:key/password", getOrganizationToken);
+  app.get("/organization/:key/password", auth.appendUser(), getOrganizationToken);
   app.get("/organization/suggest", getOrganizations);
   app.get("/installation-contact-email", getInstallationContactEmail);
   app.get("/installation-settings", getInstallationSettings);

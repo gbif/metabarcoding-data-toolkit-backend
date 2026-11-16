@@ -5,6 +5,7 @@ import axios from 'axios'
 import { getEml } from '../util/Eml/index.js';
 import {writeEmlJson, writeEmlXml, getCurrentDatasetVersion, getMetadata, dwcArchiveExists, getProcessingReport, writeProcessingReport} from '../util/filesAndDirectories.js'
 import auth from './Auth/auth.js';
+import { gbifAuthorization, sendGbifLoginRequired } from './Auth/tokens.js';
 import db from './db/index.js'
 import { md5 } from '../util/index.js';
 import { metadataReadiness } from '../validation/readiness.js';
@@ -79,6 +80,11 @@ const submitDwcToDataValidator = async (req, res) => {
                 if(!hasDwcArchive){
                     throw "No DWC Archive found"
                 }
+                // GBIF emails the validation report to the user, so it is submitted as them
+                const authorization = gbifAuthorization(req.user?.userName)
+                if(!authorization){
+                    return sendGbifLoginRequired(res, req.user?.userName)
+                }
                 const fileUrl =  config.env === 'local' ? `${config.dwcPublicAccessUrl}${req.params.id}.zip` : `${config.dwcPublicAccessUrl}${req.params.id}/${version}/archive.zip`
                 const formData = new FormData();
                 formData.append("fileUrl", fileUrl);
@@ -86,7 +92,7 @@ const submitDwcToDataValidator = async (req, res) => {
                     method: 'post',
                    url:  `${config.gbifBaseUrl.prod}validation/url`,
                    headers: {
-                     authorization: req.headers.authorization,
+                     authorization,
                      'content-type': 'multipart/form-data'
                  },
                    data: formData
@@ -106,6 +112,8 @@ const submitDwcToDataValidator = async (req, res) => {
                 console.log(error)
                 if(error === "No DWC Archive found" || error === "DwC archive does not exist"){
                     res.status(400).send(error)
+                } else if([401, 403].includes(error?.response?.status)){
+                    sendGbifLoginRequired(res, req.user?.userName)
                 } else {
                     res.sendStatus(500)
                 }

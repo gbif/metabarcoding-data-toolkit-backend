@@ -15,15 +15,18 @@ const appendUser = () => {
                     // A per-user credential the client adopts as its identity. The headers that
                     // keep it out of a shared cache are set for every response in server/index.js
                     // - they used to be set here, which meant userCanModifyDataset below sent the
-                    // same header with no cache directives at all.
-                    res.setHeader('token', user?.token);
+                    // same header with no cache directives at all. Only browser sessions are
+                    // renewed; an API token keeps its expiry.
+                    if (user.token) {
+                        res.setHeader('token', user.token);
+                    }
+                    next();
                 } else {
                    // removeTokenCookie(res);
                     res.removeHeader('token');
                     delete req.user;
+                    res.sendStatus(401)
                 }
-                
-                next();
             })
             .catch(function(err) {
                
@@ -41,7 +44,9 @@ const userCanModifyDataset = () => {
             .then((user) => {
                 if (user) {
                     req.user = user;
-                    res.setHeader('token', user?.token);
+                    if (user.token) {
+                        res.setHeader('token', user.token);
+                    }
                     const datasets = user?.datasets || [];
 
                     if(user.isAdmin || datasets.map(d => d.dataset_id).includes(req?.params?.id)){
