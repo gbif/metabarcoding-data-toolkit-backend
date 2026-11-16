@@ -82,8 +82,8 @@
   "singletonsTotal": 1,
   "geographicScope": {
     "northBoundingCoordinate": 57,
-    "southBoundingCoordinate": 0,
-    "westBoundingCoordinate": 0,
+    "southBoundingCoordinate": 56.5,
+    "westBoundingCoordinate": 8,
     "eastBoundingCoordinate": 8.5
   },
   "temporalScope": {

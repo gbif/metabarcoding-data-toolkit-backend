@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import { mean, std } from 'mathjs'
 import {getDataForDissimilarityPlot} from './ordination.js'
+import {isValidDecimalLatitude, isValidDecimalLongitude} from '../validation/coordinates.js'
 
 export const CARDINALITY_LIMIT = 1000 * 70000; // 1000 samples, 70000 OTUs
 
@@ -255,8 +256,12 @@ export const getGeographicScope =  (f) => {
 
     try {
         
-       const latitudes = f.get(`sample/metadata/decimalLatitude`).to_array();
-       const longitudes = f.get(`sample/metadata/decimalLongitude`).to_array();
+       // samples with a blank or invalid coordinate are left out rather than counted as 0
+       const latitudes = f.get(`sample/metadata/decimalLatitude`).to_array().filter(isValidDecimalLatitude);
+       const longitudes = f.get(`sample/metadata/decimalLongitude`).to_array().filter(isValidDecimalLongitude);
+       if(latitudes.length === 0 || longitudes.length === 0){
+        throw "No valid coordinates to calculate the geographic scope from"
+       }
        return {
         northBoundingCoordinate: Math.max(...latitudes),
         southBoundingCoordinate: Math.min(...latitudes),

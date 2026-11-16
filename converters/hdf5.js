@@ -107,6 +107,8 @@ const getIndptr_new = (sparseMatrix, idx, size) => {
 }
 
 
+const isBlank = data => typeof data === 'string' && data.trim() === ''
+
 const getTypeAndValues = (arr, attr) => {
     let length = -1;
     let type;
@@ -120,7 +122,9 @@ const getTypeAndValues = (arr, attr) => {
     const values = arr.map(elm => {
         const data = _.get(elm, attr)
 
-        if(typeof data === 'object' || isNaN(Number(data))){
+        // A blank cell does not make a column non-numeric, but it is not a number either:
+        // Number("") is 0, so it would be stored as 0 - a blank coordinate became 0,0
+        if(!isBlank(data) && (typeof data === 'object' || isNaN(Number(data)))){
             allValuesAreNumbers = false;
         }
         if (_.isArray(data)) {
@@ -170,7 +174,7 @@ const getTypeAndValues = (arr, attr) => {
     // use variable length string for the sequence
     return {
         type: ( key !== "DNA_sequence" &&  type === 'S' && length <= MAX_FIXED_STRING_LENGTH && length > 0) ? `${type}${length}` : type,
-        values,
+        values: type === 'd' ? values.map(v => isBlank(v) ? NaN : v) : values,
         shape
     }
 }
