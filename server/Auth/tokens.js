@@ -1,5 +1,4 @@
 import crypto from 'crypto'
-import jwt from 'jsonwebtoken'
 import config from '../../config.js'
 
 // The MDT's own login tokens. GBIF is only asked who the user is at login; after that a token is
@@ -23,7 +22,38 @@ const gbifTokens = new Map()     // userName -> {token, exp}, the GBIF registry 
 const now = () => Math.floor(Date.now() / 1000)
 const profile = user => ({ userName: user?.userName, firstName: user?.firstName, lastName: user?.lastName, email: user?.email })
 
-const sign = claims => jwt.sign(claims, config.tokenSecret, { algorithm: 'HS256', noTimestamp: true })
+// JWTs, HS256 only. A token is accepted only with exactly this header, so no other algorithm
+// (or "none") can be slipped in.
+const base64url = obj => Buffer.from(JSON.stringify(obj)).toString('base64url')
+const HEADER = base64url({ alg: 'HS256', typ: 'JWT' })
+const signature = data => crypto.createHmac('sha256', config.tokenSecret).update(data).digest('base64url')
+
+const sign = claims => {
+    const data = `${HEADER}.${base64url(claims)}`
+    return `${data}.${signature(data)}`
+}
+
+const payload = token => {
+    try {
+        return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'))
+    } catch (error) {
+        return null
+    }
+}
+
+const verifySignature = token => {
+    const parts = token.split('.')
+    if (parts.length !== 3 || parts[0] !== HEADER) {
+        return null
+    }
+    const expected = Buffer.from(signature(`${parts[0]}.${parts[1]}`))
+    const given = Buffer.from(parts[2])
+    if (expected.length !== given.length || !crypto.timingSafeEqual(expected, given)) {
+        return null
+    }
+    const claims = payload(token)
+    return claims && typeof claims.exp === 'number' && claims.exp > now() ? claims : null
+}
 
 export const issueWebToken = (user, authTime = now(), sid = crypto.randomUUID()) => {
     const exp = Math.min(now() + WEB_IDLE_SECONDS, authTime + WEB_MAX_SECONDS)
@@ -38,10 +68,8 @@ export const verify = authorization => {
     if (scheme !== 'Bearer' || !token) {
         return null
     }
-    let claims
-    try {
-        claims = jwt.verify(token, config.tokenSecret, { algorithms: ['HS256'] })
-    } catch (error) {
+    const claims = verifySignature(token)
+    if (!claims) {
         return null
     }
     if (claims.kind === 'web') {
@@ -101,7 +129,7 @@ export const revokeApiToken = (userName, sid) => {
 // The registry's JWT carries its own expiry (about 30 minutes); keep it only while it is valid
 export const setGbifToken = (userName, token) => {
     if (userName && token) {
-        gbifTokens.set(userName, { token, exp: jwt.decode(token)?.exp || now() + 25 * 60 })
+        gbifTokens.set(userName, { token, exp: payload(token)?.exp || now() + 25 * 60 })
     }
 }
 
