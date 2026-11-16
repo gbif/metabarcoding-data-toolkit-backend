@@ -69,6 +69,16 @@ taxonomy comes either as a text file or as a fasta file. A study file is optiona
 
 BIOM 1.0 (JSON) is not supported. Convert it with `biom convert --to-hdf5`.
 
+This format is built around what [QIIME 2](https://qiime2.org/) exports. QIIME 2 leaves the
+metadata inside the BIOM file empty, which is why the other files are needed:
+
+| File | QIIME 2 source | Notes |
+|---|---|---|
+| OTU table | `qiime tools export` of the feature table, giving `feature-table.biom` | |
+| Taxonomy | `qiime tools export` of the taxonomy, giving `taxonomy.tsv` | For a BIOM upload the id column is `Feature ID` (any case). `Taxon` holds the whole classification as one semicolon-separated string; MDT does not split it into ranks, so map it to `verbatimIdentification`. |
+| Sequences | `qiime tools export` of the representative sequences, giving `dna-sequences.fasta` | Its ids are the feature ids, so it matches the table and the taxonomy. |
+| Samples | the QIIME 2 sample metadata file | Name it so it is recognised, for example `metadata.tsv`, and pick its id column in the mapping step. |
+
 ## FAIRe (`FAIRe`)
 
 A dataset following the [FAIRe](https://fair-edna.github.io/) eDNA standard. It can be supplied
@@ -102,7 +112,7 @@ these names exactly:
 
 | Role | Recognised names |
 |---|---|
-| OTU table | `otutable`, `asvtable`, `matrix`, `table` |
+| OTU table | `otutable`, `asvtable`, `featuretable`, `matrix`, `table` |
 | Samples | `samples`, `sample`, `sampletable`, `sites`, `site`, `metadata` |
 | Taxonomy | `taxonomy`, `taxa`, `taxon`, `taxontable`, `taxonomytable`, `observations`, `observation` |
 | Study | `study`, `defaults`, `default`, `defaultvalues` |
