@@ -91,6 +91,21 @@ app.use(function (req, res, next) {
     next();
 });
 
+const DATASET_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VERSION = /^\d+$/;
+const isVersion = (version) => typeof version === 'string' && VERSION.test(version);
+const isFileName = (name) => typeof name === 'string' && name !== '.' && name !== '..' && !/[\/\\\0]/.test(name);
+
+app.use(function (req, res, next) {
+    if (req.query?.version !== undefined && !isVersion(req.query.version)) {
+        return res.sendStatus(400);
+    }
+    next();
+});
+app.param('id', (req, res, next, id) => DATASET_ID.test(id) ? next() : res.sendStatus(400));
+app.param('version', (req, res, next, version) => version === undefined || isVersion(version) ? next() : res.sendStatus(400));
+app.param('filename', (req, res, next, name) => isFileName(name) ? next() : res.sendStatus(400));
+
 // add routes for logins etc
 authController(app)
 // add routes for listing users datasets
