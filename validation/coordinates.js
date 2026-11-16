@@ -35,5 +35,14 @@ export const filterAndValidateCoordinates = data => {
     
 }
 
-export const isValidDecimalLatitude = lat => (!isNaN(Number(lat) && Number(lat) <= 90 && Number(lat) >= -90))
-export const isValidDecimalLongitude = lon => (!isNaN(Number(lon) && Number(lon) <= 180 && Number(lon) >= -180))
+// Number("") and Number(null) are 0, so a blank has to be ruled out before the range check
+const isCoordinateInRange = (value, limit) => {
+    if(value === null || value === undefined || value.toString().trim() === ''){
+        return false
+    }
+    const number = Number(value)
+    return !isNaN(number) && number <= limit && number >= -limit
+}
+
+export const isValidDecimalLatitude = lat => isCoordinateInRange(lat, 90)
+export const isValidDecimalLongitude = lon => isCoordinateInRange(lon, 180)
