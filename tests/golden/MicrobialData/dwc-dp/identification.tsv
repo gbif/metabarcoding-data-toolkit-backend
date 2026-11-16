@@ -1,4 +1,4 @@
-identificationID	nucleotideSequenceID
+identification_pk	nucleotideSequence_fk
 ASV_000003	ASV_000003
 ASV_000004	ASV_000004
 ASV_000006	ASV_000006

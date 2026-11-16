@@ -1,4 +1,4 @@
-nucleotideAnalysisID	eventID	molecularProtocolID	nucleotideSequenceID	readCount	totalReadCount
+nucleotideAnalysis_pk	event_fk	molecularProtocol_fk	nucleotideSequence_fk	readCount	processedTotalReadCount
 MOCK-S01:5d48a3b11e343a0ecf593772fdc7dc68	MOCK-S01	1	5d48a3b11e343a0ecf593772fdc7dc68	1	199
 MOCK-S01:d6d98a0ac6cfc0f590e660bce3d6d1ad	MOCK-S01	1	d6d98a0ac6cfc0f590e660bce3d6d1ad	120	199
 MOCK-S01:d81c30968054c657e770154139dcbe6f	MOCK-S01	1	d81c30968054c657e770154139dcbe6f	78	199

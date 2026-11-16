@@ -1,3 +1,3 @@
-eventID	decimalLongitude	decimalLatitude	verbatimLongitude	verbatimLatitude	verbatimCoordinateSystem	verbatimSRS	eventDate	verbatimEventDate	minimumDepthInMeters	maximumDepthInMeters
-SPY224102_T	-61.841	16.103					2021-06-09			
-SPY224105_T	-61.841	16.103					2021-06-06			
+event_pk	decimalLongitude	decimalLatitude	verbatimLongitude	verbatimLatitude	verbatimCoordinateSystem	verbatimSRS	eventDate	eventDurationValue	verbatimEventDate	minimumDepthInMeters	maximumDepthInMeters
+SPY224102_T	-61.841	16.103					2021-06-09				
+SPY224105_T	-61.841	16.103					2021-06-06				

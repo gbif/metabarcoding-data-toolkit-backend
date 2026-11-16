@@ -1,4 +1,4 @@
-nucleotideAnalysisID	eventID	molecularProtocolID	nucleotideSequenceID	readCount	totalReadCount
+nucleotideAnalysis_pk	event_fk	molecularProtocol_fk	nucleotideSequence_fk	readCount	processedTotalReadCount
 SPY224102_T:Gua_Boui_T_2021_10	SPY224102_T	1	Gua_Boui_T_2021_10	798	1397420
 SPY224102_T:Gua_Boui_T_2021_11	SPY224102_T	1	Gua_Boui_T_2021_11	10177	1397420
 SPY224102_T:Gua_Boui_T_2021_16	SPY224102_T	1	Gua_Boui_T_2021_16	204118	1397420

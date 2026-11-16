@@ -2,35 +2,34 @@
   "name": "dwc-data-package",
   "title": "Darwin Core Data Package",
   "description": "A data package containing Darwin Core related tables for molecular data.",
+  "mdtSchemaVersion": "1.0-DEV",
+  "mdtSchemaSourceCommit": "0fc041559db078c0c1cbdba8f8ffb4073319e2fa",
   "resources": [
     {
       "name": "event",
       "path": "data/event.tsv",
       "schema": {
-        "identifier": "http://rs.tdwg.org/dwc/dwc-dp/event",
+        "identifier": "http://rs.tdwg.org/dwc-dp/1.0-DEV/event",
+        "dcterms:isPartOf": "http://www.tdwg.org/standards/450",
         "url": "table-schemas/event.json",
         "name": "event",
         "title": "Event",
         "description": "An action, process, or set of circumstances occurring at a dcterms:Location during a period of time.",
-        "comments": "",
+        "notes": "",
         "examples": "`a material collecting event`; `a bird observation`; `a camera trap image capture`; `an organism occurrence`; `a biotic survey`",
         "namespace": "dwc",
         "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/Event",
-        "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/Event-2023-09-18",
-        "rdfs:comment": "An action that occurs at some location during some time.",
         "fields": [
           {
-            "name": "eventID",
-            "title": "Event ID",
-            "description": "An identifier for a dwc:Event.",
-            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "name": "event_pk",
+            "title": "Event (Primary Key)",
+            "description": "A unique identifier for a dwc:Event.",
+            "notes": "The value in this field MAY be changed in aggregation to guarantee uniqueness.",
             "examples": "`INBO:VIS:Ev:00009375`",
             "type": "string",
             "format": "default",
             "namespace": "dwc",
             "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/eventID",
-            "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/eventID-2023-06-28",
-            "rdfs:comment": "An identifier for the set of information associated with a dwc:Event (something that occurs at a place and time). May be a global unique identifier or an identifier specific to the data set.",
             "constraints": {
               "required": true,
               "unique": true
@@ -40,79 +39,110 @@
             "name": "year",
             "title": "Year",
             "description": "The four-digit year in which the dwc:Event occurred, according to the Common Era Calendar.",
-            "comments": "",
+            "notes": "",
             "examples": "`1160`; `2008`",
             "type": "integer",
             "format": "default",
             "namespace": "dwc",
-            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/year",
-            "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/year-2023-06-28",
-            "rdfs:comment": "The four-digit year in which the dwc:Event occurred, according to the Common Era Calendar."
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/year"
           }
         ],
-        "primaryKey": "eventID",
-        "foreignKeys": []
+        "primaryKey": "event_pk",
+        "weakPrimaryKey": "eventID",
+        "foreignKeys": [],
+        "weakForeignKeys": [
+          {
+            "fields": "recordedByID",
+            "predicate": "recorded by",
+            "reference": {
+              "resource": "agent",
+              "fields": "agentID"
+            }
+          },
+          {
+            "fields": "geologicalContextID",
+            "predicate": "within",
+            "reference": {
+              "resource": "geological-context",
+              "fields": "geologicalContextID"
+            }
+          },
+          {
+            "fields": "georeferencedByID",
+            "predicate": "georeferenced by",
+            "reference": {
+              "resource": "agent",
+              "fields": "agentID"
+            }
+          }
+        ]
       }
     },
     {
       "name": "identification",
       "path": "data/identification.tsv",
       "schema": {
-        "identifier": "http://rs.tdwg.org/dwc/dwc-dp/identification",
+        "identifier": "http://rs.tdwg.org/dwc-dp/1.0-DEV/identification",
+        "dcterms:isPartOf": "http://www.tdwg.org/standards/450",
         "url": "table-schemas/identification.json",
         "name": "identification",
         "title": "Identification",
         "description": "A classification of a resource according to a classification scheme.",
-        "comments": "For biology, the assignment of a scientific name or taxon concept to a dwc:Organism.",
+        "notes": "For biology, the assignment of a scientific name or taxon concept to a dwc:Organism.",
         "examples": "`a subspecies determination of an organism`; `a nomenclatural act designating a specimen as a holotype`",
         "namespace": "dwc",
         "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/Identification",
-        "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/Identification-2023-09-18",
-        "rdfs:comment": "A taxonomic determination (e.g., the assignment to a dwc:Taxon).",
         "fields": [
           {
-            "name": "identificationID",
-            "title": "Identification ID",
-            "description": "An identifier for a dwc:Identification.",
-            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "name": "identification_pk",
+            "title": "Identification (Primary Key)",
+            "description": "A unique identifier for a dwc:Identification.",
+            "notes": "The value in this field MAY be changed in aggregation to guarantee uniqueness.",
             "examples": "`9992`",
             "type": "string",
             "format": "default",
             "namespace": "dwc",
             "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/identificationID",
-            "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/identificationID-2023-06-28",
-            "rdfs:comment": "An identifier for the dwc:Identification (the body of information associated with the assignment of a scientific name). May be a global unique identifier or an identifier specific to the data set.",
             "constraints": {
               "required": true,
               "unique": true
             }
           },
           {
-            "name": "nucleotideSequenceID",
-            "title": "Nucleotide Sequence ID",
+            "name": "nucleotideSequence_fk",
+            "title": "Nucleotide Sequence (Foreign Key)",
             "description": "An identifier for a dwc:NucleotideSequence based on which a dwc:Identification was made.",
-            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "notes": "The value in this field MAY be changed in aggregation to preserve the relationship to the related primary key.",
             "examples": "",
             "type": "string",
             "format": "default",
-            "namespace": "dwc",
-            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/nucleotideSequenceID",
-            "dcterms:references": "",
-            "rdfs:comment": "",
+            "namespace": "dcterms",
+            "dcterms:isVersionOf": "http://purl.org/dc/terms/identifier",
             "constraints": {
               "required": false,
               "unique": false
             }
           }
         ],
-        "primaryKey": "identificationID",
+        "primaryKey": "identification_pk",
+        "weakPrimaryKey": "identificationID",
         "foreignKeys": [
           {
-            "fields": "nucleotideSequenceID",
+            "fields": "nucleotideSequence_fk",
             "predicate": "based on",
             "reference": {
               "resource": "nucleotide-sequence",
-              "fields": "nucleotideSequenceID"
+              "fields": "nucleotideSequence_pk"
+            }
+          }
+        ],
+        "weakForeignKeys": [
+          {
+            "fields": "identifiedByID",
+            "predicate": "identified by",
+            "reference": {
+              "resource": "agent",
+              "fields": "agentID"
             }
           }
         ]
@@ -122,175 +152,171 @@
       "name": "molecular-protocol",
       "path": "data/molecular-protocol.tsv",
       "schema": {
-        "identifier": "http://rs.tdwg.org/dwc/dwc-dp/molecular-protocol",
+        "identifier": "http://rs.tdwg.org/dwc-dp/1.0-DEV/molecular-protocol",
+        "dcterms:isPartOf": "http://www.tdwg.org/standards/450",
         "url": "table-schemas/molecular-protocol.json",
         "name": "molecular-protocol",
         "title": "Molecular Protocol",
-        "description": "A protocol used to derive and identify a dwc:NucleotideSequence from an ac:MaterialEntity.",
-        "comments": "",
+        "description": "A protocol used to perform a dwc:NucleotideAnalysis and potentially derive a dwc:NucleotideSequence from a dwc:MaterialEntity.",
+        "notes": "",
         "examples": "`a standard DNA barcoding workflow using Sanger sequencing`; `a shotgun metagenomics pipeline for microbial community profiling`; `a high-throughput amplicon sequencing protocol targeting 16S rRNA`",
         "namespace": "dwc",
         "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/MolecularProtocol",
-        "dcterms:references": "",
-        "rdfs:comment": "A protocol used to derive and identify a nucleotide sequence from a dwc:MaterialEntity.",
         "fields": [
           {
-            "name": "molecularProtocolID",
-            "title": "Molecular Protocol ID",
-            "description": "An identifier for a dwc:MolecularProtocol.",
-            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "name": "molecularProtocol_pk",
+            "title": "Molecular Protocol (Primary Key)",
+            "description": "A unique identifier for a dwc:MolecularProtocol.",
+            "notes": "The value in this field MAY be changed in aggregation to guarantee uniqueness.",
             "examples": "",
             "type": "string",
             "format": "default",
             "namespace": "dwc",
-            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/molecularProtocolID",
-            "dcterms:references": "",
-            "rdfs:comment": "",
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/molecularProtocolID",
             "constraints": {
               "required": true,
               "unique": true
             }
           }
         ],
-        "primaryKey": "molecularProtocolID",
-        "foreignKeys": []
+        "primaryKey": "molecularProtocol_pk",
+        "weakPrimaryKey": "molecularProtocolID",
+        "foreignKeys": [],
+        "weakForeignKeys": [
+          {
+            "fields": "source_mat_id",
+            "predicate": "has source",
+            "reference": {
+              "resource": "material",
+              "fields": "materialEntityID"
+            }
+          }
+        ]
       }
     },
     {
       "name": "nucleotide-analysis",
       "path": "data/nucleotide-analysis.tsv",
       "schema": {
-        "identifier": "http://rs.tdwg.org/dwc/dwc-dp/nucleotide-analysis",
+        "identifier": "http://rs.tdwg.org/dwc-dp/1.0-DEV/nucleotide-analysis",
+        "dcterms:isPartOf": "http://www.tdwg.org/standards/450",
         "url": "table-schemas/nucleotide-analysis.json",
         "name": "nucleotide-analysis",
         "title": "Nucleotide Analysis",
         "description": "A link between a dwc:NucleotideSequence and a dwc:Event and a dwc:MaterialEntity from which it was derived, using a specified dwc:Protocol.",
-        "comments": "",
+        "notes": "",
         "examples": "",
         "namespace": "dwc",
         "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/NucleotideAnalysis",
-        "dcterms:references": "",
-        "rdfs:comment": "A link between a dwc:NucleotideSequence and a dwc:Event and a dwc:MaterialEntity from which it was derived, using a specified dwc:Protocol.",
         "fields": [
           {
-            "name": "nucleotideAnalysisID",
-            "title": "Nucleotide Analysis ID",
-            "description": "An identifier for a dwc:NucleotideAnalysis.",
-            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "name": "nucleotideAnalysis_pk",
+            "title": "Nucleotide Analysis (Primary Key)",
+            "description": "A unique identifier for a dwc:NucleotideAnalysis.",
+            "notes": "The value in this field MAY be changed in aggregation to guarantee uniqueness.",
             "examples": "",
             "type": "string",
             "format": "default",
-            "namespace": "dwc",
-            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/nucleotideAnalysisID",
-            "dcterms:references": "",
-            "rdfs:comment": "",
+            "namespace": "dcterms",
+            "dcterms:isVersionOf": "http://purl.org/dc/terms/identifier",
             "constraints": {
               "required": true,
               "unique": true
             }
           },
           {
-            "name": "eventID",
-            "title": "Event ID",
+            "name": "event_fk",
+            "title": "Event (Foreign Key)",
             "description": "An identifier for a dwc:Event.",
-            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "notes": "The value in this field MAY be changed in aggregation to preserve the relationship to the related primary key.",
             "examples": "",
             "type": "string",
             "format": "default",
             "namespace": "dwc",
             "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/eventID",
-            "dcterms:references": "http://rs.tdwg.org/dwc/terms/version/eventID-2023-06-28",
-            "rdfs:comment": "An identifier for the set of information associated with a dwc:Event (something that occurs at a place and time). May be a global unique identifier or an identifier specific to the data set.",
             "constraints": {
-              "required": true,
+              "required": false,
               "unique": false
             }
           },
           {
-            "name": "molecularProtocolID",
-            "title": "Molecular Protocol ID",
+            "name": "molecularProtocol_fk",
+            "title": "Molecular Protocol (Foreign Key)",
             "description": "An identifier for a dwc:MolecularProtocol.",
-            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "notes": "The value in this field MAY be changed in aggregation to preserve the relationship to the related primary key.",
             "examples": "",
             "type": "string",
             "format": "default",
             "namespace": "dwc",
-            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/molecularProtocolID",
-            "dcterms:references": "",
-            "rdfs:comment": "",
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/molecularProtocolID",
             "constraints": {
               "required": true,
               "unique": false
             }
           },
           {
-            "name": "nucleotideSequenceID",
-            "title": "Nucleotide Sequence ID",
+            "name": "nucleotideSequence_fk",
+            "title": "Nucleotide Sequence (Foreign Key)",
             "description": "An identifier for a dwc:NucleotideSequence.",
-            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "notes": "The value in this field MAY be changed in aggregation to preserve the relationship to the related primary key.",
             "examples": "",
             "type": "string",
             "format": "default",
-            "namespace": "dwc",
-            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/nucleotideSequenceID",
-            "dcterms:references": "",
-            "rdfs:comment": "",
+            "namespace": "dcterms",
+            "dcterms:isVersionOf": "http://purl.org/dc/terms/identifier",
             "constraints": {
-              "required": true,
+              "required": false,
               "unique": false
             }
           },
           {
             "name": "readCount",
             "title": "Read Count",
-            "description": "A number of reads for a dwc:NucleotideSequence in a dwc:NucleotideAnalysis.",
-            "comments": "",
-            "examples": "",
+            "description": "The number of reads obtained for a processed dwc:NucleotideSequence during a dwc:NucleotideAnalysis.",
+            "notes": "",
+            "examples": "`325`; `73591`; `8302`",
             "type": "integer",
             "format": "default",
             "namespace": "dwc",
-            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/readCount",
-            "dcterms:references": "",
-            "rdfs:comment": ""
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/readCount"
           },
           {
-            "name": "totalReadCount",
-            "title": "Total Read Count",
-            "description": "A total number of reads in a dwc:NucleotideAnalysis.",
-            "comments": "",
-            "examples": "",
+            "name": "processedTotalReadCount",
+            "title": "Processed Total Read Count",
+            "description": "The total number of reads obtained for a processed dwc:NucleotideSequence during a dwc:NucleotideAnalysis.",
+            "notes": "",
+            "examples": "`50638`; `345987`; `764032`",
             "type": "integer",
             "format": "default",
             "namespace": "dwc",
-            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/totalReadCount",
-            "dcterms:references": "",
-            "rdfs:comment": ""
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/processedTotalReadCount"
           }
         ],
-        "primaryKey": "nucleotideAnalysisID",
+        "primaryKey": "nucleotideAnalysis_pk",
+        "weakPrimaryKey": "nucleotideAnalysisID",
         "foreignKeys": [
           {
-            "fields": "eventID",
+            "fields": "event_fk",
             "predicate": "material collected during",
             "reference": {
               "resource": "event",
-              "fields": "eventID"
+              "fields": "event_pk"
             }
           },
           {
-            "fields": "molecularProtocolID",
+            "fields": "molecularProtocol_fk",
             "predicate": "followed",
             "reference": {
               "resource": "molecular-protocol",
-              "fields": "molecularProtocolID"
+              "fields": "molecularProtocol_pk"
             }
           },
           {
-            "fields": "nucleotideSequenceID",
+            "fields": "nucleotideSequence_fk",
             "predicate": "produced",
             "reference": {
               "resource": "nucleotide-sequence",
-              "fields": "nucleotideSequenceID"
+              "fields": "nucleotideSequence_pk"
             }
           }
         ],
@@ -301,30 +327,27 @@
       "name": "nucleotide-sequence",
       "path": "data/nucleotide-sequence.tsv",
       "schema": {
-        "identifier": "http://rs.tdwg.org/dwc/dwc-dp/nucleotide-sequence",
+        "identifier": "http://rs.tdwg.org/dwc-dp/1.0-DEV/nucleotide-sequence",
+        "dcterms:isPartOf": "http://www.tdwg.org/standards/450",
         "url": "table-schemas/nucleotide-sequence.json",
         "name": "nucleotide-sequence",
         "title": "Nucleotide Sequence",
         "description": "A digital representation of a nucleotide sequence.",
-        "comments": "",
+        "notes": "",
         "examples": "",
         "namespace": "dwc",
         "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/NucleotideSequence",
-        "dcterms:references": "",
-        "rdfs:comment": "A digital representation of a nucleotide sequence.",
         "fields": [
           {
-            "name": "nucleotideSequenceID",
-            "title": "Nucleotide Sequence ID",
-            "description": "An identifier for a dwc:NucleotideSequence.",
-            "comments": "Recommended best practice is to use a globally unique identifier.",
+            "name": "nucleotideSequence_pk",
+            "title": "Nucleotide Sequence (Primary Key)",
+            "description": "A unique identifier for a dwc:NucleotideSequence.",
+            "notes": "The value in this field MAY be changed in aggregation to guarantee uniqueness.",
             "examples": "",
             "type": "string",
             "format": "default",
-            "namespace": "dwc",
-            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/nucleotideSequenceID",
-            "dcterms:references": "",
-            "rdfs:comment": "",
+            "namespace": "dcterms",
+            "dcterms:isVersionOf": "http://purl.org/dc/terms/identifier",
             "constraints": {
               "required": true,
               "unique": true
@@ -334,17 +357,16 @@
             "name": "sequence",
             "title": "Sequence",
             "description": "A string representing nucleotide base pairs.",
-            "comments": "",
+            "notes": "",
             "examples": "",
             "type": "string",
             "format": "default",
             "namespace": "dwc",
-            "dcterms:isVersionOf": "http://example.com/term-pending/dwc/sequence",
-            "dcterms:references": "",
-            "rdfs:comment": ""
+            "dcterms:isVersionOf": "http://rs.tdwg.org/dwc/terms/sequence"
           }
         ],
-        "primaryKey": "nucleotideSequenceID",
+        "primaryKey": "nucleotideSequence_pk",
+        "weakPrimaryKey": "nucleotideSequenceID",
         "foreignKeys": []
       }
     }

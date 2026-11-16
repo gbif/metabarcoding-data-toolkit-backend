@@ -1,4 +1,4 @@
-nucleotideAnalysisID	eventID	molecularProtocolID	nucleotideSequenceID	readCount	totalReadCount
+nucleotideAnalysis_pk	event_fk	molecularProtocol_fk	nucleotideSequence_fk	readCount	processedTotalReadCount
 NT010:09b4ba22234405ea406af7bc73a5ce1a	NT010	1	09b4ba22234405ea406af7bc73a5ce1a	1222	2483
 NT010:81d3dcfc54248f44259ac5cbfe83a00a	NT010	1	81d3dcfc54248f44259ac5cbfe83a00a	89	2483
 NT010:82780436adb026d0faf0ab5680b15b13	NT010	1	82780436adb026d0faf0ab5680b15b13	98	2483

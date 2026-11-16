@@ -1,4 +1,4 @@
-nucleotideAnalysisID	eventID	molecularProtocolID	nucleotideSequenceID	readCount	totalReadCount
+nucleotideAnalysis_pk	event_fk	molecularProtocol_fk	nucleotideSequence_fk	readCount	processedTotalReadCount
 SRR3108848:ASV_007077	SRR3108848	1	ASV_007077	475	4793
 SRR3108848:ASV_017563	SRR3108848	1	ASV_017563	251	4793
 SRR3108848:ASV_017736	SRR3108848	1	ASV_017736	231	4793

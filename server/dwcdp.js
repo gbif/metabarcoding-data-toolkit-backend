@@ -1,6 +1,7 @@
 import { getProcessingReport, writeProcessingReport, getMetadata, getCurrentDatasetVersion,  wipeGeneratedDwcDpFiles} from '../util/filesAndDirectories.js'
 import { withMetadataState } from '../util/dataset.js';
 import { metadataReadiness, metadataMissingMessage } from '../validation/readiness.js';
+import { getDwcdpVersion } from '../util/dwcdpVersion.js';
 
 import {getFileSize} from '../validation/files.js'
 import config from '../config.js'
@@ -159,6 +160,10 @@ const getDwcDpProcess = async (req, res) => {
             if(!!metadata){
                 report.metadata = metadata
             }
+            // Which DwC-DP generation the package on disk was written against, so the export
+            // page can offer to regenerate one that predates the surrogate-key migration.
+            // null when no package exists yet.
+            report.dwcdpVersion = await getDwcdpVersion(req.params.id, version, 'parquet');
             if (job) {
                
                 let dwcdp = {...job, steps: addPendingSteps(job)};

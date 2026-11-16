@@ -4,6 +4,7 @@ import auth from './Auth/auth.js';
 import _ from 'lodash'
 import { getCurrentDatasetVersion, writeProcessingReport, wipeGeneratedFilesAndResetProccessing, readTsvHeaders, readMapping } from '../util/filesAndDirectories.js'
 import { getDataset, withMetadataState } from '../util/dataset.js';
+import { getDwcdpVersion } from '../util/dwcdpVersion.js';
 
 import {processDataset} from '../workers/supervisor.js'
 import queue from 'async/queue.js';
@@ -149,6 +150,13 @@ const getProcess = async (req, res) => {
             }
             let report = await getDataset(req.params.id, version);
           //  console.log("Process request 4")
+
+            // Which DwC-DP generation the generated package was written against - the export
+            // page offers to regenerate one that predates the surrogate-key migration, and the
+            // context dataset comes from here rather than from the /dwc-dp poll.
+            if (report) {
+                report.dwcdpVersion = await getDwcdpVersion(req.params.id, version, 'parquet');
+            }
 
             if (job) {
                 let data = { ...report, ...job, steps: addPendingSteps(job) };
