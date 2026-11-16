@@ -15,9 +15,25 @@ Every format describes the same three things:
 An optional **study** file (also called defaults) holds values that apply to the whole dataset,
 such as `target_gene`, the primers or `pcr_primer_reference`.
 
+## How the format is chosen
+
+The checks run in this order, and the first that matches decides the format for the whole upload:
+
+1. **FAIRe**, if any file other than an `.xlsx` has a name starting with a FAIRe component prefix
+   (see [FAIRe](#faire-faire)), or if an `.xlsx` workbook has a sheet named for a FAIRe
+   component. One such file is enough, so a file named `sampleMetadata_x.tsv` turns an
+   otherwise ordinary text-file upload into FAIRe.
+2. **BIOM 2.1**, if any file is HDF5. This is read from the file's content, not its extension.
+3. **Excel workbook**, if there are fewer than three files and one of them is an `.xlsx`.
+4. **Text files**, if at least two files end in `.tsv`, `.csv` or `.txt`. The extension must be
+   lower case.
+
+Anything else is `INVALID`.
+
 ## Tab- or comma-separated text files (`TSV`, `TSV_WITH_FASTA`)
 
-The OTU table, samples and taxonomy as separate text files (`.tsv`, `.csv` or `.txt`). The
+The OTU table, samples and taxonomy as separate text files (`.tsv`, `.csv` or `.txt`, in lower
+case). The
 delimiter (tab, comma, semicolon or pipe) is detected per file. At least two text files are
 needed. The OTU table and the samples file are always required. The taxonomy can come from any
 of these:
@@ -35,8 +51,10 @@ ids.
 ## Excel workbook (`XLSX`, `XLSX_WITH_FASTA`)
 
 One `.xlsx` workbook with the OTU table, samples and, optionally, taxonomy as separate sheets,
-plus an optional fasta file (`XLSX_WITH_FASTA`). The workbook is the only table file: if more
-files are uploaded alongside it, the upload is not read as a workbook. Sheets are recognised by
+plus an optional fasta file (`XLSX_WITH_FASTA`). The upload is read as a workbook only when it
+has fewer than three files. All tables are then read from the workbook, and any other file
+except a fasta file is ignored. With three or more files, the workbook is not read and the
+upload is checked as text files instead. Sheets are recognised by
 name in the same way as files (see [File and sheet names](#file-and-sheet-names)). The OTU table
 and samples sheets are required. If there is no taxonomy sheet, the taxonomy has to be in the OTU
 table sheet next to the counts. A study sheet is optional. In the OTU table sheet, samples must
@@ -44,8 +62,8 @@ be the columns.
 
 ## BIOM 2.1 (`BIOM_2_1`)
 
-A BIOM 2.1 file in HDF5 format (`.biom`, `.h5`, `.hdf5`) holding the count matrix, with sample
-and OTU/ASV ids. MDT reads only the matrix and its ids from this file. Metadata stored inside
+A BIOM 2.1 file in HDF5 format (`.biom`, `.h5`, `.hdf5` or `.he5`) holding the count matrix,
+with sample and OTU/ASV ids. It is recognised by its content, whatever the extension. MDT reads only the matrix and its ids from this file. Metadata stored inside
 the BIOM file is not used, so the samples have to be uploaded as a separate text file. The
 taxonomy comes either as a text file or as a fasta file. A study file is optional.
 
@@ -108,6 +126,10 @@ counts. Any OTU table column whose header is not a sample id is treated as taxon
 for both text files and workbooks, but only when samples are the columns. The OTU table's first
 column is the OTU/ASV id for both the counts and the taxonomy.
 
+To tell the sample ids apart from the taxonomy headers, MDT reads the sample ids from the
+samples table's column named `id` or `sampleid`, in any case. If it has neither, MDT uses the
+samples column whose values match the most OTU table headers.
+
 ### Fasta file
 
 A `.fasta`, `.fa` or `.fas` file can supply the DNA sequences instead of a `DNA_sequence`
@@ -129,4 +151,5 @@ file takes precedence over the same term in the samples table.
 ### Zip archives
 
 Any upload can be a `.zip`. It is unpacked before detection, and files in folders are treated as
-if they were at the top level.
+if they were at the top level. Files of any other type than text, `.xlsx` and HDF5 are then
+removed without a warning.
