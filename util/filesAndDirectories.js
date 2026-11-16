@@ -178,62 +178,35 @@ export const readBiom = async (id, version, processFn = (progress, total, messag
 }
 
 
-export const zipDwcArchive = (id, version) => {
-    return new Promise((resolve, reject) => {
-      child_process.exec(
-        `zip -r ${config.dataStorage}${id}/${version}/archive.zip *`,
-        {
-          cwd: `${config.dataStorage}${id}/${version}/archive`,
-        },
-        function (err) {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
-        }
-      );
+const zipDirectory = (directory, target) => new Promise((resolve, reject) => {
+  try {
+    const entries = fs.readdirSync(directory).filter((name) => !name.startsWith("."));
+    child_process.execFile("zip", ["-r", target, ...entries], { cwd: directory }, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
     });
-  };
+  } catch (err) {
+    reject(err);
+  }
+});
 
-  export const zipDwcDatapackage = (id, version, format = "tsv") => {
-    return format === "tsv" ? new Promise((resolve, reject) => {
-      child_process.exec(
-        `zip -r ${config.dataStorage}${id}/${version}/dwc-dp.zip *`,
-        {
-          cwd: `${config.dataStorage}${id}/${version}/dwc-dp`,
-        },
-        function (err) {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
-        }
-      );
-    }) : new Promise((resolve, reject) => {
-      child_process.exec(
-        `zip -r ${config.dataStorage}${id}/${version}/dwc-dp.parquet.zip *`,
-        {
-          cwd: `${config.dataStorage}${id}/${version}/parquet`,
-        },
-        function (err) {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
-        }
-      );
-    }); 
-  };
+export const zipDwcArchive = (id, version) =>
+  zipDirectory(`${config.dataStorage}${id}/${version}/archive`, `${config.dataStorage}${id}/${version}/archive.zip`);
+
+  export const zipDwcDatapackage = (id, version, format = "tsv") => format === "tsv"
+    ? zipDirectory(`${config.dataStorage}${id}/${version}/dwc-dp`, `${config.dataStorage}${id}/${version}/dwc-dp.zip`)
+    : zipDirectory(`${config.dataStorage}${id}/${version}/parquet`, `${config.dataStorage}${id}/${version}/dwc-dp.parquet.zip`);
 
 
 
   export const rsyncToPublicAccess = (id, version) => {
     return new Promise((resolve, reject) => {
-      child_process.exec(
-        `rsync -chavzP ${config.dataStorage}${id}/${version}/archive.zip ${config.rsyncDirectory}/${id}.zip`,
+      child_process.execFile(
+        "rsync",
+        ["-chavzP", `${config.dataStorage}${id}/${version}/archive.zip`, `${config.rsyncDirectory}/${id}.zip`],
         function (err) {
           if (err) {
             reject(err);

@@ -1,6 +1,6 @@
 import fs from 'fs'
 import config from '../config.js'
-import {execSync, exec}  from 'child_process';
+import {execFileSync}  from 'child_process';
 import { determineFileNames, analyseCsv } from './tsvformat.js';
 import {readDefaultValues} from '../util/streamReader.js';
 import {writeMapping, readMapping, getProcessingReport} from '../util/filesAndDirectories.js'
@@ -47,7 +47,7 @@ const isFAIReWorkbook = async (filePath) => {
 };
 
 export const getMimeFromPath = (filePath) => {
-    const mimeType = execSync('file --mime-type -b "' + filePath + '"').toString();
+    const mimeType = execFileSync('file', ['--mime-type', '-b', filePath]).toString();
     return mimeType.trim();
 }
 
@@ -56,7 +56,7 @@ export const getMimeFromPath = (filePath) => {
 export const unzip = async (id, fileName, version = 1) => {
     return new Promise((resolve, reject) => {
         try {
-             execSync(`unzip -j -o "${config.dataStorage}${id}/${version}/original/${fileName}" -d "${config.dataStorage}${id}/${version}/original"`);
+             execFileSync('unzip', ['-j', '-o', `${config.dataStorage}${id}/${version}/original/${fileName}`, '-d', `${config.dataStorage}${id}/${version}/original`]);
              resolve()
         } catch (error) {
             reject(error)
@@ -68,7 +68,7 @@ export const unzip = async (id, fileName, version = 1) => {
 const deleteFile = async (id, fileName, version = 1) => {
     return new Promise((resolve, reject) => {
         try {
-             execSync(`rm "${config.dataStorage}${id}/${version}/original/${fileName}"`);
+             fs.unlinkSync(`${config.dataStorage}${id}/${version}/original/${fileName}`);
              resolve()
         } catch (error) {
             reject(error)
