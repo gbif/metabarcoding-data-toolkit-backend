@@ -180,7 +180,10 @@ export default (app) => {
 
             const datapackage = JSON.parse(fs.readFileSync(dpPath, 'utf8'));
 
-            const db = await DuckDBInstance.create(':memory:');
+            const db = await DuckDBInstance.create(':memory:', {
+                autoinstall_known_extensions: 'false',
+                autoload_known_extensions: 'false'
+            });
             const con = await db.connect();
 
             try {
@@ -204,6 +207,11 @@ export default (app) => {
                     const escapedPath = resolvedPath.replace(/'/g, "''");
                     await con.run(`CREATE VIEW "${resource.name}" AS SELECT * FROM read_parquet('${escapedPath}')`);
                 }
+
+                const escapedBase = `${resolvedBase}${path.sep}`.replace(/'/g, "''");
+                await con.run(`SET allowed_directories = ['${escapedBase}']`);
+                await con.run('SET enable_external_access = false');
+                await con.run('SET lock_configuration = true');
 
                 // Wrap the user query to enforce the row cap
                 const wrappedSql = `SELECT * FROM (\n${sql}\n) AS __explore_query LIMIT ${maxRows}`;
