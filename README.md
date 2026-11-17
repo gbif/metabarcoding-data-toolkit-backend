@@ -152,7 +152,7 @@ If the status is `failed`, you will need to investigate what went wrong. The log
 
 ## Testing and validating the Darwin Core Archive
 
-The dwc archive can be tested in the [gbif-uat test environment](https://www.gbif-uat.org/). 
+The dwc archive can be tested in the [GBIF test environment](https://www.gbif-test.org/). 
 
 ````
 curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/register-in-gbif-uat' \
@@ -160,7 +160,7 @@ curl 'https://mdt.gbif.org/service/dataset/<DATASET_KEY>/register-in-gbif-uat' \
   -H 'Authorization: Bearer <AUTHORIZATION_TOKEN>' | jq .publishing.gbifUatDatasetKey
 ````
 
-This will return a `GBIF_UAT_DATASET_KEY` for the gif-uat environment. The dataset will be available at `https://www.gbif-uat.org/dataset/<GBIF_UAT_DATASET_KEY>`
+This will return a `GBIF_UAT_DATASET_KEY` for the test environment. The dataset will be available at `https://www.gbif-test.org/dataset/<GBIF_UAT_DATASET_KEY>`
 
 It is also possible to run a validation report, using the [GBIF data-validator](https://www.gbif.org/tools/data-validator)
 

@@ -208,8 +208,8 @@ export const getDatasetLog = async (id, version) =>  {
 
         }
         if(report?.publishing?.gbifUatDatasetKey){
-           // log.push(`${report?.publishing?.registeredUAT ? new Date(report?.publishing?.registeredUAT).toUTCString() + ": ":  spacer+"  "}Dataset tested in GBIF-UAT environment: https://www.gbif-uat.org/dataset/${report?.publishing?.gbifUatDatasetKey}`)
-           events.push({created: new Date(report?.publishing?.registeredUAT), data:[`${report?.publishing?.registeredUAT ? new Date(report?.publishing?.registeredUAT).toUTCString() + ": ":  spacer+"  "}Dataset tested in GBIF-UAT environment: https://www.gbif-uat.org/dataset/${report?.publishing?.gbifUatDatasetKey} (User ${report?.publishing?.registeredUATby})`]})
+           // log.push(`${report?.publishing?.registeredUAT ? new Date(report?.publishing?.registeredUAT).toUTCString() + ": ":  spacer+"  "}Dataset tested in GBIF-UAT environment: https://www.gbif-test.org/dataset/${report?.publishing?.gbifUatDatasetKey}`)
+           events.push({created: new Date(report?.publishing?.registeredUAT), data:[`${report?.publishing?.registeredUAT ? new Date(report?.publishing?.registeredUAT).toUTCString() + ": ":  spacer+"  "}Dataset tested in GBIF-UAT environment: https://www.gbif-test.org/dataset/${report?.publishing?.gbifUatDatasetKey} (User ${report?.publishing?.registeredUATby})`]})
 
         }
         if(report?.publishing?.gbifProdDatasetKey){
