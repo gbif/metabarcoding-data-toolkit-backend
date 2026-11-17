@@ -29,7 +29,7 @@ In order to operate the Metabarcoding Data Toolkit through the API, you need to 
 
 This will give you an `AUTHORIZATION_TOKEN` issued by this MDT. It is valid for 2 hours, and each request renews it: the response carries a new one in its `token` header. It ends 24 hours after login at the latest.
 
-For scripts and tools, an API token is easier: create one on your profile page in the MDT (`https://mdt.gbif.org/user-profile`) with a lifetime of 1, 7 or 30 days. It is shown once, gives access to your datasets on this MDT only, is not renewed, and can be revoked on the same page. API tokens end when the MDT restarts.
+For scripts and tools, an API token is easier: create one on your profile page in the MDT (`https://mdt.gbif.org/user-profile/api-tokens`) with a lifetime of 1, 7 or 30 days. It is shown once, gives access to your datasets on this MDT only, is not renewed, and can be revoked on the same page. API tokens end when the MDT restarts.
 
 
 ## Uploading and validating data files
