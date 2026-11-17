@@ -72,6 +72,9 @@ const userCanModifyDataset = () => {
         });
 }
 
+// After appendUser: for what only a browser session may do, not an API token
+const webSessionOnly = () => (req, res, next) => req.user?.claims?.kind === 'web' ? next() : res.sendStatus(403)
+
 /* export const userCanPublishWithOrganisation = async (userName, organisationKey) => {
     try {
         const admin = await readOrganizationFile();
@@ -123,6 +126,7 @@ export const writeOrganisations = async (data) => {
 export default {
     appendUser,
     userCanModifyDataset,
+    webSessionOnly,
 /*     userCanPublishWithOrganisation,
  */    getOrganisationsForUser,
     getOrganisations,

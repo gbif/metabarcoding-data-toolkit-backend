@@ -7,9 +7,6 @@ import { listApiTokens, createApiToken, revokeApiToken } from './tokens.js'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-// API tokens are made and revoked from a browser session, so a copied token can't mint more
-const webSessionOnly = (req, res, next) => req.user?.claims?.kind === 'web' ? next() : res.sendStatus(403)
-
 
 export default  (app) => {
     app.get('/user/datasets', auth.appendUser(), async function(req, res) {
@@ -44,7 +41,7 @@ export default  (app) => {
         res.json(listApiTokens(req.user.userName))
     })
 
-    app.post('/user/tokens', auth.appendUser(), webSessionOnly, (req, res) => {
+    app.post('/user/tokens', auth.appendUser(), auth.webSessionOnly(), (req, res) => {
         try {
             res.status(201).json(createApiToken(req.user, req.body?.label, Number(req.body?.days)))
         } catch (error) {
@@ -57,14 +54,14 @@ export default  (app) => {
         }
     })
 
-    app.delete('/user/tokens/:tokenId', auth.appendUser(), webSessionOnly, (req, res) => {
+    app.delete('/user/tokens/:tokenId', auth.appendUser(), auth.webSessionOnly(), (req, res) => {
         if (!UUID.test(req.params.tokenId)) {
             return res.sendStatus(400)
         }
         res.sendStatus(revokeApiToken(req.user.userName, req.params.tokenId) ? 204 : 404)
     })
 
-    app.get('/admin/organizations', auth.appendUser(), async (req, res) => {
+    app.get('/admin/organizations', auth.appendUser(), auth.webSessionOnly(), async (req, res) => {
         if(!req.user.isAdmin){
             res.sendStatus(403)
         } else {
@@ -79,7 +76,7 @@ export default  (app) => {
         
     })
 
-    app.post('/admin/organizations', auth.appendUser(), async (req, res) => {
+    app.post('/admin/organizations', auth.appendUser(), auth.webSessionOnly(), async (req, res) => {
         if(!req.user.isAdmin){
             res.sendStatus(403)
         } else {

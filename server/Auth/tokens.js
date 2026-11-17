@@ -86,9 +86,11 @@ export const verify = authorization => {
     return null
 }
 
+// Renewals share the session's sid and can expire later than the token logged out with, so the
+// sid is kept until the latest any of them can expire
 export const logout = claims => {
     if (claims?.kind === 'web') {
-        loggedOut.set(claims.sid, claims.exp)
+        loggedOut.set(claims.sid, claims.auth_time + WEB_MAX_SECONDS)
     } else if (claims?.kind === 'api') {
         apiTokens.delete(claims.sid)
     }

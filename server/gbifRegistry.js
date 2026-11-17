@@ -109,7 +109,7 @@ const getOrganizationToken = async (req, res) => {
 };
 
 export default (app) => {
-  app.get("/organization/:key/password", auth.appendUser(), getOrganizationToken);
+  app.get("/organization/:key/password", auth.appendUser(), auth.webSessionOnly(), getOrganizationToken);
   app.get("/organization/suggest", getOrganizations);
   app.get("/installation-contact-email", getInstallationContactEmail);
   app.get("/installation-settings", getInstallationSettings);
